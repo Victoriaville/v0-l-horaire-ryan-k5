@@ -4,7 +4,7 @@ import { sql, invalidateCache } from "@/lib/db"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
-export async function getShiftAssignments(shiftId: number) {
+export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   const assignments = await sql`
     SELECT 
       sa.id,
@@ -21,6 +21,7 @@ export async function getShiftAssignments(shiftId: number) {
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
+    ${shiftDate ? sql`AND DATE(sa.shift_date) = ${shiftDate.toISOString().split('T')[0]}` : sql``}
     ORDER BY 
       CASE u.role 
         WHEN 'captain' THEN 1 

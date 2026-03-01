@@ -38,7 +38,7 @@ export default async function DailyViewPage({
   // Get assignments for each shift
   const shiftsWithAssignments = await Promise.all(
     dayShifts.map(async (shift: any) => {
-      const assignments = await getShiftAssignments(shift.id)
+      const assignments = await getShiftAssignments(shift.id, selectedDate)
       return { ...shift, assignments }
     }),
   )
