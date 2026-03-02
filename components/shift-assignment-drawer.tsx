@@ -1048,15 +1048,11 @@ export function ShiftAssignmentDrawer({
   currentAssignments.forEach((assignment) => {
     // Group by replacement_order (includes both direct assignments and approved replacements)
     if (assignment.replacement_order && assignment.replaced_user_id) {
-      console.log("[v0] currentAssignment with replacement_order:", {
-        user_id: assignment.user_id,
-        first_name: assignment.first_name,
-        last_name: assignment.last_name,
-        replaced_user_id: assignment.replaced_user_id,
-        is_acting_lieutenant: assignment.is_acting_lieutenant,
-        is_acting_captain: assignment.is_acting_captain,
-        replacement_order: assignment.replacement_order
-      })
+      // CRITICAL FIX: Only use assignments from THIS specific date, not other dates with same shift_id
+      const assignmentDateStr = formatDateForDB(new Date(assignment.shift_date))
+      if (assignmentDateStr !== dateStr) {
+        return
+      }
       
       if (!groupedReplacements.has(assignment.replaced_user_id)) {
         groupedReplacements.set(assignment.replaced_user_id, [])
