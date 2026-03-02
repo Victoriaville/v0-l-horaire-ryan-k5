@@ -1125,6 +1125,14 @@ export function ShiftAssignmentDrawer({
         groupedReplacements.set(r.user_id, [])
       }
       const replacedFF = allFirefighters?.find((ff) => ff.id === r.user_id)
+      
+      console.log("[v0] Processing approved replacement:", {
+        applicantId: approvedApp.applicant_id,
+        replacedUserId: r.user_id,
+        isActingLieutenant: r.is_acting_lieutenant,
+        isActingCaptain: r.is_acting_captain
+      })
+      
       groupedReplacements.get(r.user_id)!.push({
         user_id: approvedApp.applicant_id,
         first_name: approvedApp.first_name,
