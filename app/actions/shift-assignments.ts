@@ -1,7 +1,10 @@
+"use server"
+
 import { sql, invalidateCache } from "@/lib/db"
 import { formatDateForDB } from "@/lib/date-utils"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
+
 
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   const assignments = await sql`
