@@ -1037,9 +1037,6 @@ export function ShiftAssignmentDrawer({
   })
 
   const groupedReplacements = new Map<number, Array<any>>()
-  
-  // Extract shift date as YYYY-MM-DD format for comparison
-  const dateStr = formatDateForDB(shift.date)
 
   const existingReplacementKeys = new Set<string>()
   currentAssignments.forEach((assignment) => {
