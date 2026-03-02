@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   if (shiftDate) {
-    // Filter by specific date - use string comparison for reliability
+    // Filter by specific date using substring for PostgreSQL compatibility
     const targetDate = shiftDate.toISOString().split('T')[0] // "2026-03-30"
     
     const assignments = await sql`
@@ -26,7 +26,7 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       FROM shift_assignments sa
       JOIN users u ON sa.user_id = u.id
       WHERE sa.shift_id = ${shiftId}
-        AND (sa.shift_date::text LIKE ${targetDate + '%'})
+        AND substring(sa.shift_date::text, 1, 10) = ${targetDate}
       ORDER BY 
         CASE u.role 
           WHEN 'captain' THEN 1 
