@@ -5,6 +5,17 @@ import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
+  // Format date as YYYY-MM-DD using local date (not UTC)
+  const formatDateForComparison = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const dateFilter = shiftDate ? formatDateForComparison(shiftDate) : null
+  console.log("[v0] getShiftAssignments - shiftId:", shiftId, "shiftDate:", shiftDate, "formatted:", dateFilter)
+
   const assignments = await sql`
     SELECT 
       sa.id,
@@ -21,7 +32,7 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
-    ${shiftDate ? sql`AND DATE(sa.shift_date) = ${shiftDate.toISOString().split('T')[0]}` : sql``}
+    ${dateFilter ? sql`AND DATE(sa.shift_date) = ${dateFilter}` : sql``}
     ORDER BY 
       CASE u.role 
         WHEN 'captain' THEN 1 
@@ -37,6 +48,8 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       END,
       u.last_name
   `
+  
+  console.log("[v0] getShiftAssignments - returned:", assignments.length, "assignments")
   return assignments
 }
 
