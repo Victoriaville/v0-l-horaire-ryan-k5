@@ -6,11 +6,47 @@ import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
-  // Build the date filter directly in SQL for robustness
-  const dateCondition = shiftDate 
-    ? sql`AND sa.shift_date::date = ${shiftDate.toISOString().split('T')[0]}::date`
-    : sql``
-
+  if (shiftDate) {
+    // Filter by specific date - use string comparison for reliability
+    const targetDate = shiftDate.toISOString().split('T')[0] // "2026-03-30"
+    
+    const assignments = await sql`
+      SELECT 
+        sa.id,
+        sa.shift_id,
+        sa.user_id,
+        sa.assigned_at,
+        u.first_name,
+        u.last_name,
+        u.role,
+        u.email,
+        sa.is_acting_lieutenant,
+        sa.is_acting_captain,
+        sa.shift_date
+      FROM shift_assignments sa
+      JOIN users u ON sa.user_id = u.id
+      WHERE sa.shift_id = ${shiftId}
+        AND (sa.shift_date::text LIKE ${targetDate + '%'})
+      ORDER BY 
+        CASE u.role 
+          WHEN 'captain' THEN 1 
+          WHEN 'lieutenant' THEN 2 
+          WHEN 'pp1' THEN 3
+          WHEN 'pp2' THEN 4
+          WHEN 'pp3' THEN 5
+          WHEN 'pp4' THEN 6
+          WHEN 'pp5' THEN 7
+          WHEN 'pp6' THEN 8
+          WHEN 'firefighter' THEN 9 
+          ELSE 10
+        END,
+        u.last_name
+    `
+    
+    return assignments
+  }
+  
+  // No date filter - return all assignments for this shift
   const assignments = await sql`
     SELECT 
       sa.id,
@@ -27,7 +63,6 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
-    ${dateCondition}
     ORDER BY 
       CASE u.role 
         WHEN 'captain' THEN 1 
