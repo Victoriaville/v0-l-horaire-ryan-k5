@@ -332,6 +332,7 @@ export function ShiftAssignmentDrawer({
             body: JSON.stringify({
               shiftId: shift.id,
               userId: approvedApp.applicant_id,
+              shiftDate: shiftDate,
             }),
           })
 

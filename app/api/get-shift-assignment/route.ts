@@ -3,16 +3,18 @@ import { sql } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
-    const { shiftId, userId } = await request.json()
+    const { shiftId, userId, shiftDate } = await request.json()
 
-    if (!shiftId || !userId) {
+    if (!shiftId || !userId || !shiftDate) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
     const result = await sql`
       SELECT is_acting_lieutenant, is_acting_captain
       FROM shift_assignments
-      WHERE shift_id = ${shiftId} AND user_id = ${userId}
+      WHERE shift_id = ${shiftId} 
+        AND user_id = ${userId}
+        AND DATE(shift_date) = ${shiftDate}
       LIMIT 1
     `
 
