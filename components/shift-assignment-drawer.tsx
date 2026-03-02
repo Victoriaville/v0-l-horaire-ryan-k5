@@ -1050,6 +1050,11 @@ export function ShiftAssignmentDrawer({
     if (assignment.replacement_order && assignment.replaced_user_id) {
       // CRITICAL FIX: Only use assignments from THIS specific date, not other dates with same shift_id
       // Extract date from ISO string directly (format: YYYY-MM-DDTHH:MM:SS.000Z)
+      // Safety check: skip if shift_date is missing
+      if (!assignment.shift_date) {
+        return
+      }
+      
       const assignmentDateStr = assignment.shift_date.split('T')[0]
       if (assignmentDateStr !== dateStr) {
         return
@@ -1300,6 +1305,11 @@ export function ShiftAssignmentDrawer({
       .filter((assignment) => {
         // CRITICAL: Only display assignments from THIS specific date
         // Multiple dates can have the same shift_id, so filter by date
+        // Safety check: skip if shift_date is missing
+        if (!assignment.shift_date) {
+          return false
+        }
+        
         const assignmentDateStr = assignment.shift_date.split('T')[0]
         if (assignmentDateStr !== dateStr) {
           return false
