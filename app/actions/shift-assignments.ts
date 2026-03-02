@@ -10,11 +10,21 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    const result = `${year}-${month}-${day}`
+    console.log("[v0] getShiftAssignments - date conversion:", { 
+      input: date, 
+      year, 
+      month, 
+      day, 
+      result,
+      dateType: typeof date,
+      dateString: date.toString()
+    })
+    return result
   }
 
   const dateFilter = shiftDate ? formatDateForComparison(shiftDate) : null
-  console.log("[v0] getShiftAssignments - shiftId:", shiftId, "shiftDate:", shiftDate, "formatted:", dateFilter)
+  console.log("[v0] getShiftAssignments - BEFORE SQL Query:", { shiftId, shiftDate, dateFilter })
 
   const assignments = await sql`
     SELECT 
@@ -49,7 +59,20 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       u.last_name
   `
   
-  console.log("[v0] getShiftAssignments - returned:", assignments.length, "assignments")
+  console.log("[v0] getShiftAssignments - AFTER SQL Query:", { 
+    shiftId, 
+    dateFilter,
+    assignmentsCount: assignments.length,
+    assignmentDetails: assignments.map((a: any) => ({
+      id: a.id,
+      user_id: a.user_id,
+      first_name: a.first_name,
+      last_name: a.last_name,
+      is_acting_lieutenant: a.is_acting_lieutenant,
+      shift_date: a.shift_date
+    }))
+  })
+  
   return assignments
 }
 
