@@ -1,6 +1,5 @@
-"use server"
-
 import { sql, invalidateCache } from "@/lib/db"
+import { formatDateForDB } from "@/lib/date-utils"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
@@ -21,7 +20,7 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
-    ${shiftDate ? sql`AND DATE(sa.shift_date) = ${new Date(shiftDate.getFullYear(), shiftDate.getMonth(), shiftDate.getDate()).toISOString().split('T')[0]}` : sql``}
+    ${shiftDate ? sql`AND DATE(sa.shift_date) = ${formatDateForDB(shiftDate)}` : sql``}
     ORDER BY 
       CASE u.role 
         WHEN 'captain' THEN 1 
