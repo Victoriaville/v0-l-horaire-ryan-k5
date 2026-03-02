@@ -1303,18 +1303,6 @@ export function ShiftAssignmentDrawer({
 
     const assignments = (currentAssignments || [])
       .filter((assignment) => {
-        // CRITICAL: Only display assignments from THIS specific date
-        // Multiple dates can have the same shift_id, so filter by date
-        // Safety check: skip if shift_date is missing
-        if (!assignment.shift_date) {
-          return false
-        }
-        
-        const assignmentDateStr = assignment.shift_date.split('T')[0]
-        if (assignmentDateStr !== dateStr) {
-          return false
-        }
-        
         // Skip manually removed extra firefighters
         if (removedExtraFirefighters.includes(assignment.user_id)) {
           return false
