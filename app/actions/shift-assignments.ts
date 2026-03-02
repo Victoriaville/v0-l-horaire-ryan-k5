@@ -41,10 +41,28 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   // Filter by date if provided
   if (shiftDate) {
     const targetDate = formatDateForDB(shiftDate)
-    return assignments.filter((a: any) => {
+    console.log("[v0] getShiftAssignments - filtering by date:", { shiftId, shiftDate: shiftDate.toISOString(), targetDate, totalAssignments: assignments.length })
+    
+    const filtered = assignments.filter((a: any) => {
       const assignmentDate = a.shift_date?.split('T')[0]
-      return assignmentDate === targetDate
+      const matches = assignmentDate === targetDate
+      if (a.user_id === 15 || a.is_acting_lieutenant) {
+        console.log("[v0] getShiftAssignments - assignment check:", {
+          user_id: a.user_id,
+          first_name: a.first_name,
+          last_name: a.last_name,
+          is_acting_lieutenant: a.is_acting_lieutenant,
+          shift_date: a.shift_date,
+          assignmentDate,
+          targetDate,
+          matches
+        })
+      }
+      return matches
     })
+    
+    console.log("[v0] getShiftAssignments - after filtering:", { totalBefore: assignments.length, totalAfter: filtered.length })
+    return filtered
   }
   
   return assignments
