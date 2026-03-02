@@ -5,10 +5,8 @@ import { formatDateForDB } from "@/lib/date-utils"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
-
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   const dateFilter = shiftDate ? formatDateForDB(shiftDate) : null
-  console.log("[v0] getShiftAssignments called with:", { shiftId, shiftDate, dateFilter })
   
   const assignments = await sql`
     SELECT 
@@ -22,8 +20,7 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       u.email,
       sa.is_acting_lieutenant,
       sa.is_acting_captain,
-      sa.shift_date,
-      DATE(sa.shift_date)::text as shift_date_only
+      sa.shift_date
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
@@ -43,18 +40,6 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       END,
       u.last_name
   `
-  
-  console.log("[v0] getShiftAssignments returned:", {
-    count: assignments.length,
-    details: assignments.map((a: any) => ({
-      user_id: a.user_id,
-      first_name: a.first_name,
-      last_name: a.last_name,
-      is_acting_lieutenant: a.is_acting_lieutenant,
-      shift_date: a.shift_date,
-      shift_date_only: a.shift_date_only
-    }))
-  })
   
   return assignments
 }
