@@ -2357,7 +2357,7 @@ export function ShiftAssignmentDrawer({
                                 {/* Lt/Cpt buttons for ALL firefighters (including replacements and direct assignments) */}
                                 {isAdmin && !isExtraRequest && (
                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                    {assignment.is_acting_lieutenant && assignment.shift_date && assignment.shift_date.split('T')[0] === dateStr ? (
+                                    {assignment.is_acting_lieutenant ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -2382,7 +2382,7 @@ export function ShiftAssignmentDrawer({
                                         Désigner Lt
                                       </Button>
                                     )}
-                                    {assignment.is_acting_captain && assignment.shift_date && assignment.shift_date.split('T')[0] === dateStr ? (
+                                    {assignment.is_acting_captain ? (
                                       <Button
                                         size="sm"
                                         variant="outline"

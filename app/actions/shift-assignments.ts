@@ -6,8 +6,6 @@ import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
 export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
-  const dateFilter = shiftDate ? formatDateForDB(shiftDate) : null
-  
   const assignments = await sql`
     SELECT 
       sa.id,
@@ -24,7 +22,6 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
     FROM shift_assignments sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.shift_id = ${shiftId}
-    ${dateFilter ? sql`AND DATE(sa.shift_date)::text = ${dateFilter}` : sql``}
     ORDER BY 
       CASE u.role 
         WHEN 'captain' THEN 1 
@@ -40,6 +37,15 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       END,
       u.last_name
   `
+  
+  // Filter by date if provided
+  if (shiftDate) {
+    const targetDate = formatDateForDB(shiftDate)
+    return assignments.filter((a: any) => {
+      const assignmentDate = a.shift_date?.split('T')[0]
+      return assignmentDate === targetDate
+    })
+  }
   
   return assignments
 }
