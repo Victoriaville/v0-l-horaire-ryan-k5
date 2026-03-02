@@ -1049,7 +1049,8 @@ export function ShiftAssignmentDrawer({
     // Group by replacement_order (includes both direct assignments and approved replacements)
     if (assignment.replacement_order && assignment.replaced_user_id) {
       // CRITICAL FIX: Only use assignments from THIS specific date, not other dates with same shift_id
-      const assignmentDateStr = formatDateForDB(new Date(assignment.shift_date))
+      // Extract date from ISO string directly (format: YYYY-MM-DDTHH:MM:SS.000Z)
+      const assignmentDateStr = assignment.shift_date.split('T')[0]
       if (assignmentDateStr !== dateStr) {
         return
       }
