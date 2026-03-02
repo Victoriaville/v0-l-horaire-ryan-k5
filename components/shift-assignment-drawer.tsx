@@ -1046,6 +1046,21 @@ export function ShiftAssignmentDrawer({
   })
 
   currentAssignments.forEach((assignment) => {
+    // DEBUGGING: Log ALL assignments to find where Patrick's Lt flag is coming from
+    if (assignment.user_id === 15 || assignment.replaced_user_id === 15) {
+      console.log("[v0] DEBUG currentAssignment with user 15 (Patrick):", {
+        assignment_user_id: assignment.user_id,
+        assignment_user_name: `${assignment.first_name} ${assignment.last_name}`,
+        replaced_user_id: assignment.replaced_user_id,
+        shift_date: assignment.shift_date,
+        shift_date_extracted: assignment.shift_date?.split('T')[0],
+        dateStr,
+        is_acting_lieutenant: assignment.is_acting_lieutenant,
+        is_acting_captain: assignment.is_acting_captain,
+        replacement_order: assignment.replacement_order
+      })
+    }
+    
     // Group by replacement_order (includes both direct assignments and approved replacements)
     if (assignment.replacement_order && assignment.replaced_user_id) {
       // CRITICAL FIX: Only use assignments from THIS specific date, not other dates with same shift_id
