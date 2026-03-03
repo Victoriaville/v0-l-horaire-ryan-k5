@@ -352,10 +352,22 @@ export async function acknowledgeNotificationError(notificationId: number) {
   }
 
   try {
+    // First, get the notification's type and related_id to find all grouped notifications
+    const notificationDetails = await sql`
+      SELECT type, related_id FROM notifications WHERE id = ${notificationId}
+    `
+
+    if (notificationDetails.length === 0) {
+      return { success: false, error: "Notification introuvable" }
+    }
+
+    const { type, related_id } = notificationDetails[0]
+
+    // Update ALL notifications with the same type and related_id
     const updateResult = await sql`
       UPDATE notifications
       SET error_acknowledged = true
-      WHERE id = ${notificationId}
+      WHERE type = ${type} AND related_id = ${related_id}
     `
 
     // Revalidate paths to refresh the UI
@@ -369,10 +381,10 @@ export async function acknowledgeNotificationError(notificationId: number) {
       actionType: "NOTIFICATION_ERROR_ACKNOWLEDGED",
       tableName: "notifications",
       recordId: notificationId,
-      description: `Admin a marqué l'erreur d'envoi de la notification ${notificationId} comme prise en compte`,
+      description: `Admin a marqué toutes les erreurs d'envoi du groupe de notifications (type: ${type}, related_id: ${related_id}) comme prise en compte`,
     })
 
-    return { success: true, message: "Erreur marquée comme prise en compte" }
+    return { success: true, message: "Toutes les erreurs du groupe marquées comme prise en compte" }
   } catch (error) {
     console.error("[v0] acknowledgeNotificationError: Error", error)
     return {
