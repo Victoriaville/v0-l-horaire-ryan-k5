@@ -316,12 +316,12 @@ export async function getNotificationDetail(notificationId: number) {
 export async function getNotificationErrorsCount() {
   const session = await getSession()
   if (!session) {
-    return 0
+    return { count: 0 }
   }
 
   const userIsAdmin = await isUserAdmin()
   if (!userIsAdmin) {
-    return 0
+    return { count: 0 }
   }
 
   try {
@@ -333,10 +333,10 @@ export async function getNotificationErrorsCount() {
     `
 
     const count = Number.parseInt(result[0]?.error_count || "0")
-    return count
+    return { count }
   } catch (error) {
     console.error("[v0] getNotificationErrorsCount: Error", error)
-    return 0
+    return { count: 0 }
   }
 }
 
@@ -352,16 +352,37 @@ export async function acknowledgeNotificationError(notificationId: number) {
   }
 
   try {
+    // First, get the notification's type and related_id to find all grouped notifications
+    const notificationDetails = await sql`
+      SELECT type, related_id FROM notifications WHERE id = ${notificationId}
+    `
+
+    if (notificationDetails.length === 0) {
+      return { success: false, error: "Notification introuvable" }
+    }
+
+    const { type, related_id } = notificationDetails[0]
+
+    console.log("[v0] acknowledgeNotificationError: Processing notification", {
+      notificationId,
+      type,
+      related_id,
+    })
+
+    // Update ALL notifications with the same type and related_id
     const updateResult = await sql`
       UPDATE notifications
       SET error_acknowledged = true
-      WHERE id = ${notificationId}
+      WHERE type = ${type} AND related_id = ${related_id}
     `
+
+    console.log("[v0] acknowledgeNotificationError: Update result rows affected", updateResult.rows?.length || 0)
 
     // Revalidate paths to refresh the UI
     revalidatePath("/dashboard/settings/notification-history")
     revalidatePath("/dashboard/settings")
     revalidatePath("/dashboard")
+    revalidatePath("/")
 
     // Log the action in audit logs
     await createAuditLog({
@@ -369,15 +390,75 @@ export async function acknowledgeNotificationError(notificationId: number) {
       actionType: "NOTIFICATION_ERROR_ACKNOWLEDGED",
       tableName: "notifications",
       recordId: notificationId,
-      description: `Admin a marqué l'erreur d'envoi de la notification ${notificationId} comme prise en compte`,
+      description: `Admin a marqué toutes les erreurs d'envoi du groupe de notifications (type: ${type}, related_id: ${related_id}) comme prise en compte`,
     })
 
-    return { success: true, message: "Erreur marquée comme prise en compte" }
+    return { success: true, message: "Toutes les erreurs du groupe marquées comme prise en compte" }
   } catch (error) {
     console.error("[v0] acknowledgeNotificationError: Error", error)
     return {
       success: false,
       error: "Erreur lors de la mise à jour",
+    }
+  }
+}
+
+export async function acknowledgeAllNotificationErrors() {
+  const session = await getSession()
+  if (!session) {
+    return { success: false, error: "Non authentifié" }
+  }
+
+  const userIsAdmin = await isUserAdmin()
+  if (!userIsAdmin) {
+    return { success: false, error: "Accès refusé - Réservé aux admins" }
+  }
+
+  try {
+    // Get count of errors before update
+    const countBefore = await sql`
+      SELECT COUNT(*) as error_count
+      FROM notifications
+      WHERE error_acknowledged = false AND channels_failed IS NOT NULL
+    `
+    const errorsCount = countBefore[0]?.error_count || 0
+
+    console.log("[v0] acknowledgeAllNotificationErrors: Found", errorsCount, "errors to acknowledge")
+
+    // Mark ALL unacknowledged errors as acknowledged
+    const updateResult = await sql`
+      UPDATE notifications
+      SET error_acknowledged = true
+      WHERE error_acknowledged = false AND channels_failed IS NOT NULL
+    `
+
+    console.log("[v0] acknowledgeAllNotificationErrors: Updated", errorsCount, "error records")
+
+    // Revalidate paths to refresh the UI
+    revalidatePath("/dashboard/settings/notification-history")
+    revalidatePath("/dashboard/settings")
+    revalidatePath("/dashboard")
+    revalidatePath("/")
+
+    // Log the action in audit logs
+    await createAuditLog({
+      userId: session.id,
+      actionType: "NOTIFICATION_ERROR_ACKNOWLEDGED",
+      tableName: "notifications",
+      recordId: 0,
+      description: `Admin a marqué tous les ${errorsCount} erreurs de notification non traitées comme prise en compte (nettoyage en masse)`,
+    })
+
+    return { 
+      success: true, 
+      message: `${errorsCount} erreurs marquées comme prise en compte`,
+      count: errorsCount
+    }
+  } catch (error) {
+    console.error("[v0] acknowledgeAllNotificationErrors: Error", error)
+    return {
+      success: false,
+      error: "Erreur lors de la mise à jour des erreurs",
     }
   }
 }

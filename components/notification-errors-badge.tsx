@@ -6,12 +6,12 @@ export async function NotificationErrorsBadge() {
   const user = await getSession()
   if (!user || !user.is_admin) return null
 
-  const count = await getNotificationErrorsCount()
+  const { count } = await getNotificationErrorsCount()
 
   if (count === 0) return null
 
   return (
-    <Badge className="ml-2 bg-amber-600 text-white hover:bg-amber-700">
+    <Badge className="ml-2 bg-red-600 text-white hover:bg-red-700">
       {count > 99 ? "99+" : count}
     </Badge>
   )
