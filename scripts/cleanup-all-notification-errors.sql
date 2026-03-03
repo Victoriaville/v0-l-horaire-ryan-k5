@@ -13,14 +13,3 @@ SELECT
   COUNT(*) FILTER (WHERE error_acknowledged = true) as total_acknowledged
 FROM notifications
 WHERE channels_failed IS NOT NULL;
-
--- Step 3: Log the cleanup action
-INSERT INTO audit_logs (user_id, action_type, table_name, record_id, description, created_at)
-VALUES (
-  1,
-  'NOTIFICATION_ERRORS_BULK_ACKNOWLEDGED',
-  'notifications',
-  0,
-  'System cleanup: Marked all 1,166 accumulated notification errors as acknowledged',
-  NOW()
-);
