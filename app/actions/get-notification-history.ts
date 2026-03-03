@@ -363,6 +363,12 @@ export async function acknowledgeNotificationError(notificationId: number) {
 
     const { type, related_id } = notificationDetails[0]
 
+    console.log("[v0] acknowledgeNotificationError: Processing notification", {
+      notificationId,
+      type,
+      related_id,
+    })
+
     // Update ALL notifications with the same type and related_id
     const updateResult = await sql`
       UPDATE notifications
@@ -370,10 +376,13 @@ export async function acknowledgeNotificationError(notificationId: number) {
       WHERE type = ${type} AND related_id = ${related_id}
     `
 
+    console.log("[v0] acknowledgeNotificationError: Update result rows affected", updateResult.rows?.length || 0)
+
     // Revalidate paths to refresh the UI
     revalidatePath("/dashboard/settings/notification-history")
     revalidatePath("/dashboard/settings")
     revalidatePath("/dashboard")
+    revalidatePath("/")
 
     // Log the action in audit logs
     await createAuditLog({
