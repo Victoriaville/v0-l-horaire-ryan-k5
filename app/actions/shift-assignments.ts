@@ -1,52 +1,10 @@
 "use server"
 
 import { sql, invalidateCache } from "@/lib/db"
-import { formatDateForDB } from "@/lib/date-utils"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
 
-export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
-  if (shiftDate) {
-    // Filter by specific date using substring for PostgreSQL compatibility
-    const targetDate = shiftDate.toISOString().split('T')[0] // "2026-03-30"
-    
-    const assignments = await sql`
-      SELECT 
-        sa.id,
-        sa.shift_id,
-        sa.user_id,
-        sa.assigned_at,
-        u.first_name,
-        u.last_name,
-        u.role,
-        u.email,
-        sa.is_acting_lieutenant,
-        sa.is_acting_captain,
-        sa.shift_date
-      FROM shift_assignments sa
-      JOIN users u ON sa.user_id = u.id
-      WHERE sa.shift_id = ${shiftId}
-        AND substring(sa.shift_date::text, 1, 10) = ${targetDate}
-      ORDER BY 
-        CASE u.role 
-          WHEN 'captain' THEN 1 
-          WHEN 'lieutenant' THEN 2 
-          WHEN 'pp1' THEN 3
-          WHEN 'pp2' THEN 4
-          WHEN 'pp3' THEN 5
-          WHEN 'pp4' THEN 6
-          WHEN 'pp5' THEN 7
-          WHEN 'pp6' THEN 8
-          WHEN 'firefighter' THEN 9 
-          ELSE 10
-        END,
-        u.last_name
-    `
-    
-    return assignments
-  }
-  
-  // No date filter - return all assignments for this shift
+export async function getShiftAssignments(shiftId: number) {
   const assignments = await sql`
     SELECT 
       sa.id,
@@ -78,26 +36,7 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
       END,
       u.last_name
   `
-  
   return assignments
-}
-
-export async function getActingDesignationsForDate(shiftId: number, shiftDate: Date) {
-  // Get ONLY the Lt/Cpt designations that are valid for this specific date
-  const targetDate = shiftDate.toISOString().split('T')[0] // "2026-03-30"
-  
-  const designations = await sql`
-    SELECT 
-      sa.user_id,
-      sa.is_acting_lieutenant,
-      sa.is_acting_captain
-    FROM shift_assignments sa
-    WHERE sa.shift_id = ${shiftId}
-      AND substring(sa.shift_date::text, 1, 10) = ${targetDate}
-      AND (sa.is_acting_lieutenant = true OR sa.is_acting_captain = true)
-  `
-  
-  return designations
 }
 
 export async function assignFirefighterToShift(shiftId: number, userId: number) {
@@ -450,6 +389,27 @@ export async function isUserAssignedToShift(userId: number, shiftId: number, tar
   } catch (error) {
     console.error("Error checking user shift assignment:", error)
     return false
+  }
+}
+
+export async function getActingDesignationsForDate(date: string) {
+  try {
+    // Query acting designations that are valid for this specific date
+    const designations = await sql`
+      SELECT 
+        DISTINCT sa.user_id,
+        sa.is_acting_lieutenant,
+        sa.is_acting_captain
+      FROM shift_assignments sa
+      JOIN shifts s ON sa.shift_id = s.id
+      WHERE sa.shift_date = ${date}
+        AND (sa.is_acting_lieutenant = true OR sa.is_acting_captain = true)
+    `
+    
+    return designations
+  } catch (error) {
+    console.error("[v0] Error fetching acting designations for date:", error)
+    return []
   }
 }
 

@@ -192,8 +192,7 @@ export function ShiftAssignmentDrawer({
   const [showAddManualApplicationDialog, setShowAddManualApplicationDialog] = useState(false)
 
   const [actingDesignations, setActingDesignations] = useState<Array<any>>([])
-  
-  // Store Lt/Cpt designations valid ONLY for this specific date
+
   const [validLtCptForDate, setValidLtCptForDate] = useState<Set<number>>(new Set())
 
   const [refreshKey, setRefreshKey] = useState(0)
@@ -241,23 +240,23 @@ export function ShiftAssignmentDrawer({
 
   useEffect(() => {
     if (open && shift && dateStr) {
-      const loadValidLtCptForDate = async () => {
+      const loadActingDesignations = async () => {
         try {
-          const data = await getActingDesignationsForDate(shift.id, shift.date)
-          const validUsers = new Set<number>()
-          data.forEach((d: any) => {
-            if (d.is_acting_lieutenant || d.is_acting_captain) {
-              validUsers.add(d.user_id)
-            }
-          })
-          setValidLtCptForDate(validUsers)
+          const data = await getActingDesignationsForDate(dateStr)
+          // Extract user IDs that have valid Lt or Cpt designations for this date
+          const validIds = new Set(
+            data
+              .filter((d: any) => d.is_acting_lieutenant || d.is_acting_captain)
+              .map((d: any) => d.user_id)
+          )
+          setValidLtCptForDate(validIds)
         } catch (error) {
-          console.error("[v0] Error loading valid Lt/Cpt for date:", error)
+          console.error("[v0] Error loading valid designations:", error)
           setValidLtCptForDate(new Set())
         }
       }
 
-      loadValidLtCptForDate()
+      loadActingDesignations()
     }
   }, [open, shift, dateStr])
 
@@ -358,7 +357,6 @@ export function ShiftAssignmentDrawer({
             body: JSON.stringify({
               shiftId: shift.id,
               userId: approvedApp.applicant_id,
-              shiftDate: shiftDate,
             }),
           })
 
@@ -1074,18 +1072,6 @@ export function ShiftAssignmentDrawer({
   currentAssignments.forEach((assignment) => {
     // Group by replacement_order (includes both direct assignments and approved replacements)
     if (assignment.replacement_order && assignment.replaced_user_id) {
-      // CRITICAL FIX: Only use assignments from THIS specific date, not other dates with same shift_id
-      // Extract date from ISO string directly (format: YYYY-MM-DDTHH:MM:SS.000Z)
-      // Safety check: skip if shift_date is missing
-      if (!assignment.shift_date) {
-        return
-      }
-      
-      const assignmentDateStr = assignment.shift_date.split('T')[0]
-      if (assignmentDateStr !== dateStr) {
-        return
-      }
-      
       if (!groupedReplacements.has(assignment.replaced_user_id)) {
         groupedReplacements.set(assignment.replaced_user_id, [])
       }
@@ -1163,14 +1149,6 @@ export function ShiftAssignmentDrawer({
         groupedReplacements.set(r.user_id, [])
       }
       const replacedFF = allFirefighters?.find((ff) => ff.id === r.user_id)
-      
-      console.log("[v0] Processing approved replacement:", {
-        applicantId: approvedApp.applicant_id,
-        replacedUserId: r.user_id,
-        isActingLieutenant: r.is_acting_lieutenant,
-        isActingCaptain: r.is_acting_captain
-      })
-      
       groupedReplacements.get(r.user_id)!.push({
         user_id: approvedApp.applicant_id,
         first_name: approvedApp.first_name,
@@ -1395,7 +1373,6 @@ export function ShiftAssignmentDrawer({
     groupedReplacements.size,
     shift?.team_members,
     replacementUserIdsToHide,
-    dateStr,
     // permanentMemberIds, // Removed permanentMemberIds from dependency array since it's a local variable
   ]) // Added shift.team_members to dependency array
 
@@ -1897,7 +1874,7 @@ export function ShiftAssignmentDrawer({
 
                                     {isAdmin && replacement1.user_id && (
                                       <div className="grid grid-cols-2 gap-2">
-                                        {replacement1.is_acting_lieutenant ? (
+                                        {validLtCptForDate.has(replacement1.user_id) ? (
                                           <Button
                                             size="sm"
                                             variant="outline"
@@ -1928,7 +1905,7 @@ export function ShiftAssignmentDrawer({
                                             Désigner Lt
                                           </Button>
                                         )}
-                                        {replacement1.is_acting_captain ? (
+                                        {validLtCptForDate.has(replacement1.user_id) ? (
                                           <Button
                                             size="sm"
                                             variant="outline"
@@ -2383,7 +2360,7 @@ export function ShiftAssignmentDrawer({
                                 {/* Lt/Cpt buttons for ALL firefighters (including replacements and direct assignments) */}
                                 {isAdmin && !isExtraRequest && (
                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                    {assignment.is_acting_lieutenant && validLtCptForDate.has(assignment.user_id) ? (
+                                    {validLtCptForDate.has(assignment.user_id || assignment.id) ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -2408,7 +2385,7 @@ export function ShiftAssignmentDrawer({
                                         Désigner Lt
                                       </Button>
                                     )}
-                                    {assignment.is_acting_captain && validLtCptForDate.has(assignment.user_id) ? (
+                                    {validLtCptForDate.has(assignment.user_id || assignment.id) ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
