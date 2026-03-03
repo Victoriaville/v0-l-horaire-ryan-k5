@@ -107,6 +107,7 @@ export function CalendarView({
               clearInterval(restoreInterval)
               restoreInterval = null
             }
+            console.log("[v0] CalendarView - scroll restoration complete after", restoreCount, "corrections")
             currentlyRestoring = false
             return
           }
@@ -226,14 +227,18 @@ export function CalendarView({
 
       const newDirectAssignmentMap = { ...directAssignmentMap }
       if (data.directAssignments && Array.isArray(data.directAssignments)) {
+        console.log("[v0] loadPreviousMonths - processing directAssignments:", data.directAssignments.length)
         data.directAssignments.forEach((assignment: any) => {
           const dateOnly = formatLocalDate(assignment.shift_date)
           const key = `${dateOnly}_${assignment.shift_type}_${assignment.team_id}`
+          console.log("[v0] loadPreviousMonths - adding directAssignment key:", key)
           if (!newDirectAssignmentMap[key]) {
             newDirectAssignmentMap[key] = []
           }
           newDirectAssignmentMap[key].push(assignment)
         })
+      } else {
+        console.log("[v0] loadPreviousMonths - NO directAssignments in data!")
       }
       setDirectAssignmentMap(newDirectAssignmentMap)
 
@@ -375,15 +380,18 @@ export function CalendarView({
 
       const newDirectAssignmentMap = { ...directAssignmentMap }
       if (data.directAssignments) {
+        console.log("[v0] loadNextMonths - processing directAssignments:", data.directAssignments.length)
         data.directAssignments.forEach((assignment: any) => {
           const dateOnly = formatLocalDate(assignment.shift_date)
           const key = `${dateOnly}_${assignment.shift_type}_${assignment.team_id}`
+          console.log("[v0] loadNextMonths - adding directAssignment key:", key)
           if (!newDirectAssignmentMap[key]) {
             newDirectAssignmentMap[key] = []
           }
           newDirectAssignmentMap[key].push(assignment)
         })
-      }
+      } else {
+        console.log("[v0] loadNextMonths - NO directAssignments in data!")
       }
       setDirectAssignmentMap(newDirectAssignmentMap)
 
@@ -502,6 +510,15 @@ export function CalendarView({
         getDirectAssignmentsForDateRange(formatDateForDB(firstDay), formatDateForDB(lastDay)),
       ])
 
+      console.log("[v0] handleShiftUpdated - received data:", data)
+      console.log("[v0] handleShiftUpdated - received directAssignments:", directAssignmentsData?.length || 0)
+      console.log("[v0] handleShiftUpdated - received replacements:", data.replacements?.length || 0)
+      console.log("[v0] handleShiftUpdated - received actingDesignations COUNT:", data.actingDesignations?.length || 0)
+      console.log(
+        "[v0] handleShiftUpdated - received actingDesignations FULL DATA:",
+        JSON.stringify(data.actingDesignations, null, 2),
+      )
+      console.log("[v0] handleShiftUpdated - received extraFirefighters:", data.extraFirefighters?.length || 0)
 
       const newDirectAssignmentMap: Record<string, any[]> = {}
       if (directAssignmentsData) {
@@ -699,7 +716,7 @@ export function CalendarView({
                     onShiftUpdated={handleShiftUpdated}
                     onNoteChange={handleNoteChange}
                   />
-                </div>,
+                </div>
               )
             })
 
