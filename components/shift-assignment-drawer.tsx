@@ -1960,7 +1960,9 @@ export function ShiftAssignmentDrawer({
                     }
 
                     // Case 2: Firefighter is in displayedAssignments (assigned to shift)
-                    const assignment = displayedAssignments.find((a) => a.user_id === firefighter.id)
+                    const assignment = displayedAssignments.find((a) => {
+                      return a.user_id === firefighter.id
+                    })
                     if (assignment) {
                       const firefighterId = assignment.user_id || assignment.id
 
