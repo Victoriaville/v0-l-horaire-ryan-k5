@@ -184,12 +184,6 @@ export async function getFirefighterWeeklyHours(userId: number, weekDate: string
     ])
 
     console.log("[v0] isPermanentFirefighter:", isPermanentFirefighter)
-    console.log("[v0] regularShifts count:", regularShifts.length)
-    console.log("[v0] replacementShifts count:", replacementShifts.length)
-    console.log("[v0] extraAssignments count:", extraAssignments.length)
-    console.log("[v0] directAssignments count:", directAssignments.length)
-    console.log("[v0] directAssignments detail:", JSON.stringify(directAssignments))
-
     let totalHours = 0
 
     // For non-permanent, calculate regular shifts + replacements/extras
@@ -394,15 +388,11 @@ export async function getBatchFirefighterWeeklyHours(
       `,
     ])
 
-    console.log("[v0] directAssignments loaded:", directAssignments.length)
-    console.log("[v0] directAssignments detail:", JSON.stringify(directAssignments))
-
     const directAssignmentKeys = new Set<string>()
     for (const assignment of directAssignments) {
       const dateStr = formatDateStr(new Date(assignment.shift_date))
       directAssignmentKeys.add(`${assignment.user_id}_${dateStr}`)
     }
-    console.log("[v0] Direct assignment keys:", Array.from(directAssignmentKeys))
 
     // Initialize hours map with base hours
     userIds.forEach((id) => hoursMap.set(id, permanentUserIds.has(id) ? 42 : 0))

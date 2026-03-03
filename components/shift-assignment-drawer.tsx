@@ -1120,16 +1120,6 @@ export function ShiftAssignmentDrawer({
 
     const approvedApp = r.applications?.find((app: any) => app.status === "approved")
     
-    console.log("[v0] assignedReplacements processing", {
-      user_id: r.user_id,
-      is_partial: r.is_partial,
-      start_time: r.start_time,
-      end_time: r.end_time,
-      replacement_order: r.replacement_order,
-      hasApprovedApp: !!approvedApp,
-      applicationsCount: r.applications?.length || 0
-    })
-    
     // If there's an approved application, handle the replacement with assigned candidate
     if (approvedApp) {
       const replacementKey = `${approvedApp.applicant_id}_${r.user_id}`
@@ -1582,45 +1572,7 @@ export function ShiftAssignmentDrawer({
 
                     const { replacement0, replacement1, replacement2 } = getReplacementDetails(firefighter.id)
 
-                    console.log("[v0] Drawer - replacement details for firefighter", firefighter.id, {
-                      replacement0: replacement0
-                        ? {
-                            user_id: replacement0.user_id,
-                            first_name: replacement0.first_name,
-                            last_name: replacement0.last_name,
-                            replacement_order: replacement0.replacement_order,
-                            is_partial: replacement0.is_partial,
-                            start_time: replacement0.start_time,
-                            end_time: replacement0.end_time,
-                          }
-                        : null,
-                      replacement1: replacement1
-                        ? {
-                            user_id: replacement1.user_id,
-                            first_name: replacement1.first_name,
-                            last_name: replacement1.last_name,
-                            replacement_order: replacement1.replacement_order,
-                            is_partial: replacement1.is_partial,
-                            start_time: replacement1.start_time,
-                            end_time: replacement1.end_time,
-                          }
-                        : null,
-                      replacement2: replacement2
-                        ? {
-                            user_id: replacement2.user_id,
-                            first_name: replacement2.first_name,
-                            last_name: replacement2.last_name,
-                            replacement_order: replacement2.replacement_order,
-                            is_partial: replacement2.is_partial,
-                            start_time: replacement2.start_time,
-                            end_time: replacement2.end_time,
-                          }
-                        : null,
-                    })
-
-                    if (hasReplacements) {
-                      const bankInfo = replacement0 || replacement1 || replacement2
-                      return (
+                    return (
                         <Card key={`replaced-${firefighter.id}`} className="border-green-300 bg-green-50/30">
                           <CardContent className="p-3">
                             <div className="flex items-center justify-between gap-3">
