@@ -82,6 +82,24 @@ export async function getShiftAssignments(shiftId: number, shiftDate?: Date) {
   return assignments
 }
 
+export async function getActingDesignationsForDate(shiftId: number, shiftDate: Date) {
+  // Get ONLY the Lt/Cpt designations that are valid for this specific date
+  const targetDate = shiftDate.toISOString().split('T')[0] // "2026-03-30"
+  
+  const designations = await sql`
+    SELECT 
+      sa.user_id,
+      sa.is_acting_lieutenant,
+      sa.is_acting_captain
+    FROM shift_assignments sa
+    WHERE sa.shift_id = ${shiftId}
+      AND substring(sa.shift_date::text, 1, 10) = ${targetDate}
+      AND (sa.is_acting_lieutenant = true OR sa.is_acting_captain = true)
+  `
+  
+  return designations
+}
+
 export async function assignFirefighterToShift(shiftId: number, userId: number) {
   const user = await getSession()
   if (!user?.is_admin) {

@@ -28,6 +28,7 @@ import {
   removeActingLieutenant,
   setActingCaptain,
   removeActingCaptain,
+  getActingDesignationsForDate,
 } from "@/app/actions/shift-assignments"
 import {
   removeDirectAssignment,
@@ -191,6 +192,9 @@ export function ShiftAssignmentDrawer({
   const [showAddManualApplicationDialog, setShowAddManualApplicationDialog] = useState(false)
 
   const [actingDesignations, setActingDesignations] = useState<Array<any>>([])
+  
+  // Store Lt/Cpt designations valid ONLY for this specific date
+  const [validLtCptForDate, setValidLtCptForDate] = useState<Set<number>>(new Set())
 
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -234,6 +238,28 @@ export function ShiftAssignmentDrawer({
       }
     }
   }, [open, shift, currentAssignments])
+
+  useEffect(() => {
+    if (open && shift && dateStr) {
+      const loadValidLtCptForDate = async () => {
+        try {
+          const data = await getActingDesignationsForDate(shift.id, shift.date)
+          const validUsers = new Set<number>()
+          data.forEach((d: any) => {
+            if (d.is_acting_lieutenant || d.is_acting_captain) {
+              validUsers.add(d.user_id)
+            }
+          })
+          setValidLtCptForDate(validUsers)
+        } catch (error) {
+          console.error("[v0] Error loading valid Lt/Cpt for date:", error)
+          setValidLtCptForDate(new Set())
+        }
+      }
+
+      loadValidLtCptForDate()
+    }
+  }, [open, shift, dateStr])
 
   useEffect(() => {
     if (open && shift && dateStr) {
@@ -2357,7 +2383,7 @@ export function ShiftAssignmentDrawer({
                                 {/* Lt/Cpt buttons for ALL firefighters (including replacements and direct assignments) */}
                                 {isAdmin && !isExtraRequest && (
                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                    {assignment.is_acting_lieutenant ? (
+                                    {assignment.is_acting_lieutenant && validLtCptForDate.has(assignment.user_id) ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -2382,7 +2408,7 @@ export function ShiftAssignmentDrawer({
                                         Désigner Lt
                                       </Button>
                                     )}
-                                    {assignment.is_acting_captain ? (
+                                    {assignment.is_acting_captain && validLtCptForDate.has(assignment.user_id) ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
