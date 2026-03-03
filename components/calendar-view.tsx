@@ -716,7 +716,7 @@ export function CalendarView({
                     onShiftUpdated={handleShiftUpdated}
                     onNoteChange={handleNoteChange}
                   />
-                </div>,
+                </div>
               )
             })
 

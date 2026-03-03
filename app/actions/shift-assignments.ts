@@ -392,6 +392,44 @@ export async function isUserAssignedToShift(userId: number, shiftId: number, tar
   }
 }
 
+export async function getActingDesignationsForDate(date: string) {
+  try {
+    // Query acting designations that are valid for this specific date
+    const designations = await sql`
+      SELECT 
+        DISTINCT sa.user_id,
+        sa.is_acting_lieutenant,
+        sa.is_acting_captain
+      FROM shift_assignments sa
+      JOIN shifts s ON sa.shift_id = s.id
+      WHERE sa.shift_date = ${date}
+        AND (sa.is_acting_lieutenant = true OR sa.is_acting_captain = true)
+    `
+    
+    // Transform to a Map: userId -> 'lieutenant' | 'captain' | 'both'
+    const designationMap = new Map<number, 'lieutenant' | 'captain' | 'both'>()
+    
+    for (const row of designations) {
+      const userId = row.user_id
+      const isLt = row.is_acting_lieutenant
+      const isCpt = row.is_acting_captain
+      
+      if (isLt && isCpt) {
+        designationMap.set(userId, 'both')
+      } else if (isLt) {
+        designationMap.set(userId, 'lieutenant')
+      } else if (isCpt) {
+        designationMap.set(userId, 'captain')
+      }
+    }
+    
+    return designationMap
+  } catch (error) {
+    console.error("[v0] Error fetching acting designations for date:", error)
+    return new Map()
+  }
+}
+
 export async function setActingLieutenant(shiftId: number, userId: number, shiftDate?: string) {
   const user = await getSession()
   if (!user?.is_admin) {
