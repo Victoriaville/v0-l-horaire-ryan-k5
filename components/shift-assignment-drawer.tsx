@@ -193,7 +193,7 @@ export function ShiftAssignmentDrawer({
 
   const [actingDesignations, setActingDesignations] = useState<Array<any>>([])
 
-  const [validLtCptForDate, setValidLtCptForDate] = useState<Set<number>>(new Set())
+  const [validLtCptForDate, setValidLtCptForDate] = useState<Map<number, 'lieutenant' | 'captain' | 'both'>>(new Map())
 
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -242,17 +242,11 @@ export function ShiftAssignmentDrawer({
     if (open && shift && dateStr) {
       const loadActingDesignations = async () => {
         try {
-          const data = await getActingDesignationsForDate(dateStr)
-          // Extract user IDs that have valid Lt or Cpt designations for this date
-          const validIds = new Set(
-            data
-              .filter((d: any) => d.is_acting_lieutenant || d.is_acting_captain)
-              .map((d: any) => d.user_id)
-          )
-          setValidLtCptForDate(validIds)
+          const designationMap = await getActingDesignationsForDate(dateStr)
+          setValidLtCptForDate(designationMap)
         } catch (error) {
           console.error("[v0] Error loading valid designations:", error)
-          setValidLtCptForDate(new Set())
+          setValidLtCptForDate(new Map())
         }
       }
 
@@ -1874,7 +1868,7 @@ export function ShiftAssignmentDrawer({
 
                                     {isAdmin && replacement1.user_id && (
                                       <div className="grid grid-cols-2 gap-2">
-                                        {validLtCptForDate.has(replacement1.user_id) ? (
+                                        {['lieutenant', 'both'].includes(validLtCptForDate.get(replacement1.user_id) || '') ? (
                                           <Button
                                             size="sm"
                                             variant="outline"
@@ -1905,7 +1899,7 @@ export function ShiftAssignmentDrawer({
                                             Désigner Lt
                                           </Button>
                                         )}
-                                        {validLtCptForDate.has(replacement1.user_id) ? (
+                                        {['captain', 'both'].includes(validLtCptForDate.get(replacement1.user_id) || '') ? (
                                           <Button
                                             size="sm"
                                             variant="outline"
@@ -2360,7 +2354,7 @@ export function ShiftAssignmentDrawer({
                                 {/* Lt/Cpt buttons for ALL firefighters (including replacements and direct assignments) */}
                                 {isAdmin && !isExtraRequest && (
                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                    {validLtCptForDate.has(assignment.user_id || assignment.id) ? (
+                                    {['lieutenant', 'both'].includes(validLtCptForDate.get(assignment.user_id || assignment.id) || '') ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -2385,7 +2379,7 @@ export function ShiftAssignmentDrawer({
                                         Désigner Lt
                                       </Button>
                                     )}
-                                    {validLtCptForDate.has(assignment.user_id || assignment.id) ? (
+                                    {['captain', 'both'].includes(validLtCptForDate.get(assignment.user_id || assignment.id) || '') ? (
                                       <Button
                                         size="sm"
                                         variant="outline"

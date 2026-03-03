@@ -406,10 +406,27 @@ export async function getActingDesignationsForDate(date: string) {
         AND (sa.is_acting_lieutenant = true OR sa.is_acting_captain = true)
     `
     
-    return designations
+    // Transform to a Map: userId -> 'lieutenant' | 'captain' | 'both'
+    const designationMap = new Map<number, 'lieutenant' | 'captain' | 'both'>()
+    
+    for (const row of designations) {
+      const userId = row.user_id
+      const isLt = row.is_acting_lieutenant
+      const isCpt = row.is_acting_captain
+      
+      if (isLt && isCpt) {
+        designationMap.set(userId, 'both')
+      } else if (isLt) {
+        designationMap.set(userId, 'lieutenant')
+      } else if (isCpt) {
+        designationMap.set(userId, 'captain')
+      }
+    }
+    
+    return designationMap
   } catch (error) {
     console.error("[v0] Error fetching acting designations for date:", error)
-    return []
+    return new Map()
   }
 }
 
