@@ -644,7 +644,9 @@ export function CalendarView({
         </div>
 
         <div className="grid gap-1 md:gap-3 grid-cols-7">
-          {useMemo(() => months.flatMap(({ year, month, days }, monthIndex) => {
+          {useMemo(() => {
+            console.log("[v0] CalendarView useMemo - Recalculating cells, extraFirefighterMap keys:", Object.keys(extraFirefighterMap).length)
+            return months.flatMap(({ year, month, days }, monthIndex) => {
             const cells = []
 
             if (monthIndex === 0 && days.length > 0) {
