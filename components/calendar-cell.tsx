@@ -187,10 +187,7 @@ export function CalendarCell({
               const shiftExchanges = exchanges[shiftIndex] || []
               const dateStrFormatted = format(day.date, "yyyy-MM-dd")
               const shiftDirectAssignments = directAssignments[shiftIndex] || []
-              const shiftExtraFirefighters = extraFirefighters[shiftIndex] || []
-              if (dateStr === "2026-02-28") {
-                console.log(`[v0] CalendarCell - ${dateStr} shift ${shift.shift_type} (index ${shiftIndex}): shiftExtraFirefighters count=${shiftExtraFirefighters.length}, extraFirefighters length=${extraFirefighters.length}`, shiftExtraFirefighters)
-              } // Get extra firefighters for this shift
+              const shiftExtraFirefighters = extraFirefighters[shiftIndex] || [] // Get extra firefighters for this shift
 
               const firefighters =
                 shift.assigned_firefighters && shift.assigned_firefighters.trim() !== ""
@@ -520,8 +517,20 @@ export function CalendarCell({
                   </div>
                   {shifts.length > 0 ? (
                     <div className="text-[7px] md:text-xs leading-snug md:leading-relaxed text-foreground/80 space-y-0">
-                      {dateStr === "2026-02-28" && console.log(`[v0] CalendarCell - ${dateStr} ${shift.shift_type}: displayItems count=${displayItems.length}, extras count=${displayItems.filter((i) => i.data?.isExtra).length}`)}
                       {displayItems.map((item, displayIndex) => {
+                        // Handle extra firefighters
+                        if (item.role === "extra" && item.firefighter) {
+                          const firefighter = item.firefighter
+                          return (
+                            <div
+                              key={`extra-${firefighter.id}-${displayIndex}`}
+                              className="firefighter-name truncate py-0 md:py-0.5 font-semibold"
+                            >
+                              Pompier supplémentaire
+                            </div>
+                          )
+                        }
+
                         if (item.type === "double-replacement") {
                           const { key, replacements } = item.data
 

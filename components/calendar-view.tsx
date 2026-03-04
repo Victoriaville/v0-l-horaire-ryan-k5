@@ -645,7 +645,6 @@ export function CalendarView({
 
         <div className="grid gap-1 md:gap-3 grid-cols-7">
           {useMemo(() => {
-            console.log("[v0] CalendarView useMemo - Recalculating cells, extraFirefighterMap keys:", Object.keys(extraFirefighterMap))
             return months.flatMap(({ year, month, days }, monthIndex) => {
               const cells = []
 
@@ -679,9 +678,6 @@ export function CalendarView({
                 const dayExtraFirefighters = shifts.map((shift: any) => {
                   const key = `${dateStr}_${shift.shift_type}_${shift.team_id}`
                   const extraFighters = extraFirefighterMap[key] || []
-                  if (dateStr === "2026-02-28" && extraFighters.length > 0) {
-                    console.log("[v0] Found extra firefighters on 2026-02-28:", key, extraFighters)
-                  }
                   return extraFighters
                 })
 
