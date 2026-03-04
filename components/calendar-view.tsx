@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarCell } from "@/components/calendar-cell"
 import { Button } from "@/components/ui/button"
@@ -266,8 +266,8 @@ export function CalendarView({
       setActingDesignationMap(newActingDesignationMap)
 
       const newExtraFirefighterMap = { ...extraFirefighterMap }
-      if (data.extra_firefighters && Array.isArray(data.extra_firefighters)) {
-        data.extra_firefighters.forEach((extra: any) => {
+      if (data.extraFirefighters && Array.isArray(data.extraFirefighters)) {
+        data.extraFirefighters.forEach((extra: any) => {
           const dateOnly = formatLocalDate(extra.shift_date)
           const key = `${dateOnly}_${extra.shift_type}_${extra.team_id}`
           if (!newExtraFirefighterMap[key]) {
@@ -600,7 +600,7 @@ export function CalendarView({
     [months],
   )
 
-  const handleNoteChange = useCallback(async () => {
+  const handleNoteChange = async () => {
     try {
       console.log("[v0] CalendarView - note changed, reloading notes")
 
@@ -623,7 +623,7 @@ export function CalendarView({
     } catch (error) {
       console.error("[v0] Error reloading notes:", error)
     }
-  }, [months])
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -676,8 +676,7 @@ export function CalendarView({
 
               const dayExtraFirefighters = shifts.map((shift: any) => {
                 const key = `${dateStr}_${shift.shift_type}_${shift.team_id}`
-                const extraFighters = extraFirefighterMap[key] || []
-                return extraFighters
+                return extraFirefighterMap[key] || []
               })
 
               const actingDesignations = actingDesignationMap
@@ -694,60 +693,35 @@ export function CalendarView({
 
               cells.push(
                 <div key={`${year}-${month}-${index}`} className="relative">
-                    {showMonthBadge && (
-                      <div className="absolute top-5 left-0 right-0 justify-center z-10 pointer-events-none hidden md:flex">
-                        <span className="text-sm font-bold text-orange-600">
-                          {getMonthName(month)} {year}
-                        </span>
-                      </div>
-                    )}
-                    <CalendarCell
-                      day={day}
-                      shifts={shiftsWithNotes}
-                      replacements={dayReplacements}
-                      exchanges={dayExchanges}
-                      leaves={leaves}
-                      leaveMap={leaveMap}
-                      directAssignments={dayDirectAssignments}
-                      actingDesignationMap={actingDesignations}
-                      extraFirefighters={dayExtraFirefighters}
-                      dateStr={dateStr}
-                      isAdmin={isAdmin}
-                      onReplacementCreated={handleReplacementCreated}
-                      onShiftUpdated={handleShiftUpdated}
-                      onNoteChange={handleNoteChange}
-                    />
-                  </div>
-                )
+                  {showMonthBadge && (
+                    <div className="absolute top-5 left-0 right-0 justify-center z-10 pointer-events-none hidden md:flex">
+                      <span className="text-sm font-bold text-orange-600">
+                        {getMonthName(month)} {year}
+                      </span>
+                    </div>
+                  )}
+                  <CalendarCell
+                    day={day}
+                    shifts={shiftsWithNotes}
+                    replacements={dayReplacements}
+                    exchanges={dayExchanges}
+                    leaves={leaves}
+                    leaveMap={leaveMap}
+                    directAssignments={dayDirectAssignments}
+                    actingDesignationMap={actingDesignations}
+                    extraFirefighters={dayExtraFirefighters}
+                    dateStr={dateStr}
+                    isAdmin={isAdmin}
+                    onReplacementCreated={handleReplacementCreated}
+                    onShiftUpdated={handleShiftUpdated}
+                    onNoteChange={handleNoteChange}
+                  />
+                </div>
+              )
             })
 
             return cells
           })}
-        </div>
-                    )}
-                    <CalendarCell
-                      day={day}
-                      shifts={shiftsWithNotes}
-                      replacements={dayReplacements}
-                      exchanges={dayExchanges}
-                      leaves={leaves}
-                      leaveMap={leaveMap}
-                      directAssignments={dayDirectAssignments}
-                      actingDesignationMap={actingDesignations}
-                      extraFirefighters={dayExtraFirefighters}
-                      dateStr={dateStr}
-                      isAdmin={isAdmin}
-                      onReplacementCreated={handleReplacementCreated}
-                      onShiftUpdated={handleShiftUpdated}
-                      onNoteChange={handleNoteChange}
-                    />
-                  </div>
-                )
-              })
-
-              return cells
-            })
-          }, [months, extraFirefighterMap, directAssignmentMap, replacementMap, exchangeMap, actingDesignationMap, noteMap, shiftsByCycleDay, leaves, leaveMap, isAdmin])}
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -122,13 +122,6 @@ export function CalendarCell({
     setSelectedShiftForNote(shift)
     setNoteDialogOpen(true)
   }
-
-  // Reset assignments and drawer when the day/month changes (solution for extra firefighters not displaying on month change)
-  useEffect(() => {
-    setCurrentAssignments([])
-    setSelectedShift(null)
-    setDrawerOpen(false)
-  }, [day.date])
 
   const isCurrentMonth = day.isCurrentMonth !== undefined ? day.isCurrentMonth : true
 
@@ -448,7 +441,8 @@ export function CalendarCell({
                 }
               })
 
-              shiftExtraFirefighters.forEach((extra: any) => {
+              // Process extras from the shiftExtraFirefighters array
+              shiftExtraFirefighters.forEach((extra: any, extraIdx: number) => {
                 const isOpen = extra.status === "open"
                 const isAssigned = extra.status === "assigned" && extra.replacement_first_name
 
@@ -471,7 +465,7 @@ export function CalendarCell({
                     replacementOrder: 0,
                   },
                   role: "extra",
-                  index: 9999,
+                  index: 9999 + extraIdx,
                 })
               })
 
@@ -518,19 +512,6 @@ export function CalendarCell({
                   {shifts.length > 0 ? (
                     <div className="text-[7px] md:text-xs leading-snug md:leading-relaxed text-foreground/80 space-y-0">
                       {displayItems.map((item, displayIndex) => {
-                        // Handle extra firefighters
-                        if (item.role === "extra" && item.data) {
-                          const extra = item.data
-                          return (
-                            <div
-                              key={`extra-${extra.id}-${displayIndex}`}
-                              className="firefighter-name truncate py-0 md:py-0.5 font-semibold"
-                            >
-                              {extra.firstName} {extra.lastName}
-                            </div>
-                          )
-                        }
-
                         if (item.type === "double-replacement") {
                           const { key, replacements } = item.data
 
