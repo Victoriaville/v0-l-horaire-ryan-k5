@@ -724,7 +724,7 @@ export function CalendarView({
 
               return cells
             })
-          }, [months, extraFirefighterMap, directAssignmentMap, replacementMap, exchangeMap, actingDesignationMap, noteMap, shiftsByCycleDay, leaves, leaveMap, isAdmin, handleReplacementCreated, handleShiftUpdated, handleNoteChange])}
+          }, [months, extraFirefighterMap, directAssignmentMap, replacementMap, exchangeMap, actingDesignationMap, noteMap, shiftsByCycleDay, leaves, leaveMap, isAdmin])}
         </div>
       </div>
 
