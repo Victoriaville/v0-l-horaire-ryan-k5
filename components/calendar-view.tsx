@@ -644,7 +644,7 @@ export function CalendarView({
         </div>
 
         <div className="grid gap-1 md:gap-3 grid-cols-7">
-          {months.flatMap(({ year, month, days }, monthIndex) => {
+          {useMemo(() => months.flatMap(({ year, month, days }, monthIndex) => {
             const cells = []
 
             if (monthIndex === 0 && days.length > 0) {
@@ -721,7 +721,7 @@ export function CalendarView({
             })
 
             return cells
-          })}
+          }), [months, extraFirefighterMap, directAssignmentMap, replacementMap, exchangeMap, actingDesignationMap, noteMap, shiftsByCycleDay, leaves, leaveMap, isAdmin, handleReplacementCreated, handleShiftUpdated, handleNoteChange])}
         </div>
       </div>
 
