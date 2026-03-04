@@ -215,9 +215,9 @@ export function CalendarView({
       }
       setLeaveMap(newLeaveMap)
 
-      if (data.notes && Array.isArray(data.notes)) {
+      if (data.shiftNotes && Array.isArray(data.shiftNotes)) {
         const newNoteMap = { ...noteMap }
-        data.notes.forEach((note: any) => {
+        data.shiftNotes.forEach((note: any) => {
           const dateOnly = formatLocalDate(note.shift_date)
           const key = `${note.shift_id}_${dateOnly}`
           newNoteMap[key] = true
