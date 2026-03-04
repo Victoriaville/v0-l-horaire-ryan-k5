@@ -693,8 +693,8 @@ export function CalendarView({
 
                 const showMonthBadge = day.isFirstDayOfMonth
 
-                cells.push(
-                  <div key={`${year}-${month}-${index}`} className="relative">
+              cells.push(
+                <div key={`${year}-${month}-${index}-${Object.keys(extraFirefighterMap).length}`} className="relative">
                     {showMonthBadge && (
                       <div className="absolute top-5 left-0 right-0 justify-center z-10 pointer-events-none hidden md:flex">
                         <span className="text-sm font-bold text-orange-600">
