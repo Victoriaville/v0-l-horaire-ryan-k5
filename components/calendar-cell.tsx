@@ -123,6 +123,13 @@ export function CalendarCell({
     setNoteDialogOpen(true)
   }
 
+  // Reset assignments and drawer when the day/month changes (solution for extra firefighters not displaying on month change)
+  useEffect(() => {
+    setCurrentAssignments([])
+    setSelectedShift(null)
+    setDrawerOpen(false)
+  }, [day.date])
+
   const isCurrentMonth = day.isCurrentMonth !== undefined ? day.isCurrentMonth : true
 
   const getTeamBackgroundColor = (teamName: string, teamColor?: string) => {
