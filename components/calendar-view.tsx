@@ -266,8 +266,8 @@ export function CalendarView({
       setActingDesignationMap(newActingDesignationMap)
 
       const newExtraFirefighterMap = { ...extraFirefighterMap }
-      if (data.extra_firefighters && Array.isArray(data.extra_firefighters)) {
-        data.extra_firefighters.forEach((extra: any) => {
+      if (data.extraFirefighters && Array.isArray(data.extraFirefighters)) {
+        data.extraFirefighters.forEach((extra: any) => {
           const dateOnly = formatLocalDate(extra.shift_date)
           const key = `${dateOnly}_${extra.shift_type}_${extra.team_id}`
           if (!newExtraFirefighterMap[key]) {

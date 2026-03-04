@@ -441,7 +441,8 @@ export function CalendarCell({
                 }
               })
 
-              shiftExtraFirefighters.forEach((extra: any) => {
+              // Process extras from the shiftExtraFirefighters array
+              shiftExtraFirefighters.forEach((extra: any, extraIdx: number) => {
                 const isOpen = extra.status === "open"
                 const isAssigned = extra.status === "assigned" && extra.replacement_first_name
 
@@ -464,7 +465,7 @@ export function CalendarCell({
                     replacementOrder: 0,
                   },
                   role: "extra",
-                  index: 9999,
+                  index: 9999 + extraIdx,
                 })
               })
 
