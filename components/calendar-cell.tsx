@@ -520,6 +520,7 @@ export function CalendarCell({
                   </div>
                   {shifts.length > 0 ? (
                     <div className="text-[7px] md:text-xs leading-snug md:leading-relaxed text-foreground/80 space-y-0">
+                      {dateStr === "2026-02-28" && console.log(`[v0] CalendarCell - ${dateStr} ${shift.shift_type}: displayItems count=${displayItems.length}, extras count=${displayItems.filter((i) => i.data?.isExtra).length}`)}
                       {displayItems.map((item, displayIndex) => {
                         if (item.type === "double-replacement") {
                           const { key, replacements } = item.data
