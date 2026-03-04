@@ -519,14 +519,14 @@ export function CalendarCell({
                     <div className="text-[7px] md:text-xs leading-snug md:leading-relaxed text-foreground/80 space-y-0">
                       {displayItems.map((item, displayIndex) => {
                         // Handle extra firefighters
-                        if (item.role === "extra" && item.firefighter) {
-                          const firefighter = item.firefighter
+                        if (item.role === "extra" && item.data) {
+                          const extra = item.data
                           return (
                             <div
-                              key={`extra-${firefighter.id}-${displayIndex}`}
+                              key={`extra-${extra.id}-${displayIndex}`}
                               className="firefighter-name truncate py-0 md:py-0.5 font-semibold"
                             >
-                              Pompier supplémentaire
+                              {extra.firstName} {extra.lastName}
                             </div>
                           )
                         }
