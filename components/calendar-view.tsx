@@ -600,7 +600,7 @@ export function CalendarView({
     [months],
   )
 
-  const handleNoteChange = async () => {
+  const handleNoteChange = useCallback(async () => {
     try {
       console.log("[v0] CalendarView - note changed, reloading notes")
 
@@ -623,7 +623,7 @@ export function CalendarView({
     } catch (error) {
       console.error("[v0] Error reloading notes:", error)
     }
-  }
+  }, [months])
 
   return (
     <div className="flex flex-col gap-8">
