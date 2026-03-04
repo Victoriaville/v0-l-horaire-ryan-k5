@@ -187,7 +187,10 @@ export function CalendarCell({
               const shiftExchanges = exchanges[shiftIndex] || []
               const dateStrFormatted = format(day.date, "yyyy-MM-dd")
               const shiftDirectAssignments = directAssignments[shiftIndex] || []
-              const shiftExtraFirefighters = extraFirefighters[shiftIndex] || [] // Get extra firefighters for this shift
+              const shiftExtraFirefighters = extraFirefighters[shiftIndex] || []
+              if (dateStr === "2026-02-28") {
+                console.log(`[v0] CalendarCell - ${dateStr} shift ${shift.shift_type} (index ${shiftIndex}): shiftExtraFirefighters count=${shiftExtraFirefighters.length}, extraFirefighters length=${extraFirefighters.length}`, shiftExtraFirefighters)
+              } // Get extra firefighters for this shift
 
               const firefighters =
                 shift.assigned_firefighters && shift.assigned_firefighters.trim() !== ""
