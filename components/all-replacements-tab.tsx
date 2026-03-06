@@ -164,53 +164,56 @@ export function AllReplacementsTab({ allReplacements }: AllReplacementsTabProps)
       ) : (
         sortedReplacements.map((replacement: any) => (
           <Card key={replacement.id} id={`replacement-${replacement.id}`} className="overflow-hidden">
-            <CardContent className="py-0 px-1.5">
-              <div className="flex items-center gap-2 text-sm leading-none">
-                <div className="flex items-center gap-1.5 min-w-[140px]">
-                  <span className="text-sm font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
+            <CardContent className="py-3 px-3">
+              <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 text-sm">
+                {/* Ligne 1 : Toutes les infos comprimées */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-sm font-medium leading-none text-xs md:text-sm">{formatShortDate(replacement.shift_date)}</span>
 
                   <Badge
-                    className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none shrink-0`}
+                    className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1.5 py-0 h-5 leading-none shrink-0`}
                   >
                     {replacement.shift_type === "day" ? "Jour" : "Nuit"}
                   </Badge>
                   <PartTimeTeamBadge shiftDate={replacement.shift_date} />
-                </div>
 
-                <div className="flex-1 min-w-0 leading-none">
-                  {replacement.user_id === null ? (
-                    <span className="text-amber-600 dark:text-amber-400 font-medium">Supp.</span>
-                  ) : (
-                    <span className="truncate">
-                      {replacement.first_name} {replacement.last_name}
-                    </span>
-                  )}
-                  {replacement.is_partial && (
-                    <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
-                      ({replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)})
-                    </span>
-                  )}
-                </div>
-
-                <div className="shrink-0">
-                  <Badge
-                    className={`${getReplacementStatusColor(replacement.status)} text-sm px-1.5 py-0 h-5 leading-none`}
-                  >
-                    {getReplacementStatusLabel(replacement.status)}
-                  </Badge>
-                </div>
-
-                {replacement.status === "assigned" && replacement.assigned_first_name && (
-                  <div className="text-xs text-blue-600 dark:text-blue-400 flex-1 min-w-0 truncate leading-none">
-                    → {replacement.assigned_first_name} {replacement.assigned_last_name}
+                  <div className="flex-1 min-w-0 leading-none">
+                    {replacement.user_id === null ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-medium text-xs md:text-sm">Supp.</span>
+                    ) : (
+                      <span className="truncate text-xs md:text-sm">
+                        {replacement.first_name} {replacement.last_name}
+                      </span>
+                    )}
+                    {replacement.is_partial && (
+                      <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
+                        ({replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)})
+                      </span>
+                    )}
                   </div>
-                )}
 
-                <div className="flex gap-0.5 shrink-0">
+                  <div className="shrink-0">
+                    <Badge
+                      className={`${getReplacementStatusColor(replacement.status)} text-sm px-1.5 py-0 h-5 leading-none`}
+                    >
+                      {getReplacementStatusLabel(replacement.status)}
+                    </Badge>
+                  </div>
+
+                  {replacement.status === "assigned" && replacement.assigned_first_name && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 flex-1 min-w-0 truncate leading-none">
+                      → {replacement.assigned_first_name} {replacement.assigned_last_name}
+                    </div>
+                  )}
+                </div>
+
+                {/* Ligne 2 : Les boutons d'action */}
+                <div className="flex gap-1 shrink-0 w-full md:w-auto">
                   <Link
                     href={`/dashboard/replacements/${replacement.id}?tab=all&returnTo=replacement-${replacement.id}`}
+                    className="flex-1 md:flex-none"
                   >
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2 bg-transparent leading-none">
+                    <Button variant="outline" size="sm" className="h-8 text-xs px-2 bg-transparent leading-none w-full md:w-auto">
                       Assigner ({replacement.application_count || 0})
                     </Button>
                   </Link>

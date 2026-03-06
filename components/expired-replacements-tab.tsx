@@ -133,52 +133,65 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
 
           return (
             <Card key={replacement.id} className="overflow-hidden">
-              <CardContent className="py-0 px-1.5">
-                <div className="flex items-center gap-2 text-sm">
-                  {/* Date and shift type */}
-                  <div className="flex items-center gap-1.5 min-w-[140px]">
-                    <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
-                    <Badge
-                      className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
-                    >
+              <CardContent className="py-3 px-3">
+                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 text-sm">
+                  {/* Ligne 1 : Toutes les infos comprimées */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium leading-none text-xs md:text-sm">{formatShortDate(replacement.shift_date)}</span>
+                    <Badge className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1.5 py-0 h-5 leading-none shrink-0`}>
                       {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
                     </Badge>
-                    {/* Part-time team badge */}
                     <PartTimeTeamBadge shiftDate={replacement.shift_date} />
-                  </div>
-
-                  {/* Name and team */}
-                  <div className="flex-1 min-w-0 leading-none">
-                    {replacement.user_id === null ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium">Pompier supplémentaire {getExtraFirefighterNumber(replacement)}</span>
-                    ) : (
-                      <span className="truncate">
-                        {replacement.first_name} {replacement.last_name}
-                      </span>
-                    )}
-                    {replacement.is_partial && (
-                      <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
-                        ({replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)})
-                      </span>
-                    )}
-                    <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                      Créé {formatCreatedAt(replacement.created_at)}
+                    
+                    <div className="flex-1 min-w-0 leading-none">
+                      {replacement.user_id === null ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium text-xs md:text-sm">Pompier supp. {getExtraFirefighterNumber(replacement)}</span>
+                      ) : (
+                        <span className="truncate text-xs md:text-sm">
+                          {replacement.first_name} {replacement.last_name}
+                        </span>
+                      )}
+                      {replacement.is_partial && (
+                        <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
+                          ({replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)})
+                        </span>
+                      )}
+                      <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                        Créé {formatCreatedAt(replacement.created_at)}
+                      </div>
                     </div>
+
+                    {replacement.application_deadline && !isExpired && (
+                      <DeadlineTimer
+                        deadline={replacement.application_deadline}
+                        deadlineDuration={replacement.deadline_duration}
+                        shiftDate={replacement.shift_date}
+                      />
+                    )}
+
+                    {isExpired ? (
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none shrink-0">
+                        Fermé
+                      </Badge>
+                    ) : null}
                   </div>
 
-                  <div className="flex gap-0.5 shrink-0">
-                    <ApplyForReplacementButton
-                      replacementId={replacement.id}
-                      isAdmin={isAdmin}
-                      firefighters={firefighters}
-                      onSuccess={() => {}}
-                    />
-                    <DeleteReplacementButton replacementId={replacement.id} />
-                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                  {/* Ligne 2 : Les trois boutons */}
+                  <div className="flex gap-1 shrink-0 w-full md:w-auto">
+                    {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
+                      replacement.status !== "assigned" && (
+                        <ApplyForReplacementButton
+                          replacementId={replacement.id}
+                          isAdmin={isAdmin}
+                          firefighters={firefighters}
+                          hasApplied={hasApplied}
+                        />
+                      )}
+                    <Link href={`/dashboard/replacements/${replacement.id}`} className="flex-1 md:flex-none">
                       <Button
                         variant="outline"
-                        size="default"
-                        className="h-8 text-xs px-2 gap-1 bg-transparent leading-none"
+                        size="sm"
+                        className="h-8 text-xs px-2 gap-0.5 bg-transparent leading-none w-full md:w-auto"
                       >
                         <Users className="h-3 w-3" />
                         <Badge variant="secondary" className="text-[9px] px-0.5 py-0 h-3.5 leading-none">
@@ -186,6 +199,7 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                         </Badge>
                       </Button>
                     </Link>
+                    {isAdmin && <DeleteReplacementButton replacementId={replacement.id} />}
                   </div>
                 </div>
               </CardContent>
