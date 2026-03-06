@@ -29,7 +29,6 @@ import {
   setActingCaptain,
   removeActingCaptain,
   getActingDesignationsForDate,
-  getShiftAssignments,
 } from "@/app/actions/shift-assignments"
 import {
   removeDirectAssignment,
@@ -222,9 +221,19 @@ export function ShiftAssignmentDrawer({
 
   useEffect(() => {
     if (open && shift) {
+      console.log("[v0] ShiftAssignmentDrawer - currentAssignments:", currentAssignments.length)
       const withReplacementOrder = currentAssignments.filter((a) => a.replacement_order)
       if (withReplacementOrder.length > 0) {
-        // Assignments with replacement order are tracked internally
+        console.log(
+          "[v0] Assignments with replacement_order:",
+          withReplacementOrder.map((a) => ({
+            name: `${a.first_name} ${a.last_name}`,
+            replacement_order: a.replacement_order,
+            start_time: a.start_time,
+            end_time: a.end_time,
+            replaced_user_id: a.replaced_user_id,
+          })),
+        )
       }
     }
   }, [open, shift, currentAssignments])
@@ -748,7 +757,9 @@ export function ShiftAssignmentDrawer({
 
     toast.success(`${replacementName || "Le remplacement"} a été retiré`)
 
+    console.log("[v0] Drawer - About to call loadData() to refresh drawer after assignment removal")
     await loadData()
+    console.log("[v0] Drawer - loadData() completed, drawer should now show updated data")
 
     setIsLoading(false)
   }
@@ -885,7 +896,16 @@ export function ShiftAssignmentDrawer({
 
   setIsLoading(true)
   
+  console.log("[v0] DRAWER BUTTON: handleRemoveReplacement CALLED with:", {
+    shiftId,
+    userId,
+    replacementOrder,
+    firefighterName,
+  })
+  
   const result = await removeReplacement(shiftId, userId, replacementOrder)
+  
+  console.log("[v0] DRAWER BUTTON: removeReplacement returned:", result)
 
     if (result.error) {
       toast.error(result.error)
@@ -1099,6 +1119,16 @@ export function ShiftAssignmentDrawer({
     }
 
     const approvedApp = r.applications?.find((app: any) => app.status === "approved")
+    
+    console.log("[v0] assignedReplacements processing", {
+      user_id: r.user_id,
+      is_partial: r.is_partial,
+      start_time: r.start_time,
+      end_time: r.end_time,
+      replacement_order: r.replacement_order,
+      hasApprovedApp: !!approvedApp,
+      applicationsCount: r.applications?.length || 0
+    })
     
     // If there's an approved application, handle the replacement with assigned candidate
     if (approvedApp) {
@@ -1386,6 +1416,7 @@ export function ShiftAssignmentDrawer({
   // The original implementation was correct and is kept below.
   // The duplicate definition has been removed.
   const handleRemoveReplacementAssignment_updated = async (replacementId: number, assignedName: string) => {
+    console.log("[v0] handleRemoveReplacementAssignment_updated CALLED", { replacementId, assignedName })
     try {
       setLoadingReplacements(true)
 
@@ -1402,13 +1433,7 @@ export function ShiftAssignmentDrawer({
       const data = await getReplacementsForShift(shiftDate, shift.shift_type, shift.team_id)
       setReplacements(data)
 
-      // Refetch shift assignments to update currentAssignments props
-      const updatedAssignments = await getShiftAssignments(shift.id)
-      
       await loadData()
-      
-      // Call callback to refresh the parent component's shift data
-      onShiftUpdated(shift)
     } catch (error) {
       console.error("Error removing replacement assignment:", error)
       toast.error("Une erreur est survenue")
@@ -1556,6 +1581,42 @@ export function ShiftAssignmentDrawer({
                     }
 
                     const { replacement0, replacement1, replacement2 } = getReplacementDetails(firefighter.id)
+
+                    console.log("[v0] Drawer - replacement details for firefighter", firefighter.id, {
+                      replacement0: replacement0
+                        ? {
+                            user_id: replacement0.user_id,
+                            first_name: replacement0.first_name,
+                            last_name: replacement0.last_name,
+                            replacement_order: replacement0.replacement_order,
+                            is_partial: replacement0.is_partial,
+                            start_time: replacement0.start_time,
+                            end_time: replacement0.end_time,
+                          }
+                        : null,
+                      replacement1: replacement1
+                        ? {
+                            user_id: replacement1.user_id,
+                            first_name: replacement1.first_name,
+                            last_name: replacement1.last_name,
+                            replacement_order: replacement1.replacement_order,
+                            is_partial: replacement1.is_partial,
+                            start_time: replacement1.start_time,
+                            end_time: replacement1.end_time,
+                          }
+                        : null,
+                      replacement2: replacement2
+                        ? {
+                            user_id: replacement2.user_id,
+                            first_name: replacement2.first_name,
+                            last_name: replacement2.last_name,
+                            replacement_order: replacement2.replacement_order,
+                            is_partial: replacement2.is_partial,
+                            start_time: replacement2.start_time,
+                            end_time: replacement2.end_time,
+                          }
+                        : null,
+                    })
 
                     if (hasReplacements) {
                       const bankInfo = replacement0 || replacement1 || replacement2
