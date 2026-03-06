@@ -21,7 +21,7 @@ JOIN shifts s ON sa.shift_id = s.id
 WHERE u.id = 55 -- Adan Boucher
   AND ru.id = 32 -- Guy Lefebvre
   AND s.cycle_day = 9 -- February 9
-  AND s.shift_type = 'jour';
+  AND s.shift_type = 'day';
 
 -- Now delete this specific orphaned record
 DELETE FROM shift_assignments 
@@ -34,7 +34,7 @@ WHERE id IN (
   WHERE u.id = 55 -- Adan Boucher
     AND ru.id = 32 -- Guy Lefebvre
     AND s.cycle_day = 9 -- February 9
-    AND s.shift_type = 'jour'
+    AND s.shift_type = 'day'
 );
 
 -- Verify it's deleted
