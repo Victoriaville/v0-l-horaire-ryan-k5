@@ -171,6 +171,7 @@ export async function getAllFirefighters() {
       u.role,
       u.phone,
       u.is_admin,
+      u.is_owner,
       u.created_at,
       COALESCE(
         json_agg(
