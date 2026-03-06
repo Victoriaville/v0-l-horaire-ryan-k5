@@ -254,66 +254,97 @@ export function AssignedReplacementsTab({
               }`}
             >
               <CardContent className="p-3">
-                <div className="flex flex-col gap-2">
-                  {/* Ligne 1 : Infos principales */}
-                  <div className="flex items-start gap-2 flex-wrap">
-                    <span className="font-medium whitespace-nowrap text-sm">{formatShortDate(replacement.shift_date)}</span>
-                    <Badge className={`${getShiftTypeColor(replacement.shift_type)} text-xs shrink-0`}>
-                      {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs font-medium truncate">
-                      {replacement.first_name} {replacement.last_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">→</span>
-                    <span className="text-xs font-medium text-blue-600 truncate">
-                      {replacement.assigned_first_name} {replacement.assigned_last_name}
-                    </span>
-                    <div className="text-[10px] text-muted-foreground/60">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium whitespace-nowrap">{formatShortDate(replacement.shift_date)}</span>
+                      <Badge className={`${getShiftTypeColor(replacement.shift_type)} text-xs shrink-0`}>
+                        {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">•</span>
+                      <span className="text-sm">
+                        {replacement.first_name} {replacement.last_name}
+                      </span>
+                      <span className="text-sm text-muted-foreground">→</span>
+                      <span className="text-sm font-medium text-blue-600">
+                        {replacement.assigned_first_name} {replacement.assigned_last_name}
+                      </span>
+                    </div>
+
+                    <div className="text-[10px] text-muted-foreground/60 mt-0.5">
                       Créé {formatCreatedAt(replacement.created_at)}
+                    </div>
+
+                    <div className="mt-1.5">
+                      {replacement.notification_sent ? (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Check className="h-3.5 w-3.5 text-green-600" />
+                          <span className="text-green-600 font-medium">
+                            Notification envoyée {formatLocalDateTime(replacement.notification_sent_at)}
+                          </span>
+                          {replacement.notification_types_sent && replacement.notification_types_sent.length > 0 && (
+                            <>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground">
+                                {replacement.notification_types_sent.join(", ")}
+                              </span>
+                            </>
+                          )}
+                          {replacement.notification_channels_failed &&
+                            replacement.notification_channels_failed.length > 0 && (
+                              <>
+                                <span className="text-muted-foreground">•</span>
+                                <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Échec: {replacement.notification_channels_failed.join(", ")}
+                                </Badge>
+                              </>
+                            )}
+                          {replacement.notification_sent_by_first_name && (
+                            <>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground">
+                                Par {replacement.notification_sent_by_first_name}{" "}
+                                {replacement.notification_sent_by_last_name}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                          <span className="text-red-600 font-medium">Notification non envoyée</span>
+                        </div>
+                      )}
+
+                      {replacement.confirmed_at ? (
+                        <div className="flex items-center gap-1.5 text-xs mt-1">
+                          <Check className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="text-blue-600 font-medium">
+                            Réception confirmée {formatLocalDateTime(replacement.confirmed_at)}
+                          </span>
+                          {replacement.confirmed_via && (
+                            <>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground capitalize">
+                                {replacement.confirmed_via === "telegram" ? "Telegram" : replacement.confirmed_via}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      ) : replacement.notification_sent ? (
+                        <div className="flex items-center gap-1.5 text-xs mt-1">
+                          <div className="h-3.5 w-3.5 rounded-full border-2 border-orange-400 border-t-transparent animate-spin" />
+                          <span className="text-orange-600">En attente de confirmation</span>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
-                  {/* Notifications + Confirmation Info */}
-                  <div className="text-[10px] space-y-0.5">
-                    {replacement.notification_sent ? (
-                      <div className="flex items-center gap-1">
-                        <Check className="h-3 w-3 text-green-600 shrink-0" />
-                        <span className="text-green-600 font-medium">
-                          Notif. envoyée {formatLocalDateTime(replacement.notification_sent_at)}
-                        </span>
-                        {replacement.notification_types_sent && replacement.notification_types_sent.length > 0 && (
-                          <span className="text-muted-foreground">({replacement.notification_types_sent.join(", ")})</span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3 text-red-600 shrink-0" />
-                        <span className="text-red-600 font-medium">Notification non envoyée</span>
-                      </div>
-                    )}
-
-                    {replacement.confirmed_at ? (
-                      <div className="flex items-center gap-1">
-                        <Check className="h-3 w-3 text-blue-600 shrink-0" />
-                        <span className="text-blue-600 font-medium">
-                          Confirmée {formatLocalDateTime(replacement.confirmed_at)}
-                          {replacement.confirmed_via && ` (${replacement.confirmed_via})`}
-                        </span>
-                      </div>
-                    ) : replacement.notification_sent ? (
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 w-3 rounded-full border border-orange-400 border-t-transparent animate-spin shrink-0" />
-                        <span className="text-orange-600">En attente de confirmation</span>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* Ligne 2 : Boutons */}
-                  <div className="flex gap-1 flex-wrap">
-                    <Link href={`/dashboard/replacements/${replacement.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 bg-transparent w-full">
-                        Voir candidats ({replacement.candidate_count || 0})
+                  <div className="flex gap-0.5 shrink-0">
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 bg-transparent w-[140px]">
+                        Voir les candidats ({replacement.candidate_count || 0})
                       </Button>
                     </Link>
 
@@ -321,7 +352,7 @@ export function AssignedReplacementsTab({
                       <Button
                         variant="default"
                         size="sm"
-                        className="h-8 text-xs px-2 flex-1"
+                        className="h-8 text-xs px-2 w-[100px]"
                         onClick={() => handleSendNotification(replacement.id)}
                         disabled={sendingIds.has(replacement.id) || isUpdating}
                       >
@@ -332,7 +363,7 @@ export function AssignedReplacementsTab({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs px-2 bg-transparent flex-1"
+                        className="h-8 text-xs px-2 w-[100px] bg-transparent"
                         onClick={() => handleResendNotification(replacement.id)}
                         disabled={sendingIds.has(replacement.id) || isUpdating}
                       >

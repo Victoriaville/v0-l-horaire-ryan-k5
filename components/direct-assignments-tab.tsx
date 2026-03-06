@@ -168,60 +168,57 @@ export function DirectAssignmentsTab({ directAssignments, isAdmin }: DirectAssig
           sortedAssignments.map((assignment: any) => {
             return (
               <Card key={assignment.id} className="overflow-hidden">
-                <CardContent className="py-3 px-3">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 text-sm">
-                    {/* Ligne 1 : Toutes les infos comprimées */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-medium leading-none text-xs md:text-sm">{formatShortDate(assignment.shift_date)}</span>
+                <CardContent className="py-0 px-1.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    {/* Date and shift type */}
+                    <div className="flex items-center gap-1.5 min-w-[140px]">
+                      <span className="font-medium leading-none">{formatShortDate(assignment.shift_date)}</span>
                       <Badge
-                        className={`${getShiftTypeColor(assignment.shift_type)} text-xs px-1.5 py-0 h-5 leading-none shrink-0`}
+                        className={`${getShiftTypeColor(assignment.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
                       >
                         {getShiftTypeLabel(assignment.shift_type).split(" ")[0]}
                       </Badge>
                       <PartTimeTeamBadge shiftDate={assignment.shift_date} />
+                    </div>
 
-                      {/* Replaced firefighter name */}
-                      <div className="flex-1 min-w-0 leading-none text-xs md:text-sm">
-                        <span className="truncate">
-                          {assignment.replaced_first_name} {assignment.replaced_last_name}
+                    {/* Replaced firefighter name */}
+                    <div className="flex-1 min-w-0 leading-none">
+                      <span className="truncate">
+                        {assignment.replaced_first_name} {assignment.replaced_last_name}
+                      </span>
+                      {assignment.is_partial && (
+                        <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
+                          ({assignment.start_time?.slice(0, 5)}-{assignment.end_time?.slice(0, 5)})
                         </span>
-                        {assignment.is_partial && (
-                          <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
-                            ({assignment.start_time?.slice(0, 5)}-{assignment.end_time?.slice(0, 5)})
-                          </span>
-                        )}
-                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                          Créé {assignment.assigned_at ? formatCreatedAt(assignment.assigned_at) : "Date inconnue"}
-                        </div>
-                      </div>
-
-                      {/* Assigned replacement firefighter name */}
-                      <div className="text-xs text-blue-600 dark:text-blue-400 shrink-0 leading-none font-medium whitespace-nowrap">
-                        → {assignment.assigned_first_name} {assignment.assigned_last_name}
-                      </div>
-
-                      {/* Status badge - Direct assignment */}
-                      <div className="shrink-0">
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-1.5 py-0 h-5 leading-none gap-1">
-                          <Zap className="h-3 w-3" />
-                          Direct
-                        </Badge>
+                      )}
+                      <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                        Créé {assignment.assigned_at ? formatCreatedAt(assignment.assigned_at) : "Date inconnue"}
                       </div>
                     </div>
 
-                    {/* Ligne 2 : Bouton delete (admin only) */}
+                    {/* Assigned replacement firefighter name */}
+                    <div className="text-xs text-blue-600 dark:text-blue-400 shrink-0 leading-none font-medium">
+                      → {assignment.assigned_first_name} {assignment.assigned_last_name}
+                    </div>
+
+                    {/* Status badge - Direct assignment */}
+                    <div className="shrink-0">
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-sm px-1.5 py-0 h-5 leading-none gap-1">
+                        <Zap className="h-3 w-3" />
+                        Direct
+                      </Badge>
+                    </div>
+
+                    {/* Delete button (admin only) */}
                     {isAdmin && (
-                      <div className="flex gap-1 w-full md:w-auto">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClick(assignment)}
-                          className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-1 md:flex-none"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 mr-1" />
-                          Supprimer
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteClick(assignment)}
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     )}
                   </div>
                 </CardContent>

@@ -136,33 +136,31 @@ export function PendingRequestsTab({ pendingRequests }: PendingRequestsTabProps)
 
         {sortedRequests.map((request: any) => (
           <Card key={request.id} className="overflow-hidden">
-            <CardContent className="py-3 px-3">
-              <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 text-sm">
-                {/* Ligne 1 : Toutes les infos comprimées */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium leading-none text-xs md:text-sm">{formatShortDate(request.shift_date)}</span>
-                  <Badge className={`${getShiftTypeColor(request.shift_type)} text-xs px-1.5 py-0 h-5 leading-none shrink-0`}>
+            <CardContent className="py-0 px-1.5">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5 min-w-[140px]">
+                  <span className="font-medium leading-none">{formatShortDate(request.shift_date)}</span>
+                  <Badge className={`${getShiftTypeColor(request.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}>
                     {getShiftTypeLabel(request.shift_type).split(" ")[0]}
                   </Badge>
                   {request.is_partial && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 leading-none shrink-0">
+                    <Badge variant="outline" className="text-sm px-1.5 py-0 h-5 leading-none">
                       {request.start_time?.slice(0, 5)}-{request.end_time?.slice(0, 5)}
                     </Badge>
                   )}
-
-                  <div className="flex-1 min-w-0 leading-none truncate text-xs md:text-sm">
-                    {request.first_name} {request.last_name} • {request.team_name}
-                  </div>
                 </div>
 
-                {/* Ligne 2 : Les deux boutons */}
-                <div className="flex gap-1 shrink-0 w-full md:w-auto">
+                <div className="flex-1 min-w-0 leading-none truncate">
+                  {request.first_name} {request.last_name} • {request.team_name}
+                </div>
+
+                <div className="flex gap-0.5 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleReject(request.id)}
                     disabled={processingId === request.id}
-                    className="h-8 text-xs px-2 gap-1 leading-none flex-1 md:flex-none"
+                    className="h-6 text-xs px-2 gap-1 leading-none"
                   >
                     <X className="h-3 w-3" />
                     Rejeter
@@ -171,7 +169,7 @@ export function PendingRequestsTab({ pendingRequests }: PendingRequestsTabProps)
                     size="sm"
                     onClick={() => handleApprove(request.id, request.shift_date)}
                     disabled={processingId === request.id}
-                    className="h-8 text-xs px-2 gap-1 leading-none flex-1 md:flex-none"
+                    className="h-6 text-xs px-2 gap-1 leading-none"
                   >
                     <Check className="h-3 w-3" />
                     Approuver

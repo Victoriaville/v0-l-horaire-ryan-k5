@@ -147,12 +147,12 @@ export function ReplacementsTabs({
         </Button>
       </div>
 
-      <TabsList className="flex-col md:flex-row w-full md:w-auto gap-2 md:gap-0 h-auto md:h-10">
-        <TabsTrigger value="available" className="w-full md:w-auto">Remplacements disponibles ({openReplacements.length})</TabsTrigger>
+      <TabsList className="flex flex-col md:flex-row w-full md:w-auto gap-1 md:gap-0 h-auto md:h-10">
+        <TabsTrigger value="available" className="justify-start md:justify-center w-full md:w-auto">Remplacements disponibles ({openReplacements.length})</TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="to-assign"
-            className={`w-full md:w-auto ${
+            className={`justify-start md:justify-center w-full md:w-auto ${
               expiredReplacements.length > 0
                 ? "data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:text-red-600 data-[state=inactive]:font-semibold"
                 : ""
@@ -162,19 +162,19 @@ export function ReplacementsTabs({
           </TabsTrigger>
         )}
         {isAdmin && (
-          <TabsTrigger value="assigned" className={`w-full md:w-auto ${getAssignedBadgeColor()}`}>
+          <TabsTrigger value="assigned" className={`justify-start md:justify-center w-full md:w-auto ${getAssignedBadgeColor()}`}>
             Remplacements assignés {badgeText}
           </TabsTrigger>
         )}
         {isAdmin && (
-          <TabsTrigger value="direct-assignments" className="w-full md:w-auto">Assignations directes ({directAssignments.length})</TabsTrigger>
+          <TabsTrigger value="direct-assignments" className="justify-start md:justify-center w-full md:w-auto">Assignations directes ({directAssignments.length})</TabsTrigger>
         )}
-        <TabsTrigger value="my-applications" className="w-full md:w-auto">Mes candidatures ({pendingApplications.length})</TabsTrigger>
-        <TabsTrigger value="my-requests" className="w-full md:w-auto">Mes demandes ({userRequests.length})</TabsTrigger>
+        <TabsTrigger value="my-applications" className="justify-start md:justify-center w-full md:w-auto">Mes candidatures ({pendingApplications.length})</TabsTrigger>
+        <TabsTrigger value="my-requests" className="justify-start md:justify-center w-full md:w-auto">Mes demandes ({userRequests.length})</TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="pending"
-            className={`w-full md:w-auto ${
+            className={`justify-start md:justify-center w-full md:w-auto ${
               pendingRequests.length > 0
                 ? "data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:text-red-600 data-[state=inactive]:font-semibold"
                 : ""
