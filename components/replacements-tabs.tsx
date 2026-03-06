@@ -147,38 +147,38 @@ export function ReplacementsTabs({
         </Button>
       </div>
 
-      <TabsList>
-        <TabsTrigger value="available">Remplacements disponibles ({openReplacements.length})</TabsTrigger>
+      <TabsList className="flex-col md:flex-row w-full md:w-auto gap-2 md:gap-0 h-auto md:h-10">
+        <TabsTrigger value="available" className="w-full md:w-auto">Remplacements disponibles ({openReplacements.length})</TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="to-assign"
-            className={
+            className={`w-full md:w-auto ${
               expiredReplacements.length > 0
                 ? "data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:text-red-600 data-[state=inactive]:font-semibold"
                 : ""
-            }
+            }`}
           >
             Prêts à assigner ({expiredReplacements.length})
           </TabsTrigger>
         )}
         {isAdmin && (
-          <TabsTrigger value="assigned" className={getAssignedBadgeColor()}>
+          <TabsTrigger value="assigned" className={`w-full md:w-auto ${getAssignedBadgeColor()}`}>
             Remplacements assignés {badgeText}
           </TabsTrigger>
         )}
         {isAdmin && (
-          <TabsTrigger value="direct-assignments">Assignations directes ({directAssignments.length})</TabsTrigger>
+          <TabsTrigger value="direct-assignments" className="w-full md:w-auto">Assignations directes ({directAssignments.length})</TabsTrigger>
         )}
-        <TabsTrigger value="my-applications">Mes candidatures ({pendingApplications.length})</TabsTrigger>
-        <TabsTrigger value="my-requests">Mes demandes ({userRequests.length})</TabsTrigger>
+        <TabsTrigger value="my-applications" className="w-full md:w-auto">Mes candidatures ({pendingApplications.length})</TabsTrigger>
+        <TabsTrigger value="my-requests" className="w-full md:w-auto">Mes demandes ({userRequests.length})</TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="pending"
-            className={
+            className={`w-full md:w-auto ${
               pendingRequests.length > 0
                 ? "data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:text-red-600 data-[state=inactive]:font-semibold"
                 : ""
-            }
+            }`}
           >
             Demandes en attente ({pendingRequests.length})
           </TabsTrigger>

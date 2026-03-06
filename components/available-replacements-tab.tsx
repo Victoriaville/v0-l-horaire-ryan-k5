@@ -114,10 +114,10 @@ export function AvailableReplacementsTab({
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
           <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[200px] md:w-[200px] sm:w-full">
               <SelectValue placeholder="Trier par..." />
             </SelectTrigger>
             <SelectContent>
