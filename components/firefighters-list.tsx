@@ -77,6 +77,11 @@ export function FirefightersList({ firefighters, teams, isAdmin, isOwner }: Fire
                     <Badge className={`${getRoleBadgeColor(firefighter.role)} text-xs py-0 h-5`}>
                       {getRoleLabel(firefighter.role)}
                     </Badge>
+                    {firefighter.is_owner && (
+                      <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs py-0 h-5">
+                        Owner
+                      </Badge>
+                    )}
                     {firefighter.is_admin && (
                       <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs py-0 h-5">
                         Admin
