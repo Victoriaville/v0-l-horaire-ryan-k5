@@ -55,7 +55,7 @@ export default async function FirefightersPage() {
         {user.is_admin && <AddFirefighterDialog teams={teams} />}
       </div>
 
-      <FirefightersList firefighters={firefighters} teams={teams} isAdmin={user.is_admin} />
+      <FirefightersList firefighters={firefighters} teams={teams} isAdmin={user.is_admin} isOwner={user.is_owner} />
     </div>
   )
 }

@@ -13,9 +13,10 @@ interface FirefightersListProps {
   firefighters: any[]
   teams: any[]
   isAdmin: boolean
+  isOwner?: boolean
 }
 
-export function FirefightersList({ firefighters, teams, isAdmin }: FirefightersListProps) {
+export function FirefightersList({ firefighters, teams, isAdmin, isOwner }: FirefightersListProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const getRoleLabel = (role: string) => {
@@ -84,12 +85,24 @@ export function FirefightersList({ firefighters, teams, isAdmin }: FirefightersL
                   </div>
                   <p className="text-xs text-muted-foreground truncate mb-1">{firefighter.email}</p>
                   {firefighter.teams && firefighter.teams.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 items-center">
                       {firefighter.teams.map((team: any) => (
                         <Badge key={team.id} variant="outline" className="text-xs py-0 h-4">
                           {team.name}
                         </Badge>
                       ))}
+                      {isOwner && (
+                        <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
+                          ID: {firefighter.id}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  {(!firefighter.teams || firefighter.teams.length === 0) && isOwner && (
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
+                        ID: {firefighter.id}
+                      </Badge>
                     </div>
                   )}
                 </div>
