@@ -13,9 +13,10 @@ interface FirefightersListProps {
   firefighters: any[]
   teams: any[]
   isAdmin: boolean
+  isOwner?: boolean
 }
 
-export function FirefightersList({ firefighters, teams, isAdmin }: FirefightersListProps) {
+export function FirefightersList({ firefighters, teams, isAdmin, isOwner }: FirefightersListProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const getRoleLabel = (role: string) => {
@@ -90,14 +91,14 @@ export function FirefightersList({ firefighters, teams, isAdmin }: FirefightersL
                           {team.name}
                         </Badge>
                       ))}
-                      {isAdmin && (
+                      {isOwner && (
                         <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
                           ID: {firefighter.id}
                         </Badge>
                       )}
                     </div>
                   )}
-                  {(!firefighter.teams || firefighter.teams.length === 0) && isAdmin && (
+                  {(!firefighter.teams || firefighter.teams.length === 0) && isOwner && (
                     <div className="flex gap-1">
                       <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
                         ID: {firefighter.id}
