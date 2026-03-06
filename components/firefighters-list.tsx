@@ -84,12 +84,24 @@ export function FirefightersList({ firefighters, teams, isAdmin }: FirefightersL
                   </div>
                   <p className="text-xs text-muted-foreground truncate mb-1">{firefighter.email}</p>
                   {firefighter.teams && firefighter.teams.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 items-center">
                       {firefighter.teams.map((team: any) => (
                         <Badge key={team.id} variant="outline" className="text-xs py-0 h-4">
                           {team.name}
                         </Badge>
                       ))}
+                      {isAdmin && (
+                        <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
+                          ID: {firefighter.id}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  {(!firefighter.teams || firefighter.teams.length === 0) && isAdmin && (
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs py-0 h-4 text-muted-foreground bg-transparent border-gray-300 dark:border-gray-600">
+                        ID: {firefighter.id}
+                      </Badge>
                     </div>
                   )}
                 </div>
