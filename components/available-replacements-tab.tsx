@@ -158,8 +158,8 @@ export function AvailableReplacementsTab({
               className={`overflow-hidden ${isFirstCome ? "ring-2 ring-green-500 dark:ring-green-400" : ""}`}
             >
               <CardContent className="py-0 px-1.5">
+                {/* Line 1: All info */}
                 <div className="flex flex-col md:flex-row md:items-center gap-2 text-sm">
-                  {/* Info section - Line 1 on mobile, inline on desktop */}
                   <div className="flex items-center gap-1.5 min-w-[140px]">
                     <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
                     <Badge
@@ -193,14 +193,6 @@ export function AvailableReplacementsTab({
                     </div>
                   </div>
 
-                  {replacement.application_deadline && !isExpired && (
-                    <DeadlineTimer
-                      deadline={replacement.application_deadline}
-                      deadlineDuration={replacement.deadline_duration}
-                      shiftDate={replacement.shift_date}
-                    />
-                  )}
-
                   <div className="shrink-0">
                     {isExpired ? (
                       <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none">
@@ -208,8 +200,20 @@ export function AvailableReplacementsTab({
                       </Badge>
                     ) : null}
                   </div>
+                </div>
 
-                  {/* Buttons section - Line 2 on mobile, inline on desktop */}
+                {/* Line 2: Deadline + Buttons */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2 text-sm mt-2 md:mt-0">
+                  {replacement.application_deadline && !isExpired && (
+                    <div className="shrink-0">
+                      <DeadlineTimer
+                        deadline={replacement.application_deadline}
+                        deadlineDuration={replacement.deadline_duration}
+                        shiftDate={replacement.shift_date}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex gap-0.5 shrink-0 w-full md:w-auto">
                     {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
                       replacement.status !== "assigned" && (
