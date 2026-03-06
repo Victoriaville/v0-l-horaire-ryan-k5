@@ -17,40 +17,42 @@ export async function getExchangeCountReport() {
       return { error: 'Unauthorized' }
     }
 
-    // Get all users and their exchange counts for all years
-    const users = await sql`
-      SELECT DISTINCT u.id, u.first_name, u.last_name
+    // Get all users with their exchange counts by year in a SINGLE query
+    const data = await sql`
+      SELECT 
+        u.id,
+        u.first_name,
+        u.last_name,
+        EXTRACT(YEAR FROM se.requester_shift_date)::int as year,
+        COUNT(se.id) as count
       FROM users u
-      ORDER BY u.last_name, u.first_name
+      LEFT JOIN shift_exchanges se ON u.id = se.requester_id AND se.status = 'approved'
+      GROUP BY u.id, u.first_name, u.last_name, EXTRACT(YEAR FROM se.requester_shift_date)
+      ORDER BY u.last_name, u.first_name, year DESC
     `
 
-    // For each user, get their exchange counts by year
-    const firefighterCounts: FirefighterExchangeCount[] = []
+    // Transform flat data into the required structure
+    const firefighterMap = new Map<number, FirefighterExchangeCount>()
 
-    for (const user of users.rows) {
-      const exchangesByYear = await sql`
-        SELECT EXTRACT(YEAR FROM se.requester_shift_date)::int as year, COUNT(*) as count
-        FROM shift_exchanges se
-        WHERE se.requester_id = ${user.id}
-        AND se.status = 'approved'
-        GROUP BY EXTRACT(YEAR FROM se.requester_shift_date)
-        ORDER BY year DESC
-      `
-
-      const yearsMap: Record<number, number> = {}
-      for (const row of exchangesByYear.rows) {
-        yearsMap[row.year] = Number(row.count)
+    for (const row of data.rows) {
+      if (!firefighterMap.has(row.id)) {
+        firefighterMap.set(row.id, {
+          id: row.id,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          years: {},
+        })
       }
 
-      firefighterCounts.push({
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        years: yearsMap,
-      })
+      const firefighter = firefighterMap.get(row.id)!
+      if (row.year !== null) {
+        firefighter.years[row.year] = Number(row.count)
+      }
     }
 
-    // Get all years that have exchanges
+    const firefighters = Array.from(firefighterMap.values())
+
+    // Get all years that have approved exchanges
     const allYears = await sql`
       SELECT DISTINCT EXTRACT(YEAR FROM requester_shift_date)::int as year
       FROM shift_exchanges
@@ -61,7 +63,7 @@ export async function getExchangeCountReport() {
     const years = allYears.rows.map((row: any) => row.year as number)
 
     return {
-      firefighters: firefighterCounts,
+      firefighters,
       years,
     }
   } catch (error: any) {
