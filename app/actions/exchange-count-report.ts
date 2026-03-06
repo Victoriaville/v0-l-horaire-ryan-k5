@@ -21,7 +21,6 @@ export async function getExchangeCountReport() {
     const users = await sql`
       SELECT DISTINCT u.id, u.first_name, u.last_name
       FROM users u
-      WHERE u.deleted_at IS NULL
       ORDER BY u.last_name, u.first_name
     `
 
