@@ -161,32 +161,13 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                       </div>
                     </div>
 
-                    {replacement.application_deadline && !isExpired && (
-                      <DeadlineTimer
-                        deadline={replacement.application_deadline}
-                        deadlineDuration={replacement.deadline_duration}
-                        shiftDate={replacement.shift_date}
-                      />
-                    )}
-
-                    {isExpired ? (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none shrink-0">
-                        Fermé
-                      </Badge>
-                    ) : null}
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none shrink-0">
+                      Fermé
+                    </Badge>
                   </div>
 
                   {/* Ligne 2 : Les trois boutons */}
                   <div className="flex gap-1 shrink-0 w-full md:w-auto">
-                    {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
-                      replacement.status !== "assigned" && (
-                        <ApplyForReplacementButton
-                          replacementId={replacement.id}
-                          isAdmin={isAdmin}
-                          firefighters={firefighters}
-                          hasApplied={hasApplied}
-                        />
-                      )}
                     <Link href={`/dashboard/replacements/${replacement.id}`} className="flex-1 md:flex-none">
                       <Button
                         variant="outline"
