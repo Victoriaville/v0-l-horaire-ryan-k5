@@ -173,9 +173,12 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center"
+                        className="h-8 px-1.5 bg-transparent leading-none flex items-center justify-center gap-1"
                       >
                         <Users className="h-3.5 w-3.5" />
+                        <Badge variant="secondary" className="text-[9px] px-0.5 py-0 h-3.5 leading-none">
+                          {candidateCount}
+                        </Badge>
                         <span className="sr-only">Voir les candidats ({candidateCount})</span>
                       </Button>
                     </Link>
