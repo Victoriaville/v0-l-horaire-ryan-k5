@@ -158,48 +158,51 @@ export function AvailableReplacementsTab({
               className={`overflow-hidden ${isFirstCome ? "ring-2 ring-green-500 dark:ring-green-400" : ""}`}
             >
               <CardContent className="py-0.5 px-1.5">
-                {/* Mobile layout: 3 rows - Date+Badge | Name+Badges | Deadline+Buttons */}
-                <div className="flex flex-col gap-0.5 md:hidden text-xs">
-                  {/* Row 1: Date + Shift badge */}
-                  <div className="flex items-center gap-0.5">
-                    <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
-                    <Badge
-                      className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
-                    >
-                      {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
-                    </Badge>
+                {/* Mobile layout: 2 columns - Left (Date/Name) + Right (Deadline/Buttons) */}
+                <div className="md:hidden flex gap-1 items-center">
+                  {/* Left column: Date on line 1, Name on line 2 */}
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    {/* Line 1: Date + Shift badge */}
+                    <div className="flex items-center gap-0.5">
+                      <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      <Badge
+                        className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
+                      >
+                        {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
+                      </Badge>
+                    </div>
+
+                    {/* Line 2: Name + Special badges */}
+                    <div className="flex items-center gap-0.5 flex-wrap">
+                      {replacement.user_id === null ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium text-xs truncate leading-tight">
+                          Pompier supp. {getExtraFirefighterNumber(replacement)}
+                        </span>
+                      ) : (
+                        <span className="truncate text-xs leading-tight">
+                          {replacement.first_name} {replacement.last_name}
+                        </span>
+                      )}
+                      {replacement.is_partial && (
+                        <span className="text-orange-600 dark:text-orange-400 text-[9px] whitespace-nowrap leading-tight">
+                          {replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)}
+                        </span>
+                      )}
+                      {isFirstCome && (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[9px] px-1 py-0 h-4 leading-none whitespace-nowrap">
+                          Sans délai
+                        </Badge>
+                      )}
+                      {isExpired && (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
+                          Fermé
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Row 2: Name + Special badges */}
-                  <div className="flex items-center gap-0.5 flex-wrap">
-                    {replacement.user_id === null ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium text-xs truncate leading-tight">
-                        Pompier supp. {getExtraFirefighterNumber(replacement)}
-                      </span>
-                    ) : (
-                      <span className="truncate text-xs leading-tight">
-                        {replacement.first_name} {replacement.last_name}
-                      </span>
-                    )}
-                    {replacement.is_partial && (
-                      <span className="text-orange-600 dark:text-orange-400 text-[9px] whitespace-nowrap leading-tight">
-                        {replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)}
-                      </span>
-                    )}
-                    {isFirstCome && (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[9px] px-1 py-0 h-4 leading-none whitespace-nowrap">
-                        Sans délai
-                      </Badge>
-                    )}
-                    {isExpired && (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
-                        Fermé
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Row 3: Deadline + Buttons */}
-                  <div className="flex items-center gap-0.5 justify-between">
+                  {/* Right column: Deadline + Buttons (vertically centered) */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     {replacement.application_deadline && !isExpired && (
                       <DeadlineTimer
                         deadline={replacement.application_deadline}
