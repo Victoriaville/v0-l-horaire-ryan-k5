@@ -158,16 +158,20 @@ export function AvailableReplacementsTab({
               className={`overflow-hidden ${isFirstCome ? "ring-2 ring-green-500 dark:ring-green-400" : ""}`}
             >
               <CardContent className="py-0.5 px-1.5">
-                {/* Mobile layout: 1 compact row - all info + deadline + buttons */}
-                <div className="flex gap-1 md:hidden text-xs items-center">
-                  {/* Left section: Date + Shift badge + Name + Badges */}
-                  <div className="flex items-center gap-0.5 flex-wrap flex-1 min-w-0">
+                {/* Mobile layout: 3 rows - Date+Badge | Name+Badges | Deadline+Buttons */}
+                <div className="flex flex-col gap-0.5 md:hidden text-xs">
+                  {/* Row 1: Date + Shift badge */}
+                  <div className="flex items-center gap-0.5">
                     <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
                     <Badge
                       className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
                     >
                       {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
                     </Badge>
+                  </div>
+
+                  {/* Row 2: Name + Special badges */}
+                  <div className="flex items-center gap-0.5 flex-wrap">
                     {replacement.user_id === null ? (
                       <span className="text-amber-600 dark:text-amber-400 font-medium text-xs truncate leading-tight">
                         Pompier supp. {getExtraFirefighterNumber(replacement)}
@@ -194,8 +198,8 @@ export function AvailableReplacementsTab({
                     )}
                   </div>
 
-                  {/* Right section: Deadline + Buttons */}
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  {/* Row 3: Deadline + Buttons */}
+                  <div className="flex items-center gap-0.5 justify-between">
                     {replacement.application_deadline && !isExpired && (
                       <DeadlineTimer
                         deadline={replacement.application_deadline}
