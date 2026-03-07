@@ -269,15 +269,15 @@ export function AssignedReplacementsTab({
                     </div>
 
                     {/* Line 2: Name assigned only */}
-                    <div className="text-xs leading-tight">
-                      <span className="font-medium text-blue-600 truncate">
+                    <div className="flex items-center gap-0.5 flex-wrap">
+                      <span className="font-medium text-blue-600 truncate text-xs leading-tight">
                         {replacement.assigned_first_name} {replacement.assigned_last_name}
                       </span>
                     </div>
                   </div>
 
                   {/* Right column: Buttons (vertically centered) */}
-                  <div className="flex flex-row gap-0.5 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     {!replacement.notification_sent ? (
                       <Button
                         variant="default"
