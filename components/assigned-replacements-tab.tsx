@@ -253,7 +253,7 @@ export function AssignedReplacementsTab({
                     : "" // Default gray border for confirmed
               }`}
             >
-              <CardContent className="p-3">
+              <CardContent className="py-0.5 px-1.5">
                 {/* Mobile layout: 2 columns - Left (Date/Name) + Right (Buttons) */}
                 <div className="md:hidden flex gap-1 items-center">
                   {/* Left column: Date on line 1, Name on line 2 */}
@@ -268,12 +268,8 @@ export function AssignedReplacementsTab({
                       </Badge>
                     </div>
 
-                    {/* Line 2: Name replaced -> Name assigned */}
+                    {/* Line 2: Name assigned only */}
                     <div className="text-xs leading-tight">
-                      <span className="truncate">
-                        {replacement.first_name} {replacement.last_name}
-                      </span>
-                      <span className="text-muted-foreground"> → </span>
                       <span className="font-medium text-blue-600 truncate">
                         {replacement.assigned_first_name} {replacement.assigned_last_name}
                       </span>
@@ -282,13 +278,6 @@ export function AssignedReplacementsTab({
 
                   {/* Right column: Buttons (vertically centered) */}
                   <div className="flex flex-row gap-0.5 shrink-0">
-                    <Link href={`/dashboard/replacements/${replacement.id}`}>
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5" />
-                        <span className="sr-only">Voir les candidats</span>
-                      </Button>
-                    </Link>
-
                     {!replacement.notification_sent ? (
                       <Button
                         variant="default"
@@ -314,6 +303,12 @@ export function AssignedReplacementsTab({
                         <span className="sr-only">Renvoyer</span>
                       </Button>
                     )}
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5" />
+                        <span className="sr-only">Voir les détails</span>
+                      </Button>
+                    </Link>
                   </div>
                 </div>
 
