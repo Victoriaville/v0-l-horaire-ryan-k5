@@ -253,8 +253,67 @@ export function AssignedReplacementsTab({
                     : "" // Default gray border for confirmed
               }`}
             >
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-3">
+              <CardContent className="py-0.5 px-1.5">
+                {/* Mobile layout: 2 columns - Left (Date/Name) + Right (Buttons) */}
+                <div className="md:hidden flex gap-1 items-center">
+                  {/* Left column: Date on line 1, Name on line 2 */}
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    {/* Line 1: Date + Shift badge */}
+                    <div className="flex items-center gap-0.5">
+                      <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      <Badge
+                        className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
+                      >
+                        {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
+                      </Badge>
+                    </div>
+
+                    {/* Line 2: Name assigned only */}
+                    <div className="flex items-center gap-0.5 flex-wrap">
+                      <span className="font-medium text-blue-600 truncate text-xs leading-tight">
+                        {replacement.assigned_first_name} {replacement.assigned_last_name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right column: Buttons (vertically centered) */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {!replacement.notification_sent ? (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-8 w-8 p-0 leading-none flex items-center justify-center"
+                        onClick={() => handleSendNotification(replacement.id)}
+                        disabled={sendingIds.has(replacement.id) || isUpdating}
+                        title="Envoyer notification"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        <span className="sr-only">Envoyer</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center"
+                        onClick={() => handleResendNotification(replacement.id)}
+                        disabled={sendingIds.has(replacement.id) || isUpdating}
+                        title="Renvoyer notification"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span className="sr-only">Renvoyer</span>
+                      </Button>
+                    )}
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5" />
+                        <span className="sr-only">Voir les détails</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Desktop layout: Keep original structure */}
+                <div className="hidden md:flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium whitespace-nowrap">{formatShortDate(replacement.shift_date)}</span>

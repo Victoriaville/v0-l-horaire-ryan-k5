@@ -133,8 +133,60 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
 
           return (
             <Card key={replacement.id} className="overflow-hidden">
-              <CardContent className="py-0 px-1.5">
-                <div className="flex items-center gap-2 text-sm">
+              <CardContent className="py-0.5 px-1.5">
+                {/* Mobile layout: 2 columns - Left (Date/Name) + Right (Buttons) */}
+                <div className="md:hidden flex gap-1 items-center">
+                  {/* Left column: Date on line 1, Name on line 2 */}
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    {/* Line 1: Date + Shift badge */}
+                    <div className="flex items-center gap-0.5">
+                      <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      <Badge
+                        className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
+                      >
+                        {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
+                      </Badge>
+                    </div>
+
+                    {/* Line 2: Name only */}
+                    <div className="flex items-center gap-0.5 flex-wrap">
+                      {replacement.user_id === null ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium text-xs leading-tight">Pompier supplémentaire {getExtraFirefighterNumber(replacement)}</span>
+                      ) : (
+                        <span className="truncate text-xs leading-tight">
+                          {replacement.first_name} {replacement.last_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right column: Buttons (vertically centered) */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <ApplyForReplacementButton
+                      replacementId={replacement.id}
+                      isAdmin={isAdmin}
+                      firefighters={firefighters}
+                      onSuccess={() => {}}
+                    />
+                    <DeleteReplacementButton replacementId={replacement.id} />
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-1.5 bg-transparent leading-none flex items-center justify-center gap-1"
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        <Badge variant="secondary" className="text-[9px] px-0.5 py-0 h-3.5 leading-none">
+                          {candidateCount}
+                        </Badge>
+                        <span className="sr-only">Voir les candidats ({candidateCount})</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Desktop layout: Keep original structure */}
+                <div className="hidden md:flex items-center gap-2 text-sm">
                   {/* Date and shift type */}
                   <div className="flex items-center gap-1.5 min-w-[140px]">
                     <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
