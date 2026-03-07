@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Check, Send, ArrowUpDown, AlertCircle, RefreshCw } from "lucide-react"
+import { Check, Send, ArrowUpDown, AlertCircle, RefreshCw, Users } from "lucide-react"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
 import { formatShortDate, formatLocalDateTime } from "@/lib/date-utils"
 import { sendAssignmentNotification } from "@/app/actions/send-assignment-notification"
@@ -254,9 +254,9 @@ export function AssignedReplacementsTab({
               }`}
             >
               <CardContent className="py-0.5 px-1.5">
-                {/* Mobile layout: 2 columns - Left (Date/Name) + Right (Buttons) */}
+                {/* Mobile layout: 2 columns - Left (Date/Names/Notification) + Right (Buttons) */}
                 <div className="md:hidden flex gap-1 items-center">
-                  {/* Left column: Date on line 1, Name on line 2 */}
+                  {/* Left column: 3 lines - Date, Replaced→Assigned, Notification info */}
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     {/* Line 1: Date + Shift badge */}
                     <div className="flex items-center gap-0.5">
@@ -268,21 +268,68 @@ export function AssignedReplacementsTab({
                       </Badge>
                     </div>
 
-                    {/* Line 2: Name assigned only */}
+                    {/* Line 2: Replaced → Assigned */}
                     <div className="flex items-center gap-0.5 flex-wrap">
+                      <span className="text-xs leading-tight truncate">
+                        {replacement.first_name} {replacement.last_name}
+                      </span>
+                      <span className="text-xs leading-tight">→</span>
                       <span className="font-medium text-blue-600 truncate text-xs leading-tight">
                         {replacement.assigned_first_name} {replacement.assigned_last_name}
                       </span>
+                    </div>
+
+                    {/* Line 3: Notification status */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {replacement.notification_sent ? (
+                        <>
+                          <Check className="h-3 w-3 text-green-600 shrink-0" />
+                          <span className="text-green-600 font-medium text-xs leading-tight">Envoyée</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-3 w-3 text-red-600 shrink-0" />
+                          <span className="text-red-600 font-medium text-xs leading-tight">Non envoyée</span>
+                        </>
+                      )}
+                      
+                      {replacement.confirmed_at ? (
+                        <>
+                          <span className="text-muted-foreground text-xs">•</span>
+                          <Check className="h-3 w-3 text-blue-600 shrink-0" />
+                          <span className="text-blue-600 text-xs leading-tight">Confirmée</span>
+                        </>
+                      ) : replacement.notification_sent ? (
+                        <>
+                          <span className="text-muted-foreground text-xs">•</span>
+                          <div className="h-2.5 w-2.5 rounded-full border border-orange-400 border-t-transparent animate-spin shrink-0" />
+                          <span className="text-orange-600 text-xs leading-tight">En attente</span>
+                        </>
+                      ) : null}
                     </div>
                   </div>
 
                   {/* Right column: Buttons (vertically centered) */}
                   <div className="flex items-center gap-0.5 shrink-0">
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-1.5 bg-transparent leading-none flex items-center justify-center gap-1"
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        <Badge variant="secondary" className="text-[9px] px-0.5 py-0 h-3.5 leading-none">
+                          {replacement.candidate_count || 0}
+                        </Badge>
+                        <span className="sr-only">Voir les candidats ({replacement.candidate_count || 0})</span>
+                      </Button>
+                    </Link>
+
                     {!replacement.notification_sent ? (
                       <Button
                         variant="default"
                         size="sm"
-                        className="h-8 w-8 p-0 leading-none flex items-center justify-center"
+                        className="h-8 px-1.5 leading-none flex items-center justify-center"
                         onClick={() => handleSendNotification(replacement.id)}
                         disabled={sendingIds.has(replacement.id) || isUpdating}
                         title="Envoyer notification"
@@ -294,7 +341,7 @@ export function AssignedReplacementsTab({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center"
+                        className="h-8 px-1.5 bg-transparent leading-none flex items-center justify-center"
                         onClick={() => handleResendNotification(replacement.id)}
                         disabled={sendingIds.has(replacement.id) || isUpdating}
                         title="Renvoyer notification"
@@ -303,12 +350,6 @@ export function AssignedReplacementsTab({
                         <span className="sr-only">Renvoyer</span>
                       </Button>
                     )}
-                    <Link href={`/dashboard/replacements/${replacement.id}`}>
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5" />
-                        <span className="sr-only">Voir les détails</span>
-                      </Button>
-                    </Link>
                   </div>
                 </div>
 
