@@ -293,11 +293,11 @@ export function AvailableReplacementsTab({
                     </div>
                   </div>
 
-                  {/* Right column: Buttons (30%) - Vertical stack */}
-                  <div className="flex flex-col gap-0.5 py-1 justify-start">
+                  {/* Right column: Buttons (30%) - Horizontal stack */}
+                  <div className="flex flex-row gap-0.5 py-1 justify-end items-start shrink-0">
                     {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
                       replacement.status !== "assigned" && (
-                        <div className="w-full">
+                        <div>
                           <ApplyForReplacementButton
                             replacementId={replacement.id}
                             isAdmin={isAdmin}
@@ -306,14 +306,14 @@ export function AvailableReplacementsTab({
                           />
                         </div>
                       )}
-                    <Link href={`/dashboard/replacements/${replacement.id}`} className="w-full">
+                    <Link href={`/dashboard/replacements/${replacement.id}`}>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-[9px] px-1.5 gap-0.5 bg-transparent leading-none w-full"
+                        className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center"
                       >
-                        <Users className="h-2.5 w-2.5" />
-                        <span className="text-[8px]">{candidateCount}</span>
+                        <Users className="h-3.5 w-3.5" />
+                        <span className="sr-only">{candidateCount} candidats</span>
                       </Button>
                     </Link>
                     {isAdmin && <DeleteReplacementButton replacementId={replacement.id} />}
