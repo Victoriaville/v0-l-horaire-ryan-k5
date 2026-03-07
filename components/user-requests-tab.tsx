@@ -94,7 +94,8 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
         sortedRequests.map((request: any) => (
           <Card key={request.id} className="overflow-hidden">
             <CardContent className="py-0 px-1.5">
-              <div className="flex items-center gap-2 text-sm">
+              {/* Desktop layout */}
+              <div className="hidden md:flex items-center gap-2 text-sm">
                 {/* Date and shift type */}
                 <div className="flex items-center gap-1.5 min-w-[140px]">
                   <span className="font-medium leading-none">{formatShortDate(request.shift_date)}</span>
@@ -123,6 +124,44 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                 <Badge className={`${getStatusColor(request.status)} text-sm px-1.5 py-0 h-5 leading-none`}>
                   {getStatusLabel(request.status)}
                 </Badge>
+              </div>
+
+              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status badge) */}
+              <div className="md:hidden flex gap-1 items-center">
+                {/* Left column: Date + Names/Team (2 lines) */}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  {/* Line 1: Date + Shift badge + Partial info */}
+                  <div className="flex items-center gap-0.5">
+                    <span className="font-medium text-xs leading-tight">{formatShortDate(request.shift_date)}</span>
+                    <Badge className={`${getShiftTypeColor(request.shift_type)} text-xs px-1 py-0 h-4 leading-none`}>
+                      {getShiftTypeLabel(request.shift_type).split(" ")[0]}
+                    </Badge>
+                    {request.is_partial && (
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-4 leading-none">
+                        {request.start_time?.slice(0, 5)}-{request.end_time?.slice(0, 5)}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Line 2: Name • Team + Assigned info if applicable */}
+                  <div className="flex items-center gap-0.5 flex-wrap">
+                    <span className="text-xs leading-tight truncate">
+                      {request.first_name} {request.last_name} • {request.team_name}
+                    </span>
+                    {request.status === "assigned" && request.assigned_first_name && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 leading-tight">
+                        → {request.assigned_first_name} {request.assigned_last_name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right column: Status badge (vertically centered) */}
+                <div className="shrink-0">
+                  <Badge className={`${getStatusColor(request.status)} text-xs px-1 py-0 h-4 leading-none`}>
+                    {getStatusLabel(request.status)}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
