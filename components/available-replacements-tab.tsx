@@ -157,23 +157,77 @@ export function AvailableReplacementsTab({
               key={replacement.id}
               className={`overflow-hidden ${isFirstCome ? "ring-2 ring-green-500 dark:ring-green-400" : ""}`}
             >
-              <CardContent className="py-0 px-1.5">
-                {/* Desktop layout: all in one row */}
-                <div className="hidden md:flex md:items-center gap-2 text-sm">
-                  <div className="flex items-center gap-1.5 min-w-[140px]">
-                    <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
+              <CardContent className="py-0.5 px-1.5">
+                {/* Mobile layout: 1 compact row - all info + deadline + buttons */}
+                <div className="flex gap-1 md:hidden text-xs items-center">
+                  {/* Left section: Date + Shift badge + Name + Badges */}
+                  <div className="flex items-center gap-0.5 flex-wrap flex-1 min-w-0">
+                    <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
                     <Badge
-                      className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
+                      className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
                     >
                       {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
                     </Badge>
-                    <PartTimeTeamBadge shiftDate={replacement.shift_date} />
+                    {replacement.user_id === null ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-medium text-xs truncate leading-tight">
+                        Pompier supp. {getExtraFirefighterNumber(replacement)}
+                      </span>
+                    ) : (
+                      <span className="truncate text-xs leading-tight">
+                        {replacement.first_name} {replacement.last_name}
+                      </span>
+                    )}
+                    {replacement.is_partial && (
+                      <span className="text-orange-600 dark:text-orange-400 text-[9px] whitespace-nowrap leading-tight">
+                        {replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)}
+                      </span>
+                    )}
                     {isFirstCome && (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-1.5 py-0 h-5 leading-none whitespace-nowrap">
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[9px] px-1 py-0 h-4 leading-none whitespace-nowrap">
                         Sans délai
                       </Badge>
                     )}
+                    {isExpired && (
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
+                        Fermé
+                      </Badge>
+                    )}
                   </div>
+
+                  {/* Right section: Deadline + Buttons */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {replacement.application_deadline && !isExpired && (
+                      <DeadlineTimer
+                        deadline={replacement.application_deadline}
+                        deadlineDuration={replacement.deadline_duration}
+                        shiftDate={replacement.shift_date}
+                      />
+                    )}
+                    {/* Buttons - Horizontal stack */}
+                    <div className="flex flex-row gap-0.5 shrink-0">
+                      {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
+                        replacement.status !== "assigned" && (
+                          <ApplyForReplacementButton
+                            replacementId={replacement.id}
+                            isAdmin={isAdmin}
+                            firefighters={firefighters}
+                            hasApplied={hasApplied}
+                          />
+                        )}
+                      <Link href={`/dashboard/replacements/${replacement.id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0 bg-transparent leading-none flex items-center justify-center"
+                        >
+                          <Users className="h-3.5 w-3.5" />
+                          <span className="sr-only">{candidateCount} candidats</span>
+                        </Button>
+                      </Link>
+                      {isAdmin && <DeleteReplacementButton replacementId={replacement.id} />}
+                    </div>
+                  </div>
+                </div>
 
                   <div className="flex-1 min-w-0 leading-none">
                     {replacement.user_id === null ? (
