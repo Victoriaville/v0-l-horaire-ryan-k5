@@ -235,78 +235,85 @@ export function AvailableReplacementsTab({
                   </div>
                 </div>
 
-                {/* Mobile layout: Line 1 with info, Line 2 with buttons */}
-                <div className="flex flex-col gap-2 md:hidden text-sm">
-                  {/* Line 1: All info */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
-                    <Badge
-                      className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
-                    >
-                      {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
-                    </Badge>
-                    <PartTimeTeamBadge shiftDate={replacement.shift_date} />
-                    {isFirstCome && (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-1.5 py-0 h-5 leading-none whitespace-nowrap">
-                        Sans délai
+                {/* Mobile layout: 2-column grid (info left, buttons right) */}
+                <div className="flex gap-1 md:hidden text-xs">
+                  {/* Left column: Info (70%) */}
+                  <div className="flex-1 flex flex-col gap-0.5 py-1 min-w-0">
+                    {/* Row 1: Date + Shift badge + Partial badge */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      <Badge
+                        className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
+                      >
+                        {getShiftTypeLabel(replacement.shift_type).split(" ")[0]}
                       </Badge>
-                    )}
-                    <div className="shrink-0">
-                      {isExpired ? (
-                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none">
+                      <PartTimeTeamBadge shiftDate={replacement.shift_date} />
+                    </div>
+
+                    {/* Row 2: Name + Special badges */}
+                    <div className="flex items-center gap-1 flex-wrap min-w-0">
+                      {replacement.user_id === null ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium text-xs truncate leading-tight">
+                          Pompier supp. {getExtraFirefighterNumber(replacement)}
+                        </span>
+                      ) : (
+                        <span className="truncate text-xs leading-tight">
+                          {replacement.first_name} {replacement.last_name}
+                        </span>
+                      )}
+                      {replacement.is_partial && (
+                        <span className="text-orange-600 dark:text-orange-400 text-[9px] whitespace-nowrap leading-tight">
+                          {replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)}
+                        </span>
+                      )}
+                      {isFirstCome && (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[9px] px-1 py-0 h-4 leading-none whitespace-nowrap">
+                          Sans délai
+                        </Badge>
+                      )}
+                      {isExpired && (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
                           Fermé
                         </Badge>
-                      ) : null}
+                      )}
+                    </div>
+
+                    {/* Row 3: Created date + Deadline */}
+                    <div className="flex items-center gap-1 flex-wrap text-[9px] text-muted-foreground/70">
+                      <span className="leading-tight">Créé {formatCreatedAt(replacement.created_at)}</span>
+                      {replacement.application_deadline && !isExpired && (
+                        <span className="leading-tight flex-shrink-0">
+                          <DeadlineTimer
+                            deadline={replacement.application_deadline}
+                            deadlineDuration={replacement.deadline_duration}
+                            shiftDate={replacement.shift_date}
+                          />
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="leading-none">
-                    {replacement.user_id === null ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium">Pompier supplémentaire {getExtraFirefighterNumber(replacement)}</span>
-                    ) : (
-                      <span className="truncate">
-                        {replacement.first_name} {replacement.last_name}
-                      </span>
-                    )}
-                    {replacement.is_partial && (
-                      <span className="text-orange-600 dark:text-orange-400 ml-1 text-xs">
-                        ({replacement.start_time?.slice(0, 5)}-{replacement.end_time?.slice(0, 5)})
-                      </span>
-                    )}
-                    <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                      Créé {formatCreatedAt(replacement.created_at)}
-                    </div>
-                  </div>
-
-                  {replacement.application_deadline && !isExpired && (
-                    <DeadlineTimer
-                      deadline={replacement.application_deadline}
-                      deadlineDuration={replacement.deadline_duration}
-                      shiftDate={replacement.shift_date}
-                    />
-                  )}
-
-                  {/* Line 2: Buttons only */}
-                  <div className="flex gap-0.5">
+                  {/* Right column: Buttons (30%) - Vertical stack */}
+                  <div className="flex flex-col gap-0.5 py-1 justify-start">
                     {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
                       replacement.status !== "assigned" && (
-                        <ApplyForReplacementButton
-                          replacementId={replacement.id}
-                          isAdmin={isAdmin}
-                          firefighters={firefighters}
-                          hasApplied={hasApplied}
-                        />
+                        <div className="w-full">
+                          <ApplyForReplacementButton
+                            replacementId={replacement.id}
+                            isAdmin={isAdmin}
+                            firefighters={firefighters}
+                            hasApplied={hasApplied}
+                          />
+                        </div>
                       )}
-                    <Link href={`/dashboard/replacements/${replacement.id}`}>
+                    <Link href={`/dashboard/replacements/${replacement.id}`} className="w-full">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs px-2 gap-0.5 bg-transparent leading-none"
+                        className="h-7 text-[9px] px-1.5 gap-0.5 bg-transparent leading-none w-full"
                       >
-                        <Users className="h-3 w-3" />
-                        <Badge variant="secondary" className="text-[9px] px-0.5 py-0 h-3.5 leading-none">
-                          {candidateCount}
-                        </Badge>
+                        <Users className="h-2.5 w-2.5" />
+                        <span className="text-[8px]">{candidateCount}</span>
                       </Button>
                     </Link>
                     {isAdmin && <DeleteReplacementButton replacementId={replacement.id} />}
