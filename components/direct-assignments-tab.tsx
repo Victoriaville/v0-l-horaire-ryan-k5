@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, ArrowUp, ArrowDown, Zap, Trash2 } from "lucide-react"
+import { ArrowUpDown, ArrowUp, ArrowDown, Zap, Trash2, Eye } from "lucide-react"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
 import { parseLocalDate, formatShortDate, formatCreatedAt } from "@/lib/date-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -149,12 +149,20 @@ export function DirectAssignmentsTab({ directAssignments, isAdmin }: DirectAssig
           </div>
           <div className="flex items-center gap-2">
             <Checkbox id="show-past" checked={showPastAssignments} onCheckedChange={setShowPastAssignments} />
+            {/* Desktop: Show full text */}
             <label
               htmlFor="show-past"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              className="hidden md:block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
               Afficher les remplacements passés
             </label>
+            {/* Mobile: Show icon only with title attribute for tooltip */}
+            <div
+              className="md:hidden"
+              title="Afficher les remplacements passés"
+            >
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
         </div>
 
