@@ -4,7 +4,8 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Users, ArrowUpDown, ArrowUp, ArrowDown, Clock } from "lucide-react"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
 import { parseLocalDate, formatShortDate, formatCreatedAt } from "@/lib/date-utils"
 import Link from "next/link"
@@ -29,6 +30,7 @@ interface ExpiredReplacementsTabProps {
 export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, isAdmin, firefighters }: ExpiredReplacementsTabProps) {
   const [sortBy, setSortBy] = useState<"date" | "created_at" | "name" | "candidates">("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [showExpired, setShowExpired] = useState(false)
 
   // Helper function to get extra firefighter number
   const getExtraFirefighterNumber = (replacement: any) => {
@@ -90,6 +92,15 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
     return sortDirection === "asc" ? comparison : -comparison
   })
 
+  const filteredByExpiry = showExpired 
+    ? sortedReplacements 
+    : sortedReplacements.filter((r) => {
+        const replacementDate = parseLocalDate(r.shift_date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return replacementDate >= today
+      })
+
   if (!isAdmin) {
     return null
   }
@@ -118,18 +129,39 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
           >
             {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
           </Button>
+          <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setShowExpired(!showExpired)}
+              title={showExpired ? "Masquer les remplacement expirés" : "Afficher les remplacement expirés"}
+            >
+              <Clock className={`h-4 w-4 ${showExpired ? "text-foreground" : "text-muted-foreground"}`} />
+              <span className="sr-only">{showExpired ? "Masquer" : "Afficher"} les remplacements expirés</span>
+            </Button>
+            <Switch
+              checked={showExpired}
+              onCheckedChange={setShowExpired}
+              aria-label="Afficher les remplacements expirés"
+            />
+          </div>
         </div>
       </div>
 
-      {sortedReplacements.length === 0 ? (
+      {filteredByExpiry.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Aucun remplacement à assigner pour le moment</p>
           </CardContent>
         </Card>
       ) : (
-        sortedReplacements.map((replacement: any) => {
+        filteredByExpiry.map((replacement: any) => {
           const candidateCount = Number.parseInt(replacement.application_count) || 0
+          const replacementDate = parseLocalDate(replacement.shift_date)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const isExpired = replacementDate < today && showExpired
 
           return (
             <Card key={replacement.id} className="overflow-hidden">
@@ -141,6 +173,11 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                     {/* Line 1: Date + Shift badge */}
                     <div className="flex items-center gap-0.5">
                       <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      {isExpired && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0 h-4 leading-none flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                          <Clock className="h-2.5 w-2.5" />
+                        </Badge>
+                      )}
                       <Badge
                         className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
                       >
@@ -190,6 +227,11 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                   {/* Date and shift type */}
                   <div className="flex items-center gap-1.5 min-w-[140px]">
                     <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
+                    {isExpired && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0 h-5 leading-none flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                        <Clock className="h-3 w-3" />
+                      </Badge>
+                    )}
                     <Badge
                       className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
                     >

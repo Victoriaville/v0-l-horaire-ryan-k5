@@ -1535,10 +1535,11 @@ export async function getExpiredReplacements() {
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN users replaced_user ON r.user_id = replaced_user.id
       WHERE r.status = 'open'
-        AND r.application_deadline IS NOT NULL
-        AND r.application_deadline < CURRENT_TIMESTAMP
-        AND r.shift_date >= CURRENT_DATE - INTERVAL '7 days'
-      ORDER BY r.application_deadline ASC
+        AND (
+          (r.application_deadline IS NOT NULL AND r.application_deadline < CURRENT_TIMESTAMP)
+          OR r.shift_date < CURRENT_DATE
+        )
+      ORDER BY r.shift_date DESC
     `
 
     return replacements
