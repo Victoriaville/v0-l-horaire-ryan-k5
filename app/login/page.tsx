@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
-import Image from "next/image"
+
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -44,15 +44,6 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <Image 
-              src="/login-logo.png" 
-              alt="SSIV Logo" 
-              width={80} 
-              height={80} 
-              className="rounded-lg shadow-md"
-            />
-          </div>
           <CardTitle className="text-2xl text-center">Horaire SSIV</CardTitle>
           <CardDescription className="text-center">Connectez-vous à votre compte</CardDescription>
         </CardHeader>
