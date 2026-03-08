@@ -149,22 +149,11 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                   </div>
                 </div>
 
-                {/* Right column: Status badge + Retirer button (vertically centered) */}
-                <div className="flex items-center gap-0.5 shrink-0">
+                {/* Right column: Status badge (vertically centered) */}
+                <div className="shrink-0">
                   <Badge className={`${getStatusColor(request.status)} text-xs px-1 py-0 h-4 leading-none`}>
                     {getStatusLabel(request.status)}
                   </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      // Handle delete/retirer action
-                      console.log("Retirer request:", request.id)
-                    }}
-                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Retirer
-                  </Button>
                 </div>
               </div>
             </CardContent>
