@@ -126,8 +126,8 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                 </Badge>
               </div>
 
-              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status badge + Button) */}
-              <div className="md:hidden flex gap-1 items-center">
+              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status + Button) */}
+              <div className="md:hidden flex gap-1 items-center py-2">
                 {/* Left column: Date + Names/Team (2 lines) */}
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                   {/* Line 1: Date + Shift badge + Partial info */}
@@ -149,11 +149,18 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                   </div>
                 </div>
 
-                {/* Right column: Status badge (vertically centered) */}
-                <div className="shrink-0">
-                  <Badge className={`${getStatusColor(request.status)} text-xs px-1 py-0 h-4 leading-none`}>
-                    {getStatusLabel(request.status)}
-                  </Badge>
+                {/* Right column: Status badge + assigned info (vertically centered, no shrink) */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <Badge className={`${getStatusColor(request.status)} text-xs px-1 py-0 h-4 leading-none`}>
+                      {getStatusLabel(request.status)}
+                    </Badge>
+                    {request.status === "assigned" && request.assigned_first_name && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 leading-tight">
+                        → {request.assigned_first_name.slice(0, 1)}. {request.assigned_last_name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

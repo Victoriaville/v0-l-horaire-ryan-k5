@@ -238,7 +238,8 @@ export function ReplacementsTabs({
             .map((application: any) => (
               <Card key={application.id} className="overflow-hidden">
                 <CardContent className="py-0 px-1.5">
-                  <div className="flex items-center gap-2 text-sm">
+                  {/* Desktop layout */}
+                  <div className="hidden md:flex items-center gap-2 text-sm py-2">
                     {/* Date and shift type */}
                     <div className="flex items-center gap-1.5 min-w-[140px]">
                       <span className="font-medium leading-none">{formatShortDate(application.shift_date)}</span>
@@ -285,6 +286,56 @@ export function ReplacementsTabs({
                         shiftType={application.shift_type}
                       />
                     )}
+                  </div>
+
+                  {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status + Button) */}
+                  <div className="md:hidden flex gap-1 items-start py-2">
+                    {/* Left column: Date + Names/Team + Partial info (3 lines) */}
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      {/* Line 1: Date + Shift badge + PartTime badge */}
+                      <div className="flex items-center gap-0.5">
+                        <span className="font-medium text-xs leading-tight">{formatShortDate(application.shift_date)}</span>
+                        <Badge className={`${getShiftTypeColor(application.shift_type)} text-xs px-1 py-0 h-4 leading-none`}>
+                          {getShiftTypeLabel(application.shift_type).split(" ")[0]}
+                        </Badge>
+                        <PartTimeTeamBadge shiftDate={application.shift_date} />
+                      </div>
+
+                      {/* Line 2: First Name • Team (or "Name • Team") */}
+                      <div className="text-xs leading-tight truncate">
+                        {application.first_name} • {application.team_name}
+                      </div>
+
+                      {/* Line 3: Partial info if applicable */}
+                      {application.is_partial && (
+                        <div className="text-xs text-orange-600 dark:text-orange-400 leading-tight">
+                          {application.start_time?.slice(0, 5)}-{application.end_time?.slice(0, 5)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right column: Status badge + Assigned info + Button (vertically stacked, no shrink) */}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge className={`${getStatusColor(application.status)} text-xs px-1 py-0 h-4 leading-none`}>
+                        {getStatusLabel(application.status)}
+                      </Badge>
+
+                      {/* Assigned replacement firefighter name */}
+                      {application.replacement_status === "assigned" && application.assigned_first_name && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400 leading-tight">
+                          → {application.assigned_first_name.slice(0, 1)}. {application.assigned_last_name}
+                        </div>
+                      )}
+
+                      {/* Withdraw button */}
+                      {application.status === "pending" && application.replacement_status === "open" && (
+                        <WithdrawApplicationButton
+                          applicationId={application.id}
+                          shiftDate={application.shift_date}
+                          shiftType={application.shift_type}
+                        />
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -137,7 +137,8 @@ export function PendingRequestsTab({ pendingRequests }: PendingRequestsTabProps)
         {sortedRequests.map((request: any) => (
           <Card key={request.id} className="overflow-hidden">
             <CardContent className="py-0 px-1.5">
-              <div className="flex items-center gap-2 text-sm">
+              {/* Desktop layout */}
+              <div className="hidden md:flex items-center gap-2 text-sm py-2">
                 <div className="flex items-center gap-1.5 min-w-[140px]">
                   <span className="font-medium leading-none">{formatShortDate(request.shift_date)}</span>
                   <Badge className={`${getShiftTypeColor(request.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}>
@@ -173,6 +174,51 @@ export function PendingRequestsTab({ pendingRequests }: PendingRequestsTabProps)
                   >
                     <Check className="h-3 w-3" />
                     Approuver
+                  </Button>
+                </div>
+              </div>
+
+              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Buttons) */}
+              <div className="md:hidden flex gap-1 items-start py-2">
+                {/* Left column: Date + Badges + Name (2 lines) */}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  {/* Line 1: Date + Shift badge + Partial info */}
+                  <div className="flex items-center gap-0.5">
+                    <span className="font-medium text-xs leading-tight">{formatShortDate(request.shift_date)}</span>
+                    <Badge className={`${getShiftTypeColor(request.shift_type)} text-xs px-1 py-0 h-4 leading-none`}>
+                      {getShiftTypeLabel(request.shift_type).split(" ")[0]}
+                    </Badge>
+                    {request.is_partial && (
+                      <Badge variant="outline" className="text-xs px-1 py-0 h-4 leading-none">
+                        {request.start_time?.slice(0, 5)}-{request.end_time?.slice(0, 5)}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Line 2: First Name Last Name */}
+                  <div className="text-xs leading-tight truncate">
+                    {request.first_name} {request.last_name}
+                  </div>
+                </div>
+
+                {/* Right column: Buttons (vertically centered, no shrink) */}
+                <div className="flex flex-row gap-0.5 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleReject(request.id)}
+                    disabled={processingId === request.id}
+                    className="h-6 text-xs px-2 gap-0.5 leading-none"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(request.id, request.shift_date)}
+                    disabled={processingId === request.id}
+                    className="h-6 text-xs px-2 gap-0.5 leading-none"
+                  >
+                    <Check className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
