@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, ArrowUpDown, ArrowUp, ArrowDown, Clock } from "lucide-react"
+import { Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { ApplyForReplacementButton } from "@/components/apply-for-replacement-button"
 import { DeleteReplacementButton } from "@/components/delete-replacement-button"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
@@ -34,7 +34,6 @@ export function AvailableReplacementsTab({
 }: AvailableReplacementsTabProps) {
   const [sortBy, setSortBy] = useState<"date" | "created_at" | "name" | "candidates">("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [showExpired, setShowExpired] = useState(false)
 
   const openReplacements: any[] = []
   Object.entries(groupedReplacements).forEach(([dateKey, replacements]) => {
@@ -43,13 +42,12 @@ export function AvailableReplacementsTab({
     })
   })
 
-  // Use allReplacements as base (includes expired ones), fallback to openReplacements
-  const displayReplacements = allReplacements.length > openReplacements.length ? allReplacements : openReplacements
+  const displayReplacements = openReplacements
 
   console.log("[v0] AvailableReplacementsTab - Total open replacements:", openReplacements.length)
   console.log("[v0] AvailableReplacementsTab - Display count:", displayReplacements.length)
-  console.log("[v0] AvailableReplacementsTab - Show expired:", showExpired)
-  
+
+  // Helper function to get extra firefighter number
   const getExtraFirefighterNumber = (replacement: any) => {
     if (replacement.user_id !== null) return null
     
@@ -80,14 +78,7 @@ export function AvailableReplacementsTab({
   }
 
   const filteredReplacements = displayReplacements.filter((replacement) => {
-    // A replacement is only "expired" if its SHIFT DATE has passed, not the application deadline
-    const isExpired = replacement.shift_date && new Date(replacement.shift_date) < new Date()
-    
-    // If showExpired is true, show all replacements
-    // If false, hide expired ones
-    if (showExpired) {
-      return true
-    }
+    const isExpired = replacement.application_deadline && new Date(replacement.application_deadline) < new Date()
     return !isExpired
   })
 
@@ -122,7 +113,7 @@ export function AvailableReplacementsTab({
 
   return (
     <div className="space-y-0.5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
           <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
@@ -145,17 +136,6 @@ export function AvailableReplacementsTab({
             {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
           </Button>
         </div>
-        
-        {/* Toggle for showing expired replacements */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={() => setShowExpired(!showExpired)}
-          title={showExpired ? "Masquer les remplacements passés" : "Afficher les remplacements passés"}
-        >
-          <Clock className={`h-4 w-4 ${showExpired ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
-        </Button>
       </div>
 
       {sortedReplacements.length === 0 ? (
@@ -169,7 +149,7 @@ export function AvailableReplacementsTab({
           const hasApplied = userApplications.some((app: any) => app.replacement_id === replacement.id)
           const candidateCount = Number.parseInt(replacement.application_count) || 0
           const isOwnReplacement = replacement.user_id === userId
-          const isExpired = replacement.shift_date && new Date(replacement.shift_date) < new Date()
+          const isExpired = replacement.application_deadline && new Date(replacement.application_deadline) < new Date()
           const isFirstCome = replacement.deadline_duration === -1
 
           return (
@@ -214,8 +194,8 @@ export function AvailableReplacementsTab({
                         </Badge>
                       )}
                       {isExpired && (
-                        <Badge className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 text-[9px] px-1 py-0 h-4 leading-none">
-                          Passé
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
+                          Fermé
                         </Badge>
                       )}
                     </div>
@@ -304,8 +284,8 @@ export function AvailableReplacementsTab({
 
                   <div className="shrink-0">
                     {isExpired ? (
-                      <Badge className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 text-sm px-1.5 py-0 h-5 leading-none">
-                        Passé
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none">
+                        Fermé
                       </Badge>
                     ) : null}
                   </div>
