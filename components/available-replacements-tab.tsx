@@ -49,7 +49,7 @@ export function AvailableReplacementsTab({
   console.log("[v0] AvailableReplacementsTab - Total open replacements:", openReplacements.length)
   console.log("[v0] AvailableReplacementsTab - Display count:", displayReplacements.length)
   console.log("[v0] AvailableReplacementsTab - Show expired:", showExpired)
-  console.log("[v0] AvailableReplacementsTab - Filtered replacements:", filteredReplacements.length)
+  
   const getExtraFirefighterNumber = (replacement: any) => {
     if (replacement.user_id !== null) return null
     
