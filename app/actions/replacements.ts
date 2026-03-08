@@ -1539,7 +1539,6 @@ export async function getExpiredReplacements() {
           (r.application_deadline IS NOT NULL AND r.application_deadline < CURRENT_TIMESTAMP)
           OR r.shift_date < CURRENT_DATE
         )
-        AND r.shift_date >= CURRENT_DATE - INTERVAL '90 days'
       ORDER BY r.shift_date DESC
     `
 

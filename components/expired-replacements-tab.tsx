@@ -158,6 +158,10 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
       ) : (
         filteredByExpiry.map((replacement: any) => {
           const candidateCount = Number.parseInt(replacement.application_count) || 0
+          const replacementDate = parseLocalDate(replacement.shift_date)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const isExpired = replacementDate < today && showExpired
 
           return (
             <Card key={replacement.id} className="overflow-hidden">
@@ -169,6 +173,11 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                     {/* Line 1: Date + Shift badge */}
                     <div className="flex items-center gap-0.5">
                       <span className="font-medium text-xs leading-tight">{formatShortDate(replacement.shift_date)}</span>
+                      {isExpired && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0 h-4 leading-none flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                          <Clock className="h-2.5 w-2.5" />
+                        </Badge>
+                      )}
                       <Badge
                         className={`${getShiftTypeColor(replacement.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
                       >
@@ -218,6 +227,11 @@ export function ExpiredReplacementsTab({ expiredReplacements, allReplacements, i
                   {/* Date and shift type */}
                   <div className="flex items-center gap-1.5 min-w-[140px]">
                     <span className="font-medium leading-none">{formatShortDate(replacement.shift_date)}</span>
+                    {isExpired && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0 h-5 leading-none flex items-center gap-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                        <Clock className="h-3 w-3" />
+                      </Badge>
+                    )}
                     <Badge
                       className={`${getShiftTypeColor(replacement.shift_type)} text-sm px-1.5 py-0 h-5 leading-none`}
                     >
