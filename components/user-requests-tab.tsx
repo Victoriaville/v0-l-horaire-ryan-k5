@@ -126,7 +126,7 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                 </Badge>
               </div>
 
-              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status badge) */}
+              {/* Mobile layout: 2 columns - Left (Date/Info) + Right (Status badge + Button) */}
               <div className="md:hidden flex gap-1 items-center">
                 {/* Left column: Date + Names/Team (2 lines) */}
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
@@ -143,24 +143,28 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                     )}
                   </div>
 
-                  {/* Line 2: Name • Team + Assigned info if applicable */}
-                  <div className="flex items-center gap-0.5 flex-wrap">
-                    <span className="text-xs leading-tight truncate">
-                      {request.first_name} {request.last_name} • {request.team_name}
-                    </span>
-                    {request.status === "assigned" && request.assigned_first_name && (
-                      <span className="text-xs text-blue-600 dark:text-blue-400 leading-tight">
-                        → {request.assigned_first_name} {request.assigned_last_name}
-                      </span>
-                    )}
+                  {/* Line 2: Name • Team */}
+                  <div className="text-xs leading-tight truncate">
+                    {request.first_name} {request.last_name} • {request.team_name}
                   </div>
                 </div>
 
-                {/* Right column: Status badge (vertically centered) */}
-                <div className="shrink-0">
+                {/* Right column: Status badge + Retirer button (vertically centered) */}
+                <div className="flex items-center gap-0.5 shrink-0">
                   <Badge className={`${getStatusColor(request.status)} text-xs px-1 py-0 h-4 leading-none`}>
                     {getStatusLabel(request.status)}
                   </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Handle delete/retirer action
+                      console.log("Retirer request:", request.id)
+                    }}
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Retirer
+                  </Button>
                 </div>
               </div>
             </CardContent>
