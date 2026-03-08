@@ -169,7 +169,8 @@ export function DirectAssignmentsTab({ directAssignments, isAdmin }: DirectAssig
             return (
               <Card key={assignment.id} className="overflow-hidden">
                 <CardContent className="py-0 px-1.5">
-                  <div className="flex items-center gap-2 text-sm">
+                  {/* Desktop layout */}
+                  <div className="hidden md:flex items-center gap-2 text-sm">
                     {/* Date and shift type */}
                     <div className="flex items-center gap-1.5 min-w-[140px]">
                       <span className="font-medium leading-none">{formatShortDate(assignment.shift_date)}</span>
@@ -220,6 +221,59 @@ export function DirectAssignmentsTab({ directAssignments, isAdmin }: DirectAssig
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
+                  </div>
+
+                  {/* Mobile layout: 2 columns - Left (Date/Names) + Right (Buttons) */}
+                  <div className="md:hidden flex gap-1 items-center">
+                    {/* Left column: Date + Names (2 lines) */}
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      {/* Line 1: Date + Shift badge */}
+                      <div className="flex items-center gap-0.5">
+                        <span className="font-medium text-xs leading-tight">{formatShortDate(assignment.shift_date)}</span>
+                        <Badge
+                          className={`${getShiftTypeColor(assignment.shift_type)} text-xs px-1 py-0 h-4 leading-none`}
+                        >
+                          {getShiftTypeLabel(assignment.shift_type).split(" ")[0]}
+                        </Badge>
+                        <PartTimeTeamBadge shiftDate={assignment.shift_date} />
+                      </div>
+
+                      {/* Line 2: Replaced → Assigned + partial info */}
+                      <div className="flex items-center gap-0.5 flex-wrap">
+                        <span className="text-xs leading-tight truncate">
+                          {assignment.replaced_first_name} {assignment.replaced_last_name}
+                        </span>
+                        <span className="text-xs leading-tight">→</span>
+                        <span className="font-medium text-blue-600 dark:text-blue-400 truncate text-xs leading-tight">
+                          {assignment.assigned_first_name} {assignment.assigned_last_name}
+                        </span>
+                        {assignment.is_partial && (
+                          <span className="text-orange-600 dark:text-orange-400 text-xs leading-tight">
+                            ({assignment.start_time?.slice(0, 5)}-{assignment.end_time?.slice(0, 5)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right column: Status badge + Delete button (vertically centered) */}
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-1 py-0 h-4 leading-none gap-0.5">
+                        <Zap className="h-2.5 w-2.5" />
+                        Direct
+                      </Badge>
+
+                      {/* Delete button (admin only) */}
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(assignment)}
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
