@@ -80,7 +80,8 @@ export function AvailableReplacementsTab({
   }
 
   const filteredReplacements = displayReplacements.filter((replacement) => {
-    const isExpired = replacement.application_deadline && new Date(replacement.application_deadline) < new Date()
+    // A replacement is only "expired" if its SHIFT DATE has passed, not the application deadline
+    const isExpired = replacement.shift_date && new Date(replacement.shift_date) < new Date()
     
     // If showExpired is true, show all replacements
     // If false, hide expired ones
@@ -168,7 +169,7 @@ export function AvailableReplacementsTab({
           const hasApplied = userApplications.some((app: any) => app.replacement_id === replacement.id)
           const candidateCount = Number.parseInt(replacement.application_count) || 0
           const isOwnReplacement = replacement.user_id === userId
-          const isExpired = replacement.application_deadline && new Date(replacement.application_deadline) < new Date()
+          const isExpired = replacement.shift_date && new Date(replacement.shift_date) < new Date()
           const isFirstCome = replacement.deadline_duration === -1
 
           return (
