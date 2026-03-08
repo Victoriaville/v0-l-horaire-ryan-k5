@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, ArrowUpDown, ArrowUp, ArrowDown, Clock } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
 import { ApplyForReplacementButton } from "@/components/apply-for-replacement-button"
 import { DeleteReplacementButton } from "@/components/delete-replacement-button"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
@@ -44,12 +43,13 @@ export function AvailableReplacementsTab({
     })
   })
 
-  const displayReplacements = openReplacements
+  // Use allReplacements as base (includes expired ones), fallback to openReplacements
+  const displayReplacements = allReplacements.length > openReplacements.length ? allReplacements : openReplacements
 
   console.log("[v0] AvailableReplacementsTab - Total open replacements:", openReplacements.length)
   console.log("[v0] AvailableReplacementsTab - Display count:", displayReplacements.length)
-
-  // Helper function to get extra firefighter number
+  console.log("[v0] AvailableReplacementsTab - Show expired:", showExpired)
+  console.log("[v0] AvailableReplacementsTab - Filtered replacements:", filteredReplacements.length)
   const getExtraFirefighterNumber = (replacement: any) => {
     if (replacement.user_id !== null) return null
     
@@ -146,17 +146,15 @@ export function AvailableReplacementsTab({
         </div>
         
         {/* Toggle for showing expired replacements */}
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <Switch
-            checked={showExpired}
-            onCheckedChange={setShowExpired}
-            className="data-[state=checked]:bg-blue-600"
-          />
-          <span className="text-sm text-muted-foreground">
-            {showExpired ? "Afficher tous" : "Masquer les passés"}
-          </span>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => setShowExpired(!showExpired)}
+          title={showExpired ? "Masquer les remplacements passés" : "Afficher les remplacements passés"}
+        >
+          <Clock className={`h-4 w-4 ${showExpired ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
+        </Button>
       </div>
 
       {sortedReplacements.length === 0 ? (

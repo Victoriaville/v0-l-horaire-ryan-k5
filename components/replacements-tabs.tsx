@@ -104,8 +104,12 @@ export function ReplacementsTabs({
 
   const replacementsToDisplay = isAdmin ? allReplacements : recentReplacements
 
-  const openReplacements = replacementsToDisplay.filter((r) => {
-    if (r.status !== "open") return false
+  // For the Available tab: get all open replacements (including expired ones)
+  // The AvailableReplacementsTab will filter them based on user preference
+  const allOpenReplacements = replacementsToDisplay.filter((r) => r.status === "open")
+  
+  // For the tab count: show only non-expired ones
+  const openReplacements = allOpenReplacements.filter((r) => {
     const isExpired = r.application_deadline && new Date(r.application_deadline) < new Date()
     return !isExpired
   })
@@ -188,7 +192,7 @@ export function ReplacementsTabs({
       <TabsContent value="available">
         <AvailableReplacementsTab
           groupedReplacements={groupedOpenReplacements}
-          allReplacements={replacementsToDisplay}
+          allReplacements={allOpenReplacements}
           userApplications={userApplications}
           isAdmin={isAdmin}
           firefighters={firefighters}
