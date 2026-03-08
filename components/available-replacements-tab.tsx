@@ -4,7 +4,8 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Users, ArrowUpDown, ArrowUp, ArrowDown, Clock } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { ApplyForReplacementButton } from "@/components/apply-for-replacement-button"
 import { DeleteReplacementButton } from "@/components/delete-replacement-button"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
@@ -34,6 +35,7 @@ export function AvailableReplacementsTab({
 }: AvailableReplacementsTabProps) {
   const [sortBy, setSortBy] = useState<"date" | "created_at" | "name" | "candidates">("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [showExpired, setShowExpired] = useState(false)
 
   const openReplacements: any[] = []
   Object.entries(groupedReplacements).forEach(([dateKey, replacements]) => {
@@ -79,6 +81,12 @@ export function AvailableReplacementsTab({
 
   const filteredReplacements = displayReplacements.filter((replacement) => {
     const isExpired = replacement.application_deadline && new Date(replacement.application_deadline) < new Date()
+    
+    // If showExpired is true, show all replacements
+    // If false, hide expired ones
+    if (showExpired) {
+      return true
+    }
     return !isExpired
   })
 
@@ -113,7 +121,7 @@ export function AvailableReplacementsTab({
 
   return (
     <div className="space-y-0.5">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
           <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
@@ -135,6 +143,19 @@ export function AvailableReplacementsTab({
           >
             {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
           </Button>
+        </div>
+        
+        {/* Toggle for showing expired replacements */}
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <Switch
+            checked={showExpired}
+            onCheckedChange={setShowExpired}
+            className="data-[state=checked]:bg-blue-600"
+          />
+          <span className="text-sm text-muted-foreground">
+            {showExpired ? "Afficher tous" : "Masquer les passés"}
+          </span>
         </div>
       </div>
 
@@ -194,8 +215,8 @@ export function AvailableReplacementsTab({
                         </Badge>
                       )}
                       {isExpired && (
-                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-[9px] px-1 py-0 h-4 leading-none">
-                          Fermé
+                        <Badge className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 text-[9px] px-1 py-0 h-4 leading-none">
+                          Passé
                         </Badge>
                       )}
                     </div>
@@ -284,8 +305,8 @@ export function AvailableReplacementsTab({
 
                   <div className="shrink-0">
                     {isExpired ? (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm px-1.5 py-0 h-5 leading-none">
-                        Fermé
+                      <Badge className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 text-sm px-1.5 py-0 h-5 leading-none">
+                        Passé
                       </Badge>
                     ) : null}
                   </div>
