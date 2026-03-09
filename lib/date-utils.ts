@@ -72,6 +72,7 @@ export function formatLocalDateTime(dateInput: string | Date | null | undefined)
   const date = new Date(dateInput)
 
   return new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "America/Toronto",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
