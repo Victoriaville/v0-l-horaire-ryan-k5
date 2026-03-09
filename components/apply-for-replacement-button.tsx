@@ -125,10 +125,10 @@ export function ApplyForReplacementButton({
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button
-          disabled={isLoading || hasApplied}
+          disabled={isLoading}
           size="sm"
           variant={hasApplied ? "outline" : "default"}
-          className={`h-8 text-xs px-2 gap-1 leading-none ${hasApplied ? "border-green-500 text-green-600 dark:text-green-400" : ""}`}
+          className={`h-8 text-xs px-2 gap-1 leading-none ${hasApplied ? "border-green-500 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950" : ""}`}
         >
           {hasApplied ? <Check className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
         </Button>
