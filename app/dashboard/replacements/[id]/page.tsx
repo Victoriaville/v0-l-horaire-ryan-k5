@@ -411,6 +411,19 @@ export default async function ReplacementDetailPage({
     }
   }
 
+  const getShiftTypeName = (type: string) => {
+    switch (type) {
+      case "day":
+        return "Jour"
+      case "night":
+        return "Nuit"
+      case "full_24h":
+        return "24h"
+      default:
+        return type
+    }
+  }
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "pending":
@@ -450,31 +463,32 @@ export default async function ReplacementDetailPage({
           <CardHeader>
             {/* Mobile Layout */}
             <div className="md:hidden">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                {/* Left: Date + Info */}
+              <div className="flex items-start justify-between gap-3">
+                {/* Left: Date + Shift Type + Info */}
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-lg">
                     {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                      weekday: "short",
+                      weekday: "long",
                     })}
                     . {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
                       month: "short",
                       day: "numeric",
                     })}
                   </CardTitle>
-                  <CardDescription className="mt-2">
+                  <div className="text-sm text-muted-foreground mt-1 mb-2">
+                    {getShiftTypeName(replacement.shift_type)}
+                    {replacement.is_partial && (
+                      <span className="text-orange-600 dark:text-orange-400">
+                        {" • Partiel "}
+                        {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
+                      </span>
+                    )}
+                  </div>
+                  <CardDescription>
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-foreground">
                         Remplacement de : {replacement.first_name} {replacement.last_name}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span>{getShiftTypeLabel(replacement.shift_type)}</span>
-                        {replacement.is_partial && (
-                          <span className="text-orange-600 dark:text-orange-400">
-                            • Partiel {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </CardDescription>
                 </div>
