@@ -283,25 +283,86 @@ export default async function ReplacementDetailPage({
     return (
       <div
         key={application.id}
-        className={`flex items-center gap-4 p-4 border rounded-lg transition-colors ${
+        className={`flex flex-col gap-3 p-4 border rounded-lg transition-colors ${
           isAlreadyAssigned ? "bg-muted/50 opacity-60 border-muted" : "bg-card hover:bg-accent/50"
         }`}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className={`font-semibold text-foreground ${isAlreadyAssigned ? "line-through" : ""}`}>
-              {application.last_name} {application.first_name}
-            </span>
-            <span className="text-sm text-muted-foreground hidden md:inline">{getRoleLabel(application.role)}</span>
-            {application.has_collective_agreement_priority && (
-              <Badge className="bg-amber-500 text-white hover:bg-amber-600 font-semibold">Priorité</Badge>
-            )}
-            {application.has_team_priority && (
-              <Badge className="bg-blue-600 text-white hover:bg-blue-700 font-semibold">Priorité équipe</Badge>
-            )}
+        {/* LINE 1: Name + Status Badge */}
+        <div className="flex items-center justify-between gap-3">
+          <span className={`font-semibold text-foreground ${isAlreadyAssigned ? "line-through" : ""}`}>
+            {application.last_name} {application.first_name}
+          </span>
+          <Badge className={getStatusColor(application.status)}>{getStatusLabel(application.status)}</Badge>
+        </div>
+
+        {/* LINE 2: Hours + Action Buttons */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="text-blue-600 border-blue-600">
               {application.weeklyHours}h cette semaine
             </Badge>
+            {application.has_collective_agreement_priority && (
+              <Badge className="bg-amber-500 text-white hover:bg-amber-600 font-semibold text-xs">Priorité</Badge>
+            )}
+            {application.has_team_priority && (
+              <Badge className="bg-blue-600 text-white hover:bg-blue-700 font-semibold text-xs">Priorité équipe</Badge>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            {!cannotBeAssigned && application.status === "approved" && (
+              <UnassignReplacementButton
+                applicationId={application.id}
+                firefighterName={`${application.last_name} ${application.first_name}`}
+              />
+            )}
+            {!cannotBeAssigned &&
+              application.status === "pending" &&
+              !isAlreadyAssigned &&
+              replacement.status !== "assigned" &&
+              user?.is_admin && (
+                <>
+                  <ApproveApplicationButton
+                    applicationId={application.id}
+                    firefighterName={`${application.last_name} ${application.first_name}`}
+                    isPartial={replacement.is_partial}
+                    startTime={replacement.start_time}
+                    endTime={replacement.end_time}
+                    replacedFirefighterRole={replacement.replaced_role}
+                    shiftFirefighters={teamFirefighters}
+                    shiftId={shiftId}
+                    replacementFirefighterId={application.user_id}
+                    actualWeeklyHours={application.actualWeeklyHours || application.weeklyHours}
+                    shiftType={replacement.shift_type}
+                    teamPriorityCandidates={teamPriorityCandidates.map((c: any) => ({
+                      user_id: c.user_id,
+                      first_name: c.first_name,
+                      last_name: c.last_name,
+                      team_rank: c.team_rank,
+                    }))}
+                    shiftDate={
+                      replacement.shift_date instanceof Date
+                        ? replacement.shift_date.toISOString().split("T")[0]
+                        : typeof replacement.shift_date === "string"
+                          ? replacement.shift_date.split("T")[0]
+                          : undefined
+                    }
+                  />
+                  <RejectApplicationButton applicationId={application.id} />
+                </>
+              )}
+            {!cannotBeAssigned && application.status === "rejected" && (
+              <ReactivateApplicationButton applicationId={application.id} replacementStatus={replacement.status} />
+            )}
+          </div>
+        </div>
+
+        {/* Additional Info - Hidden on Mobile */}
+        {(isAbsent ||
+          isAlreadyAssigned ||
+          (application.status !== "pending" && application.reviewer_first_name)) && (
+          <div className="hidden md:flex items-center gap-3 flex-wrap text-sm text-muted-foreground pt-2 border-t">
             {isAbsent && absenceData && (
               <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50 dark:bg-red-950">
                 Absent (
@@ -315,66 +376,22 @@ export default async function ReplacementDetailPage({
                 Déjà assigné à un autre remplacement
               </Badge>
             )}
-            <span className="text-sm text-muted-foreground hidden md:inline">
-              Postulé le {formatLocalDateTime(application.applied_at)}
-            </span>
             {application.status !== "pending" && application.reviewer_first_name && (
-              <span className="text-sm text-muted-foreground">
+              <span>
                 {application.status === "approved" ? "Approuvée" : "Rejetée"} par {application.reviewer_first_name}{" "}
                 {application.reviewer_last_name} le{" "}
                 {parseLocalDate(application.reviewed_at).toLocaleDateString("fr-CA")}
               </span>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge className={getStatusColor(application.status)}>{getStatusLabel(application.status)}</Badge>
+        )}
+
+        {/* Desktop Additional Info */}
+        <div className="hidden md:flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
+          <span>{getRoleLabel(application.role)}</span>
+          <span>Postulé le {formatLocalDateTime(application.applied_at)}</span>
           {cannotBeAssigned && (
-            <span className="text-sm text-muted-foreground italic">Candidat pour rôle de lieutenant uniquement</span>
-          )}
-          {!cannotBeAssigned && application.status === "approved" && (
-            <UnassignReplacementButton
-              applicationId={application.id}
-              firefighterName={`${application.last_name} ${application.first_name}`}
-            />
-          )}
-          {!cannotBeAssigned &&
-            application.status === "pending" &&
-            !isAlreadyAssigned &&
-            replacement.status !== "assigned" &&
-            user?.is_admin && (
-              <>
-                <ApproveApplicationButton
-                  applicationId={application.id}
-                  firefighterName={`${application.last_name} ${application.first_name}`}
-                  isPartial={replacement.is_partial}
-                  startTime={replacement.start_time}
-                  endTime={replacement.end_time}
-                  replacedFirefighterRole={replacement.replaced_role}
-                  shiftFirefighters={teamFirefighters}
-                  shiftId={shiftId}
-                  replacementFirefighterId={application.user_id}
-                  actualWeeklyHours={application.actualWeeklyHours || application.weeklyHours}
-                  shiftType={replacement.shift_type}
-                  teamPriorityCandidates={teamPriorityCandidates.map((c: any) => ({
-                    user_id: c.user_id,
-                    first_name: c.first_name,
-                    last_name: c.last_name,
-                    team_rank: c.team_rank,
-                  }))}
-                  shiftDate={
-                    replacement.shift_date instanceof Date
-                      ? replacement.shift_date.toISOString().split("T")[0]
-                      : typeof replacement.shift_date === "string"
-                        ? replacement.shift_date.split("T")[0]
-                        : undefined
-                  }
-                />
-                <RejectApplicationButton applicationId={application.id} />
-              </>
-            )}
-          {!cannotBeAssigned && application.status === "rejected" && (
-            <ReactivateApplicationButton applicationId={application.id} replacementStatus={replacement.status} />
+            <span className="italic">Candidat pour rôle de lieutenant uniquement</span>
           )}
         </div>
       </div>
@@ -462,7 +479,7 @@ export default async function ReplacementDetailPage({
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
           <h2 className="text-2xl font-bold text-foreground">
             Candidats pour ce remplacement ({applicationsWithAbsences.length})
           </h2>
