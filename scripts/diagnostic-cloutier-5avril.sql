@@ -3,7 +3,7 @@
 -- 1. Vérifier tous les remplaçants assignés pour le 5 avril 2026
 SELECT 
   sa.id,
-  u.name as remplacant,
+  CONCAT(u.first_name, ' ', u.last_name) as remplacant,
   u.id as user_id,
   sa.replaced_user_id,
   sa.shift_date,
@@ -19,9 +19,9 @@ ORDER BY sa.user_id, sa.start_time;
 SELECT 
   sa.id,
   sa.user_id,
-  u.name,
+  CONCAT(u.first_name, ' ', u.last_name) as remplacant,
   sa.replaced_user_id,
-  ur.name as remplacé,
+  CONCAT(ur.first_name, ' ', ur.last_name) as remplacé,
   sa.shift_date,
   sa.start_time,
   sa.end_time
@@ -32,4 +32,11 @@ WHERE sa.user_id = 1956
   AND sa.shift_date = '2026-04-05';
 
 -- 3. Vérifier les IDs pour Yannick Dargy et Raphael Cloutier
-SELECT id, name FROM users WHERE name LIKE '%Dargy%' OR name LIKE '%Cloutier%';
+SELECT 
+  id, 
+  CONCAT(first_name, ' ', last_name) as full_name 
+FROM users 
+WHERE first_name LIKE '%Dargy%' 
+   OR first_name LIKE '%Cloutier%'
+   OR last_name LIKE '%Dargy%'
+   OR last_name LIKE '%Cloutier%';
