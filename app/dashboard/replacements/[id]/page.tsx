@@ -470,7 +470,8 @@ export default async function ReplacementDetailPage({
                     {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
                       weekday: "long",
                     })}
-                    . {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                    {" "}
+                    {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
                       month: "short",
                       day: "numeric",
                     })}
@@ -504,47 +505,44 @@ export default async function ReplacementDetailPage({
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <CardTitle className="text-2xl">
-                      {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                        weekday: "short",
-                      })}
-                      . {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </CardTitle>
-                  </div>
-
-                  {/* Badge Équipe */}
-                  <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold px-3 py-1">
-                    É{partTimeTeam}
-                  </Badge>
+            <div className="hidden md:flex items-start justify-between gap-3">
+              {/* Left: Date + Shift Type + Info */}
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-2xl">
+                  {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                    weekday: "long",
+                  })}
+                  {" "}
+                  {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </CardTitle>
+                <div className="text-sm text-muted-foreground mt-1 mb-2">
+                  {getShiftTypeLabel(replacement.shift_type)}
+                  {replacement.is_partial && (
+                    <span className="text-orange-600 dark:text-orange-400">
+                      {" • Partiel "}
+                      {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
+                    </span>
+                  )}
                 </div>
-
-                {/* Description: Firefighter + Shift Type */}
-                <CardDescription className="mt-3">
+                <CardDescription>
                   <div className="flex flex-col gap-1">
                     <span className="font-medium text-foreground">
                       Remplacement de : {replacement.first_name} {replacement.last_name}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <span>{getShiftTypeLabel(replacement.shift_type)}</span>
-                      {replacement.is_partial && (
-                        <span className="text-orange-600 dark:text-orange-400">
-                          • Partiel {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </CardDescription>
               </div>
 
-              {/* Right: Delete Button */}
-              <DeleteReplacementButton replacementId={replacementId} />
+              {/* Right: Badge + Delete */}
+              <div className="flex flex-col gap-2 items-end shrink-0">
+                <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold px-3 py-1">
+                  É{partTimeTeam}
+                </Badge>
+                <DeleteReplacementButton replacementId={replacementId} />
+              </div>
             </div>
           </CardHeader>
         </Card>
