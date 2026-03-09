@@ -2724,8 +2724,6 @@ export function ShiftAssignmentDrawer({
               onClick={handleAddExtraFirefighter}
               disabled={
                 isLoading ||
-                extraDeadlineSeconds === null ||
-                extraDeadlineSeconds === 0 ||
                 (isExtraPartial && extraStartTime >= extraEndTime)
               }
               className="bg-orange-600 hover:bg-orange-700"
