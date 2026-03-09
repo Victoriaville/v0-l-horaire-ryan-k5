@@ -212,7 +212,7 @@ export function AvailableReplacementsTab({
                     )}
                     {/* Buttons - Horizontal stack */}
                     <div className="flex flex-row gap-0.5 shrink-0">
-                      {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
+                      {(isAdmin || (!isOwnReplacement && !isExpired)) &&
                         replacement.status !== "assigned" && (
                           <ApplyForReplacementButton
                             replacementId={replacement.id}
@@ -291,7 +291,7 @@ export function AvailableReplacementsTab({
                   </div>
 
                   <div className="flex gap-0.5 shrink-0">
-                    {(isAdmin || (!hasApplied && !isOwnReplacement && !isExpired)) &&
+                    {(isAdmin || (!isOwnReplacement && !isExpired)) &&
                       replacement.status !== "assigned" && (
                         <ApplyForReplacementButton
                           replacementId={replacement.id}
