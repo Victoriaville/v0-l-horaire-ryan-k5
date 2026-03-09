@@ -527,7 +527,7 @@ export default async function ReplacementDetailPage({
                   })}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground mt-1 mb-2">
-                  {getShiftTypeLabel(replacement.shift_type)}
+                  {getShiftTypeName(replacement.shift_type)}
                   {replacement.is_partial && (
                     <span className="text-orange-600 dark:text-orange-400">
                       {" • Partiel "}
