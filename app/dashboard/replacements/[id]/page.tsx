@@ -448,31 +448,53 @@ export default async function ReplacementDetailPage({
 
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              {/* Left: Date */}
               <div className="flex-1">
-                <CardTitle className="text-2xl flex items-center gap-3">
-                  {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                  <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold px-3 py-1">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                  <div>
+                    <CardTitle className="text-lg md:text-2xl">
+                      {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                        weekday: "short",
+                      })}
+                      . {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </CardTitle>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                      {parseLocalDate(replacement.shift_date).getFullYear()}
+                    </p>
+                  </div>
+
+                  {/* Badge Équipe */}
+                  <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-xs md:text-sm font-semibold px-3 py-1 w-fit">
                     Équipe É{partTimeTeam}
                   </Badge>
-                </CardTitle>
-                <CardDescription>
-                  {replacement.first_name} {replacement.last_name} • {replacement.team_name} •{" "}
-                  {getShiftTypeLabel(replacement.shift_type)}
-                  {replacement.is_partial && (
-                    <span className="text-orange-600 dark:text-orange-400">
-                      {" • Remplacement partiel "}
-                      {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
+                </div>
+
+                {/* Description: Firefighter + Shift Type */}
+                <CardDescription className="mt-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-foreground">
+                      Remplacement de : {replacement.first_name} {replacement.last_name}
                     </span>
-                  )}
+                    <div className="flex items-center gap-2">
+                      <span>{getShiftTypeLabel(replacement.shift_type)}</span>
+                      {replacement.is_partial && (
+                        <span className="text-orange-600 dark:text-orange-400">
+                          • Partiel {formatReplacementTime(replacement.is_partial, replacement.start_time, replacement.end_time)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </CardDescription>
               </div>
-              <DeleteReplacementButton replacementId={replacementId} />
+
+              {/* Right: Delete Button */}
+              <div className="flex justify-end md:justify-start">
+                <DeleteReplacementButton replacementId={replacementId} />
+              </div>
             </div>
           </CardHeader>
         </Card>
