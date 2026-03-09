@@ -10,20 +10,7 @@ WHERE
   AND user_id = 1956  -- Raphael Cloutier
   AND shift_date = '2026-04-05'
   AND start_time = '07:00'
-  AND end_time = '17:00'
-  AND shift_type = 'jour';
+  AND end_time = '17:00';
 
--- Vérification: afficher l'entrée avant suppression (à titre informatif)
-SELECT 
-  id,
-  user_id,
-  replaced_user_id,
-  shift_date,
-  start_time,
-  end_time,
-  shift_type
-FROM shift_assignments
-WHERE 
-  user_id = 1956
-  AND shift_date = '2026-04-05'
-  AND shift_type = 'jour';
+-- Confirmer la suppression
+SELECT 'Assignation supprimée avec succès' AS result;
