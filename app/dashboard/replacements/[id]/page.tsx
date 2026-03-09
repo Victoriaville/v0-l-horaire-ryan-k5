@@ -398,6 +398,10 @@ export default async function ReplacementDetailPage({
     )
   }
 
+  const capitalizeFirstLetter = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1)
+  }
+
   const getShiftTypeLabel = (type: string) => {
     switch (type) {
       case "day":
@@ -467,9 +471,11 @@ export default async function ReplacementDetailPage({
                 {/* Left: Date + Shift Type + Info */}
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-lg">
-                    {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                      weekday: "long",
-                    })}
+                    {capitalizeFirstLetter(
+                      parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                        weekday: "long",
+                      })
+                    )}
                     {" "}
                     {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
                       month: "short",
@@ -509,9 +515,11 @@ export default async function ReplacementDetailPage({
               {/* Left: Date + Shift Type + Info */}
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-2xl">
-                  {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
-                    weekday: "long",
-                  })}
+                  {capitalizeFirstLetter(
+                    parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
+                      weekday: "long",
+                    })
+                  )}
                   {" "}
                   {parseLocalDate(replacement.shift_date).toLocaleDateString("fr-CA", {
                     month: "short",
