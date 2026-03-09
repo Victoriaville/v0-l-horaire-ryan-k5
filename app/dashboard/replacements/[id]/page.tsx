@@ -293,18 +293,11 @@ export default async function ReplacementDetailPage({
               {application.last_name} {application.first_name}
             </span>
             <span className="text-sm text-muted-foreground">{getRoleLabel(application.role)}</span>
-            <span className="text-sm text-muted-foreground">{application.email}</span>
             {application.has_collective_agreement_priority && (
               <Badge className="bg-amber-500 text-white hover:bg-amber-600 font-semibold">Priorité</Badge>
             )}
             {application.has_team_priority && (
               <Badge className="bg-blue-600 text-white hover:bg-blue-700 font-semibold">Priorité équipe</Badge>
-            )}
-            {!application.has_collective_agreement_priority && !application.has_team_priority && (
-              <span className="text-sm text-muted-foreground">{application.team_name}</span>
-            )}
-            {(application.has_collective_agreement_priority || application.has_team_priority) && (
-              <span className="text-sm text-muted-foreground">{application.team_name}</span>
             )}
             <Badge variant="outline" className="text-blue-600 border-blue-600">
               {application.weeklyHours}h cette semaine
