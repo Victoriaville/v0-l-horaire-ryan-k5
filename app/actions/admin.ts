@@ -23,9 +23,9 @@ export async function isUserAdmin(userId?: number): Promise<boolean> {
     }
 
     const user = result[0]
-    const isAdmin = user.role === "captain" || user.is_admin === true
+    const isAdmin = user.is_admin === true
 
-    // Captains are always admin OR user has is_admin flag
+    // User has is_admin flag
     return isAdmin
   } catch (error) {
     console.error("isUserAdmin: Error", error)
@@ -72,9 +72,9 @@ export async function getAllUsersWithAdminStatus() {
       success: true,
       users: users.map((user) => ({
         ...user,
-        // Captains are always admin
-        isAdmin: user.role === "captain" || user.is_admin === true,
-        canModifyAdmin: user.role !== "captain", // Can't remove captain admin status
+        // Admin status is determined only by is_admin flag
+        isAdmin: user.is_admin === true,
+        canModifyAdmin: true, // All users can have admin status toggled
       })),
     }
   } catch (error) {
@@ -99,20 +99,13 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
   }
 
   try {
-    // Check if target user is a captain
+    // Check if target user exists
     const targetUser = await sql`
-      SELECT role FROM users WHERE id = ${userId}
+      SELECT id FROM users WHERE id = ${userId}
     `
 
     if (targetUser.length === 0) {
       return { success: false, error: "Utilisateur introuvable" }
-    }
-
-    if (targetUser[0].role === "captain") {
-      return {
-        success: false,
-        error: "Impossible de modifier le statut admin d'un capitaine",
-      }
     }
 
     // Update admin status
