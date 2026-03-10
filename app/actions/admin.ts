@@ -33,6 +33,33 @@ export async function isUserAdmin(userId?: number): Promise<boolean> {
   }
 }
 
+// Helper function to check if user is owner
+export async function isUserOwner(userId?: number): Promise<boolean> {
+  try {
+    const session = await getSession()
+
+    if (!session) return false
+
+    const userIdToCheck = userId || session.id
+
+    const result = await sql`
+      SELECT is_owner
+      FROM users
+      WHERE id = ${userIdToCheck}
+    `
+
+    if (result.length === 0) {
+      return false
+    }
+
+    const user = result[0]
+    return user.is_owner === true
+  } catch (error) {
+    console.error("isUserOwner: Error", error)
+    return false
+  }
+}
+
 export async function getAllUsersWithAdminStatus() {
   const session = await getSession()
   if (!session) {
@@ -44,6 +71,9 @@ export async function getAllUsersWithAdminStatus() {
   if (!currentUserIsAdmin) {
     return { success: false, error: "Accès refusé - Réservé aux admins" }
   }
+
+  // Check if current user is owner (for showing owner toggle)
+  const currentUserIsOwner = await isUserOwner()
 
   try {
     const users = await sql`
@@ -70,10 +100,12 @@ export async function getAllUsersWithAdminStatus() {
 
     return {
       success: true,
+      currentUserIsOwner,
       users: users.map((user) => ({
         ...user,
         // Admin status is determined only by is_admin flag
         isAdmin: user.is_admin === true,
+        isOwner: user.is_owner === true,
         canModifyAdmin: true, // All users can have admin status toggled
       })),
     }
@@ -124,6 +156,48 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
     return {
       success: false,
       error: "Erreur lors de la modification du statut",
+    }
+  }
+}
+
+export async function toggleUserOwnerStatus(userId: number, makeOwner: boolean) {
+  const session = await getSession()
+  if (!session) {
+    return { success: false, error: "Non authentifié" }
+  }
+
+  // Check if current user is owner (only owners can modify owner status)
+  const currentUserIsOwner = await isUserOwner()
+  if (!currentUserIsOwner) {
+    return { success: false, error: "Accès refusé - Réservé aux propriétaires" }
+  }
+
+  try {
+    // Check if target user exists
+    const targetUser = await sql`
+      SELECT id FROM users WHERE id = ${userId}
+    `
+
+    if (targetUser.length === 0) {
+      return { success: false, error: "Utilisateur introuvable" }
+    }
+
+    // Update owner status
+    await sql`
+      UPDATE users
+      SET is_owner = ${makeOwner}
+      WHERE id = ${userId}
+    `
+
+    return {
+      success: true,
+      message: makeOwner ? "Utilisateur promu propriétaire" : "Statut propriétaire retiré",
+    }
+  } catch (error) {
+    console.error("toggleUserOwnerStatus: Error", error)
+    return {
+      success: false,
+      error: "Erreur lors de la modification du statut propriétaire",
     }
   }
 }

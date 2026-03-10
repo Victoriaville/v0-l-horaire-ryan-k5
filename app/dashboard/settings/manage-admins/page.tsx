@@ -29,7 +29,7 @@ export default async function ManageAdminsPage() {
         </p>
       </div>
 
-      <ManageAdminsClient users={result.users} />
+      <ManageAdminsClient users={result.users} currentUserIsOwner={result.currentUserIsOwner || false} />
     </div>
   )
 }
