@@ -99,20 +99,13 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
   }
 
   try {
-    // Check if target user is a captain
+    // Check if target user exists
     const targetUser = await sql`
-      SELECT role FROM users WHERE id = ${userId}
+      SELECT id FROM users WHERE id = ${userId}
     `
 
     if (targetUser.length === 0) {
       return { success: false, error: "Utilisateur introuvable" }
-    }
-
-    if (targetUser[0].role === "captain") {
-      return {
-        success: false,
-        error: "Impossible de modifier le statut admin d'un capitaine",
-      }
     }
 
     // Update admin status
