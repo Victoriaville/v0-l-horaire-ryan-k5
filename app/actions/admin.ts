@@ -23,9 +23,9 @@ export async function isUserAdmin(userId?: number): Promise<boolean> {
     }
 
     const user = result[0]
-    const isAdmin = user.role === "captain" || user.is_admin === true
+    const isAdmin = user.is_admin === true
 
-    // Captains are always admin OR user has is_admin flag
+    // User has is_admin flag
     return isAdmin
   } catch (error) {
     console.error("isUserAdmin: Error", error)
@@ -72,9 +72,9 @@ export async function getAllUsersWithAdminStatus() {
       success: true,
       users: users.map((user) => ({
         ...user,
-        // Captains are always admin
-        isAdmin: user.role === "captain" || user.is_admin === true,
-        canModifyAdmin: user.role !== "captain", // Can't remove captain admin status
+        // Admin status is determined only by is_admin flag
+        isAdmin: user.is_admin === true,
+        canModifyAdmin: true, // All users can have admin status toggled
       })),
     }
   } catch (error) {

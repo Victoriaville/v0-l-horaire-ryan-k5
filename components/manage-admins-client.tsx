@@ -41,8 +41,12 @@ export function ManageAdminsClient({ users }: ManageAdminsClientProps) {
   const router = useRouter()
   const [loadingUserId, setLoadingUserId] = useState<number | null>(null)
 
-  const captains = users.filter((u) => u.role === "captain")
-  const otherUsers = users.filter((u) => u.role !== "captain")
+  // Sort users by role (captains first) then by name
+  const sortedUsers = users.sort((a, b) => {
+    if (a.role === "captain" && b.role !== "captain") return -1
+    if (a.role !== "captain" && b.role === "captain") return 1
+    return a.last_name.localeCompare(b.last_name)
+  })
 
   const handleToggleAdmin = async (userId: number, currentIsAdmin: boolean) => {
     setLoadingUserId(userId)
@@ -64,64 +68,17 @@ export function ManageAdminsClient({ users }: ManageAdminsClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Captains Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
-            Capitaines
+            Gestion des administrateurs
           </CardTitle>
-          <CardDescription>Les capitaines ont toujours les privilèges administrateurs (non modifiable)</CardDescription>
+          <CardDescription>Activez ou désactivez les privilèges administrateurs pour chaque utilisateur</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {captains.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium">
-                      {user.first_name} {user.last_name}
-                    </div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className={roleColors[user.role]}>{roleLabels[user.role] || user.role}</Badge>
-                  {user.is_owner && (
-                    <Badge className="bg-purple-100 text-purple-800">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Propriétaire
-                    </Badge>
-                  )}
-                  <Badge className="bg-green-100 text-green-800">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Admin
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Other Users Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Autres utilisateurs
-          </CardTitle>
-          <CardDescription>Activez ou désactivez les privilèges administrateurs pour ces utilisateurs</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {otherUsers.map((user) => (
+            {sortedUsers.map((user) => (
               <div
                 key={user.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
