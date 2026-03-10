@@ -10,6 +10,7 @@ export function getRoleLabel(role: string): string {
     pp4: "PP4",
     pp5: "PP5",
     pp6: "PP6",
+    other: "Autre",
   }
   return roleLabels[role] || role
 }
@@ -25,4 +26,5 @@ export const availableRoles = [
   { value: "pp4", label: "PP4" },
   { value: "pp5", label: "PP5" },
   { value: "pp6", label: "PP6" },
+  { value: "other", label: "Autre" },
 ] as const
