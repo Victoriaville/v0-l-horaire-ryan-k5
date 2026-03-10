@@ -184,7 +184,7 @@ export function AddFirefighterDialog({ teams }: AddFirefighterDialogProps) {
 
           <div className="bg-muted p-3 rounded-lg text-sm">
             <p className="font-semibold mb-1">Mot de passe par défaut:</p>
-            <p className="font-mono">Pompier2025!</p>
+            <p className="font-mono">SSIV2026</p>
           </div>
 
           <div className="flex justify-end gap-2">

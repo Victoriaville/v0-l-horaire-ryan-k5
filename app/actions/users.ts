@@ -170,7 +170,7 @@ export async function importTeam1Firefighters(): Promise<{
       teamId = team[0].id
     }
 
-    const defaultPassword = "Pompier2025!"
+    const defaultPassword = "SSIV2026"
     const passwordHash = await hashPassword(defaultPassword)
 
     let imported = 0
@@ -252,7 +252,7 @@ export async function addFirefighter(data: {
       }
     }
 
-    const defaultPassword = "Pompier2025!"
+    const defaultPassword = "SSIV2026"
     const passwordHash = await hashPassword(defaultPassword)
 
     // Insert user
