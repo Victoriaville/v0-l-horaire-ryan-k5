@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { toggleUserAdminStatus, toggleUserOwnerStatus } from "@/app/actions/admin"
 import { useRouter } from "next/navigation"
-import { User, Shield, ShieldCheck, Crown } from "lucide-react"
+import { User, ShieldCheck, Key } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface UserWithAdminStatus {
   id: number
@@ -116,13 +122,19 @@ export function ManageAdminsClient({ users, currentUserIsOwner = false }: Manage
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Badge className={roleColors[user.role]}>{roleLabels[user.role] || user.role}</Badge>
                   {user.isOwner && (
-                    <Badge className="bg-purple-100 text-purple-800">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Propriétaire
-                    </Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Key className="h-6 w-6 text-amber-500 flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Propriétaire</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
+                  <Badge className={roleColors[user.role]}>{roleLabels[user.role] || user.role}</Badge>
                   {currentUserIsOwner && (
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{user.isOwner ? "Propriétaire" : "Non propriétaire"}</span>
