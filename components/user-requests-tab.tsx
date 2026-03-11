@@ -151,11 +151,20 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                     )}
                   </div>
 
-                  {/* Line 2: Name • Leave Banks */}
+                  {/* Line 2: Name • Leave Bank 1 */}
                   <div className="text-xs leading-tight truncate">
                     {request.first_name} {request.last_name}
-                    {request.leave_bank_1 && <span> • {formatLeaveBanks(request.leave_bank_1, request.leave_hours_1, request.leave_bank_2, request.leave_hours_2)}</span>}
+                    {request.leave_bank_1 && (
+                      <span> • {formatLeaveBanks(request.leave_bank_1, request.leave_hours_1)}</span>
+                    )}
                   </div>
+
+                  {/* Line 3: Leave Bank 2 (if exists) */}
+                  {request.leave_bank_2 && (
+                    <div className="text-xs leading-tight truncate">
+                      {formatLeaveBanks(request.leave_bank_2, request.leave_hours_2)}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right column: Status badge + assigned info (vertically centered, no shrink) */}
