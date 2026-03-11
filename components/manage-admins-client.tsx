@@ -4,9 +4,15 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { toggleUserAdminStatus } from "@/app/actions/admin"
+import { toggleUserAdminStatus, toggleUserOwnerStatus } from "@/app/actions/admin"
 import { useRouter } from "next/navigation"
-import { User, Shield, ShieldCheck } from "lucide-react"
+import { User, ShieldCheck, Key } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface UserWithAdminStatus {
   id: number
@@ -17,12 +23,14 @@ interface UserWithAdminStatus {
   is_admin: boolean
   is_owner?: boolean
   isAdmin: boolean
+  isOwner?: boolean
   canModifyAdmin: boolean
   created_at: string
 }
 
 interface ManageAdminsClientProps {
   users: UserWithAdminStatus[]
+  currentUserIsOwner?: boolean
 }
 
 const roleLabels: Record<string, string> = {
@@ -37,9 +45,10 @@ const roleColors: Record<string, string> = {
   firefighter: "bg-gray-100 text-gray-800",
 }
 
-export function ManageAdminsClient({ users }: ManageAdminsClientProps) {
+export function ManageAdminsClient({ users, currentUserIsOwner = false }: ManageAdminsClientProps) {
   const router = useRouter()
   const [loadingUserId, setLoadingUserId] = useState<number | null>(null)
+  const [loadingOwnerUserId, setLoadingOwnerUserId] = useState<number | null>(null)
 
   // Sort users by role (captains first) then by name
   const sortedUsers = users.sort((a, b) => {
@@ -63,6 +72,24 @@ export function ManageAdminsClient({ users }: ManageAdminsClientProps) {
       alert("Erreur lors de la modification")
     } finally {
       setLoadingUserId(null)
+    }
+  }
+
+  const handleToggleOwner = async (userId: number, currentIsOwner: boolean) => {
+    setLoadingOwnerUserId(userId)
+
+    try {
+      const result = await toggleUserOwnerStatus(userId, !currentIsOwner)
+
+      if (result.success) {
+        router.refresh()
+      } else {
+        alert(result.error)
+      }
+    } catch (error) {
+      alert("Erreur lors de la modification")
+    } finally {
+      setLoadingOwnerUserId(null)
     }
   }
 
@@ -95,12 +122,28 @@ export function ManageAdminsClient({ users }: ManageAdminsClientProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
+                  {user.isOwner && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Key className="h-6 w-6 text-amber-500 flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Propriétaire</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <Badge className={roleColors[user.role]}>{roleLabels[user.role] || user.role}</Badge>
-                  {user.is_owner && (
-                    <Badge className="bg-purple-100 text-purple-800">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Propriétaire
-                    </Badge>
+                  {currentUserIsOwner && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{user.isOwner ? "Propriétaire" : "Non propriétaire"}</span>
+                      <Switch
+                        checked={user.isOwner || false}
+                        onCheckedChange={() => handleToggleOwner(user.id, user.isOwner || false)}
+                        disabled={loadingOwnerUserId === user.id}
+                      />
+                    </div>
                   )}
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{user.isAdmin ? "Admin" : "Non admin"}</span>
