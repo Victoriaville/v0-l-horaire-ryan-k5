@@ -115,9 +115,10 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                   )}
                 </div>
 
-                {/* Team name */}
+                {/* Name and leave bank */}
                 <div className="flex-1 min-w-0 leading-none truncate">
-                  {request.first_name} {request.last_name} • {request.team_name}
+                  {request.first_name} {request.last_name}
+                  {request.leave_bank_1 && <span> • {request.leave_bank_1}</span>}
                 </div>
 
                 {request.status === "assigned" && request.assigned_first_name && (
@@ -149,9 +150,10 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                     )}
                   </div>
 
-                  {/* Line 2: Name • Team */}
+                  {/* Line 2: Name • Leave Bank */}
                   <div className="text-xs leading-tight truncate">
-                    {request.first_name} {request.last_name} • {request.team_name}
+                    {request.first_name} {request.last_name}
+                    {request.leave_bank_1 && <span> • {request.leave_bank_1}</span>}
                   </div>
                 </div>
 
