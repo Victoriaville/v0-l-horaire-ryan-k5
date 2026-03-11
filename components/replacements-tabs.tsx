@@ -138,6 +138,14 @@ export function ReplacementsTabs({
 
   const badgeText = getAssignedBadge()
 
+  // Count only future user requests (shift_date >= today)
+  const futureUserRequests = userRequests.filter((request: any) => {
+    const shiftDate = parseLocalDate(request.shift_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return shiftDate >= today
+  })
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
       <div className="flex justify-end gap-2 mb-4">
@@ -170,7 +178,7 @@ export function ReplacementsTabs({
           <TabsTrigger value="direct-assignments" className="justify-start md:justify-center w-full md:w-auto">Assignations directes ({directAssignments.length})</TabsTrigger>
         )}
         <TabsTrigger value="my-applications" className="justify-start md:justify-center w-full md:w-auto">Mes candidatures ({pendingApplications.length})</TabsTrigger>
-        <TabsTrigger value="my-requests" className="justify-start md:justify-center w-full md:w-auto">Mes demandes ({userRequests.length})</TabsTrigger>
+        <TabsTrigger value="my-requests" className="justify-start md:justify-center w-full md:w-auto">Mes demandes ({futureUserRequests.length})</TabsTrigger>
         {isAdmin && (
           <TabsTrigger
             value="pending"

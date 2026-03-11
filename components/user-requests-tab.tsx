@@ -15,7 +15,7 @@ interface UserRequestsTabProps {
 }
 
 export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) {
-  const [showAssignedRequests, setShowAssignedRequests] = useState(false)
+  const [showPastRequests, setShowPastRequests] = useState(false)
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -51,9 +51,15 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
     }
   }
 
-  const filteredRequests = showAssignedRequests
+  // Filter requests by future date (>= today) or all if showing past
+  const filteredRequests = showPastRequests
     ? userRequests
-    : userRequests.filter((request) => request.status !== "assigned")
+    : userRequests.filter((request) => {
+        const shiftDate = parseLocalDate(request.shift_date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return shiftDate >= today
+      })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => compareShifts(a, b, parseLocalDate))
 
@@ -63,18 +69,18 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setShowAssignedRequests(!showAssignedRequests)}
+          onClick={() => setShowPastRequests(!showPastRequests)}
           className="gap-2"
         >
-          {showAssignedRequests ? (
+          {showPastRequests ? (
             <>
               <EyeOff className="h-4 w-4" />
-              Masquer les demandes assignées
+              Masquer les demandes passées
             </>
           ) : (
             <>
               <Eye className="h-4 w-4" />
-              Afficher les demandes assignées
+              Afficher les demandes passées
             </>
           )}
         </Button>
@@ -84,9 +90,9 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              {showAssignedRequests
+              {showPastRequests
                 ? "Vous n'avez pas encore demandé de remplacement"
-                : "Vous n'avez aucune demande en attente"}
+                : "Vous n'avez aucune demande à venir"}
             </p>
           </CardContent>
         </Card>
