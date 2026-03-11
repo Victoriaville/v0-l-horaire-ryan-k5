@@ -8,6 +8,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { parseLocalDate, formatShortDate } from "@/lib/date-utils"
 import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
 import { compareShifts } from "@/lib/shift-sort"
+import { formatLeaveBanks } from "@/lib/replacement-utils"
 
 interface UserRequestsTabProps {
   userRequests: any[]
@@ -115,10 +116,10 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                   )}
                 </div>
 
-                {/* Name and leave bank */}
+                {/* Name and leave banks */}
                 <div className="flex-1 min-w-0 leading-none truncate">
                   {request.first_name} {request.last_name}
-                  {request.leave_bank_1 && <span> • {request.leave_bank_1}</span>}
+                  {request.leave_bank_1 && <span> • {formatLeaveBanks(request.leave_bank_1, request.leave_hours_1, request.leave_bank_2, request.leave_hours_2)}</span>}
                 </div>
 
                 {request.status === "assigned" && request.assigned_first_name && (
@@ -150,10 +151,10 @@ export function UserRequestsTab({ userRequests, userId }: UserRequestsTabProps) 
                     )}
                   </div>
 
-                  {/* Line 2: Name • Leave Bank */}
+                  {/* Line 2: Name • Leave Banks */}
                   <div className="text-xs leading-tight truncate">
                     {request.first_name} {request.last_name}
-                    {request.leave_bank_1 && <span> • {request.leave_bank_1}</span>}
+                    {request.leave_bank_1 && <span> • {formatLeaveBanks(request.leave_bank_1, request.leave_hours_1, request.leave_bank_2, request.leave_hours_2)}</span>}
                   </div>
                 </div>
 
