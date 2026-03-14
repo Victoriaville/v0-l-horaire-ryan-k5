@@ -1779,7 +1779,17 @@ export async function getReplacementsAdminActionCount() {
         AND shift_date >= CURRENT_DATE - INTERVAL '7 days'
     `
 
-    const totalCount = Number(pendingRequests[0]?.count || 0) + Number(expiredReplacements[0]?.count || 0)
+    // Count assigned replacements - must match getAssignedReplacements()
+    const assignedReplacements = await sql`
+      SELECT COUNT(DISTINCT r.id) as count
+      FROM replacements r
+      INNER JOIN replacement_applications ra 
+        ON r.id = ra.replacement_id 
+        AND ra.status = 'approved'
+      WHERE r.shift_date >= CURRENT_DATE
+    `
+
+    const totalCount = Number(pendingRequests[0]?.count || 0) + Number(expiredReplacements[0]?.count || 0) + Number(assignedReplacements[0]?.count || 0)
     return totalCount
   } catch (error) {
     console.error("getReplacementsAdminActionCount: Error", error)
