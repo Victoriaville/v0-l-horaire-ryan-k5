@@ -1779,7 +1779,7 @@ export async function getReplacementsAdminActionCount() {
         AND shift_date >= CURRENT_DATE - INTERVAL '7 days'
     `
 
-    // Count assigned replacements - must match getAssignedReplacements()
+    // Count assigned replacements needing action (not sent OR not confirmed)
     const assignedReplacements = await sql`
       SELECT COUNT(DISTINCT r.id) as count
       FROM replacements r
@@ -1787,6 +1787,7 @@ export async function getReplacementsAdminActionCount() {
         ON r.id = ra.replacement_id 
         AND ra.status = 'approved'
       WHERE r.shift_date >= CURRENT_DATE
+        AND (r.notification_sent = false OR r.confirmed_at IS NULL)
     `
 
     const totalCount = Number(pendingRequests[0]?.count || 0) + Number(expiredReplacements[0]?.count || 0) + Number(assignedReplacements[0]?.count || 0)
