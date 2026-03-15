@@ -112,21 +112,27 @@ async function createSession(userId: number): Promise<string> {
   const sessionToken = generateUUID()
   const cookieStore = await cookies()
 
-  cookieStore.set("session", sessionToken, {
+  // Extract domain from NEXT_PUBLIC_APP_URL for proper cookie domain setting
+  let cookieDomain: string | undefined
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    try {
+      cookieDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
+    } catch (error) {
+      console.error("[v0] Invalid NEXT_PUBLIC_APP_URL:", error)
+    }
+  }
+
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
-  })
+    ...(cookieDomain && { domain: cookieDomain }),
+  }
 
-  cookieStore.set("userId", userId.toString(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-    path: "/",
-  })
+  cookieStore.set("session", sessionToken, cookieOptions)
+  cookieStore.set("userId", userId.toString(), cookieOptions)
 
   return sessionToken
 }
