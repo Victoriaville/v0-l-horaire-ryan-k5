@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
-import { useActionState } from "react"
+import { useState, useRef } from "react"
 import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
@@ -21,8 +21,19 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
-  const [state, formAction] = useActionState(login, null)
-  const loginError = state?.error
+  const [loginError, setLoginError] = useState("")
+  const formRef = useRef<HTMLFormElement>(null)
+
+  async function handleLogin(formData: FormData) {
+    setLoginError("")
+    const result = await login(formData)
+
+    if (result?.error) {
+      setLoginError(result.error)
+    }
+    // If login succeeds, the server action will redirect to /dashboard
+    // If it fails, result.error will be shown above
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4 relative">
@@ -57,7 +68,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={formAction} className="space-y-4">
+          <form action={handleLogin} className="space-y-4" ref={formRef}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
