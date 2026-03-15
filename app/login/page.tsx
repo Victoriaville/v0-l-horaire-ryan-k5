@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
@@ -22,7 +22,6 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
-  const formRef = useRef<HTMLFormElement>(null)
 
   async function handleLogin(formData: FormData) {
     setLoginError("")
@@ -31,8 +30,6 @@ export default function LoginPage() {
     if (result?.error) {
       setLoginError(result.error)
     }
-    // If login succeeds, the server action will redirect to /dashboard
-    // If it fails, result.error will be shown above
   }
 
   return (
@@ -68,7 +65,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={handleLogin} className="space-y-4" ref={formRef}>
+          <form action={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
