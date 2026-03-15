@@ -30,6 +30,8 @@ export default function LoginPage() {
     if (result?.error) {
       setLoginError(result.error)
     }
+    // Note: If login succeeds, the server action will redirect to /dashboard
+    // If it fails, result.error will be shown above
   }
 
   return (
@@ -65,7 +67,10 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={handleLogin} className="space-y-4">
+          <form action={handleLogin} className="space-y-4" onSubmit={(e) => {
+            // Prevent the default form submission and handle it properly
+            // The form action will be called automatically by React
+          }}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
