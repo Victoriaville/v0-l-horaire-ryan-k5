@@ -153,8 +153,31 @@ async function createSession(userId: number): Promise<string> {
   
   console.log("[v0] createSession: Final cookie options =", cookieOptions)
 
+  // Create a simple JWT payload
+  const jwtPayload = {
+    id: userId.toString(),
+    iat: Math.floor(Date.now() / 1000),
+  }
+  
+  // Convert to base64 for simple JWT-like encoding
+  // Format: header.payload.signature (we'll use a simple format for now)
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url")
+  const payload = Buffer.from(JSON.stringify(jwtPayload)).toString("base64url")
+  
+  // Create a simple signature using the secret
+  const secret = process.env.JWT_SECRET || "your-secret-key"
+  const crypto = await import("crypto")
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(`${header}.${payload}`)
+    .digest("base64url")
+  
+  const jwt = `${header}.${payload}.${signature}`
+  
+  console.log("[v0] createSession: JWT created successfully")
+
   cookieStore.set("session", sessionToken, cookieOptions)
-  cookieStore.set("userId", userId.toString(), cookieOptions)
+  cookieStore.set("userId", jwt, cookieOptions)
 
   return sessionToken
 }
