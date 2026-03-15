@@ -114,22 +114,39 @@ async function createSession(userId: number): Promise<string> {
 
   // Extract domain from NEXT_PUBLIC_APP_URL for proper cookie domain setting
   let cookieDomain: string | undefined
-  if (process.env.NEXT_PUBLIC_APP_URL) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  
+  console.log("[v0] createSession: NEXT_PUBLIC_APP_URL =", appUrl)
+  
+  if (appUrl) {
     try {
-      cookieDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
+      cookieDomain = new URL(appUrl).hostname
+      console.log("[v0] createSession: Extracted domain =", cookieDomain)
     } catch (error) {
-      console.error("[v0] Invalid NEXT_PUBLIC_APP_URL:", error)
+      console.error("[v0] createSession: Invalid NEXT_PUBLIC_APP_URL:", error)
     }
+  } else {
+    console.warn("[v0] createSession: NEXT_PUBLIC_APP_URL is not defined - will use default domain handling")
   }
 
-  const cookieOptions = {
+  // Build cookie options - domain is optional and will be set only if explicitly configured
+  const cookieOptions: any = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
-    ...(cookieDomain && { domain: cookieDomain }),
   }
+  
+  // Only add domain if we have one from NEXT_PUBLIC_APP_URL
+  if (cookieDomain) {
+    cookieOptions.domain = cookieDomain
+    console.log("[v0] createSession: Setting cookie domain =", cookieDomain)
+  } else {
+    console.log("[v0] createSession: No domain configured, letting browser handle cookie domain")
+  }
+  
+  console.log("[v0] createSession: Final cookie options =", cookieOptions)
 
   cookieStore.set("session", sessionToken, cookieOptions)
   cookieStore.set("userId", userId.toString(), cookieOptions)
