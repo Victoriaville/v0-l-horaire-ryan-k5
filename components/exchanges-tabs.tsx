@@ -61,24 +61,24 @@ export function ExchangesTabs({
         </Card>
       )}
 
-      <TabsList>
+      <TabsList className="flex flex-col md:flex-row w-full md:w-auto gap-1 md:gap-0 h-auto md:h-10">
         {isAdmin && (
           <>
-            <TabsTrigger value="all">Tous les échanges ({nonPastExchangesCount})</TabsTrigger>
-            <TabsTrigger value="my-exchanges">Mes échanges ({userExchanges.length})</TabsTrigger>
+            <TabsTrigger value="all" className="justify-start md:justify-center w-full md:w-auto">Tous les échanges ({nonPastExchangesCount})</TabsTrigger>
+            <TabsTrigger value="my-exchanges" className="justify-start md:justify-center w-full md:w-auto">Mes échanges ({userExchanges.length})</TabsTrigger>
             <TabsTrigger
               value="pending"
-              className={
+              className={`justify-start md:justify-center w-full md:w-auto ${
                 pendingExchanges.length > 0
                   ? "data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:text-red-600 data-[state=inactive]:font-semibold"
                   : ""
-              }
+              }`}
             >
               En attente ({pendingExchanges.length})
             </TabsTrigger>
           </>
         )}
-        {!isAdmin && <TabsTrigger value="my-exchanges">Mes échanges ({userExchanges.length})</TabsTrigger>}
+        {!isAdmin && <TabsTrigger value="my-exchanges" className="justify-start md:justify-center w-full md:w-auto">Mes échanges ({userExchanges.length})</TabsTrigger>}
       </TabsList>
 
       {isAdmin && (
