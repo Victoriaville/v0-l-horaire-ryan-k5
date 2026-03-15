@@ -3,6 +3,7 @@
 import { cookies } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { createHmac } from "crypto"
 
 export interface User {
   id: number
@@ -13,6 +14,38 @@ export interface User {
   is_admin: boolean
   is_owner?: boolean // Added optional is_owner field for owner permissions
   phone?: string
+}
+
+// Utility function to decode and verify JWT
+export function decodeJWT(token: string): { id: string } | null {
+  try {
+    const parts = token.split(".")
+    if (parts.length !== 3) {
+      console.log("[v0] decodeJWT: Invalid JWT format - wrong number of parts")
+      return null
+    }
+
+    const [header, payload, signature] = parts
+
+    // Verify the signature
+    const secret = process.env.JWT_SECRET || "your-secret-key"
+    const expectedSignature = createHmac("sha256", secret)
+      .update(`${header}.${payload}`)
+      .digest("base64url")
+
+    if (signature !== expectedSignature) {
+      console.log("[v0] decodeJWT: JWT signature verification failed")
+      return null
+    }
+
+    // Decode the payload
+    const decodedPayload = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"))
+    console.log("[v0] decodeJWT: Successfully decoded JWT")
+    return decodedPayload
+  } catch (error) {
+    console.log("[v0] decodeJWT: Error decoding JWT =", error instanceof Error ? error.message : String(error))
+    return null
+  }
 }
 
 function generateUUID(): string {
@@ -188,11 +221,22 @@ const CACHE_TTL = 60000 // 60 seconds (increased from 5 seconds)
 export async function getSession(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
-    const userId = cookieStore.get("userId")?.value
+    const jwtToken = cookieStore.get("userId")?.value
 
-    if (!userId) {
+    if (!jwtToken) {
+      console.log("[v0] getSession: No JWT token found in cookie")
       return null
     }
+
+    // Decode and verify the JWT
+    const decoded = decodeJWT(jwtToken)
+    if (!decoded || !decoded.id) {
+      console.log("[v0] getSession: Failed to decode JWT")
+      return null
+    }
+
+    const userId = Number.parseInt(decoded.id)
+    console.log("[v0] getSession: Extracted userId from JWT =", userId)
 
     // Check cache first
     const cacheKey = `user_${userId}`
@@ -200,6 +244,7 @@ export async function getSession(): Promise<User | null> {
     const now = Date.now()
 
     if (cached && now - cached.timestamp < CACHE_TTL) {
+      console.log("[v0] getSession: Returning cached user")
       return cached.user
     }
 
@@ -212,7 +257,7 @@ export async function getSession(): Promise<User | null> {
         const result = await sql`
           SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone
           FROM users
-          WHERE id = ${Number.parseInt(userId)}
+          WHERE id = ${userId}
         `
 
         const user = result.length > 0 ? (result[0] as User) : null
