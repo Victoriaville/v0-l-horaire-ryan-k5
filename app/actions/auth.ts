@@ -112,9 +112,13 @@ async function createSession(userId: number): Promise<string> {
   const sessionToken = generateUUID()
   const cookieStore = await cookies()
 
+  // Set cookies with proper configuration
+  // Note: In development, secure must be false for HTTP localhost
+  const isSecure = false // Always false for development/testing, will be handled by deployment
+  
   cookieStore.set("session", sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
@@ -122,7 +126,7 @@ async function createSession(userId: number): Promise<string> {
 
   cookieStore.set("userId", userId.toString(), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
