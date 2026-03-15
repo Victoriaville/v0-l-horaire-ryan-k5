@@ -129,10 +129,15 @@ async function createSession(userId: number): Promise<string> {
     console.warn("[v0] createSession: NEXT_PUBLIC_APP_URL is not defined - will use default domain handling")
   }
 
+  // Detect HTTPS from the APP URL - works on HTTP and HTTPS
+  const isHttps = appUrl?.startsWith("https://") ?? false
+  
+  console.log("[v0] createSession: isHttps =", isHttps)
+
   // Build cookie options - domain is optional and will be set only if explicitly configured
   const cookieOptions: any = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
