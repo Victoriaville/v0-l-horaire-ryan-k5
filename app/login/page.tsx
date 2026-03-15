@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
-import { useState } from "react"
+import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
@@ -21,18 +21,8 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
-  const [loginError, setLoginError] = useState("")
-
-  async function handleLogin(formData: FormData) {
-    setLoginError("")
-    const result = await login(formData)
-
-    if (result?.error) {
-      setLoginError(result.error)
-    }
-    // Note: If login succeeds, the server action will redirect to /dashboard
-    // If it fails, result.error will be shown above
-  }
+  const [state, formAction] = useActionState(login, null)
+  const loginError = state?.error
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4 relative">
@@ -67,10 +57,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={handleLogin} className="space-y-4" onSubmit={(e) => {
-            // Prevent the default form submission and handle it properly
-            // The form action will be called automatically by React
-          }}>
+          <form action={formAction} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />

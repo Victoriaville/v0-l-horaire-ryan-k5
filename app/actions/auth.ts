@@ -112,8 +112,6 @@ async function createSession(userId: number): Promise<string> {
   const sessionToken = generateUUID()
   const cookieStore = await cookies()
 
-  console.log("[v0] createSession: Setting cookies for userId:", userId)
-
   // Set cookies with proper configuration
   // Note: In development, secure must be false for HTTP localhost
   const isSecure = false // Always false for development/testing, will be handled by deployment
@@ -127,10 +125,7 @@ async function createSession(userId: number): Promise<string> {
   }
 
   cookieStore.set("session", sessionToken, cookieOptions)
-  console.log("[v0] createSession: Set 'session' cookie")
-
   cookieStore.set("userId", userId.toString(), cookieOptions)
-  console.log("[v0] createSession: Set 'userId' cookie with value:", userId)
 
   return sessionToken
 }
@@ -143,15 +138,9 @@ export async function getSession(): Promise<User | null> {
     const cookieStore = await cookies()
     const userId = cookieStore.get("userId")?.value
 
-    console.log("[v0] getSession: Looking for userId cookie")
-    
     if (!userId) {
-      console.log("[v0] getSession: No userId found in cookies!")
-      console.log("[v0] getSession: Available cookies:", Array.from(cookieStore.getAll()).map(c => c.name))
       return null
     }
-
-    console.log("[v0] getSession: Found userId in cookie:", userId)
 
     // Check cache first
     const cacheKey = `user_${userId}`
@@ -235,8 +224,6 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  console.log("[v0] login: Starting login with email:", email)
-
   if (!email) {
     return { error: "Email requis" }
   }
@@ -249,12 +236,10 @@ export async function login(formData: FormData) {
     `
 
     if (result.length === 0) {
-      console.log("[v0] login: User not found for email:", email)
       return { error: "Email incorrect" }
     }
 
     const user = result[0]
-    console.log("[v0] login: User found, id:", user.id)
 
     if (user.password_hash !== null && user.password_hash !== undefined) {
       // If user has a password set, verify it
@@ -263,16 +248,12 @@ export async function login(formData: FormData) {
       }
       const isValid = await verifyPassword(password, user.password_hash)
       if (!isValid) {
-        console.log("[v0] login: Invalid password for user:", user.id)
         return { error: "Mot de passe incorrect" }
       }
     }
     // If password_hash is NULL, allow login with email only
 
-    console.log("[v0] login: Creating session for user:", user.id)
     await createSession(user.id)
-    
-    console.log("[v0] login: Session created, about to redirect to /dashboard")
   } catch (error) {
     console.error("[v0] Login error:", error)
 
@@ -283,7 +264,6 @@ export async function login(formData: FormData) {
     return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
   }
 
-  console.log("[v0] login: Calling redirect to /dashboard")
   redirect("/dashboard")
 }
 
