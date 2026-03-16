@@ -23,15 +23,6 @@ function SubmitButton() {
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
 
-  async function handleLogin(formData: FormData) {
-    setLoginError("")
-    const result = await login(formData)
-
-    if (result?.error) {
-      setLoginError(result.error)
-    }
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4 relative">
       {/* Version Display - Bottom Right */}
@@ -65,7 +56,17 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={handleLogin} className="space-y-4">
+          <form
+            action={async (formData) => {
+              console.log("[v0] LoginPage: Form submitted")
+              const result = await login(formData)
+              if (result?.error) {
+                console.log("[v0] LoginPage: Login error:", result.error)
+                setLoginError(result.error)
+              }
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
