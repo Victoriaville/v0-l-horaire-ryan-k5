@@ -13,7 +13,6 @@ import {
   // Removed getExchangeRequestEmail, getExchangeApprovedEmail, getExchangeRejectedEmail, getExchangeRequestConfirmationEmail
 } from "@/lib/email"
 import { parseLocalDate } from "@/lib/date-utils"
-import { sendTelegramMessage } from "@/lib/telegram"
 // crypto is available globally in Node.js
 
 export async function getUserNotifications(userId: number) {
