@@ -1,10 +1,10 @@
-import * as jose from "jose"
+import { SignJWT, jwtVerify } from "jose"
 
 // Utility function to create JWT (server-only)
 export async function createJWT(id: string): Promise<string> {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-    const token = await jose.SignJWT({ id })
+    const token = await new SignJWT({ id })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
       .sign(secret)
@@ -20,7 +20,7 @@ export async function createJWT(id: string): Promise<string> {
 export async function decodeJWT(token: string): Promise<{ id: string } | null> {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-    const verified = await jose.jwtVerify(token, secret)
+    const verified = await jwtVerify(token, secret)
     const payload = verified.payload as { id?: string }
     if (payload.id) {
       console.log("[v0] decodeJWT: Successfully decoded JWT")
