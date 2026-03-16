@@ -116,8 +116,6 @@ async function createSession(userId: number): Promise<string> {
   // Detect HTTPS from the APP URL
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
   const isHttps = appUrl?.startsWith("https://") ?? true
-  
-  console.log("[v0] createSession: isHttps =", isHttps)
 
   // Build cookie options - DO NOT set domain explicitly as this breaks cookie persistence on Vercel
   // Let Next.js handle cookie domain automatically based on the request
@@ -130,12 +128,9 @@ async function createSession(userId: number): Promise<string> {
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
   }
-  
-  console.log("[v0] createSession: Final cookie options (domain auto-handled by Next.js) =", cookieOptions)
 
   // Create JWT using jose (edge-runtime compatible)
   const jwt = await createJWT(userId.toString())
-  console.log("[v0] createSession: JWT created successfully")
 
   cookieStore.set("session", sessionToken, cookieOptions)
   cookieStore.set("userId", jwt, cookieOptions)
@@ -152,19 +147,16 @@ export async function getSession(): Promise<User | null> {
     const jwtToken = cookieStore.get("userId")?.value
 
     if (!jwtToken) {
-      console.log("[v0] getSession: No JWT token found in cookie")
       return null
     }
 
     // Decode and verify the JWT
     const decoded = await decodeJWT(jwtToken)
     if (!decoded || !decoded.id) {
-      console.log("[v0] getSession: Failed to decode JWT")
       return null
     }
 
     const userId = Number.parseInt(decoded.id)
-    console.log("[v0] getSession: Extracted userId from JWT =", userId)
 
     // Check cache first
     const cacheKey = `user_${userId}`
@@ -172,7 +164,6 @@ export async function getSession(): Promise<User | null> {
     const now = Date.now()
 
     if (cached && now - cached.timestamp < CACHE_TTL) {
-      console.log("[v0] getSession: Returning cached user")
       return cached.user
     }
 
@@ -249,21 +240,16 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  console.log("[v0] login: Called with email:", email)
-
   if (!email) {
     return { error: "Email requis" }
   }
 
   try {
-    console.log("[v0] login: Querying database for user")
     const result = await sql`
       SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
       FROM users
       WHERE email = ${email}
     `
-
-    console.log("[v0] login: Query returned", result.length, "results")
 
     if (result.length === 0) {
       return { error: "Email incorrect" }
@@ -283,9 +269,7 @@ export async function login(formData: FormData) {
     }
     // If password_hash is NULL, allow login with email only
 
-    console.log("[v0] login: Creating session for user", user.id)
     await createSession(user.id)
-    console.log("[v0] login: Session created successfully for user", user.id)
   } catch (error) {
     console.error("[v0] Login error:", error)
 
@@ -297,7 +281,6 @@ export async function login(formData: FormData) {
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
-  console.log("[v0] login: About to redirect to dashboard")
   redirect("/dashboard")
 }
 
