@@ -1,51 +1,33 @@
-import { createHmac } from "crypto"
+import * as jose from "jose"
 
-// Helper functions for base64url encoding/decoding that work everywhere
-export function toBase64Url(str: string): string {
-  return Buffer.from(str, "utf-8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "")
-}
-
-export function fromBase64Url(str: string): string {
-  // Add padding if needed
-  let padded = str + "==".substring(0, (4 - (str.length % 4)) % 4)
-  // Convert base64url to base64
-  const base64 = padded.replace(/-/g, "+").replace(/_/g, "/")
-  return Buffer.from(base64, "base64").toString("utf-8")
-}
-
-// Utility function to decode and verify JWT (NOT a server action, just a utility)
-export function decodeJWT(token: string): { id: string } | null {
+// Utility function to create JWT (server-only)
+export async function createJWT(id: string): Promise<string> {
   try {
-    const parts = token.split(".")
-    if (parts.length !== 3) {
-      console.log("[v0] decodeJWT: Invalid JWT format - wrong number of parts")
-      return null
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+    const token = await jose.SignJWT({ id })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(secret)
+    console.log("[v0] createJWT: JWT created successfully")
+    return token
+  } catch (error) {
+    console.log("[v0] createJWT: Error creating JWT =", error instanceof Error ? error.message : String(error))
+    throw error
+  }
+}
+
+// Utility function to decode and verify JWT (edge-runtime compatible)
+export async function decodeJWT(token: string): Promise<{ id: string } | null> {
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+    const verified = await jose.jwtVerify(token, secret)
+    const payload = verified.payload as { id?: string }
+    if (payload.id) {
+      console.log("[v0] decodeJWT: Successfully decoded JWT")
+      return { id: payload.id }
     }
-
-    const [header, payload, signature] = parts
-
-    // Verify the signature
-    const secret = process.env.JWT_SECRET || "your-secret-key"
-    const expectedSignature = createHmac("sha256", secret)
-      .update(`${header}.${payload}`)
-      .digest("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "")
-
-    if (signature !== expectedSignature) {
-      console.log("[v0] decodeJWT: JWT signature verification failed")
-      return null
-    }
-
-    // Decode the payload
-    const decodedPayload = JSON.parse(fromBase64Url(payload))
-    console.log("[v0] decodeJWT: Successfully decoded JWT")
-    return decodedPayload
+    console.log("[v0] decodeJWT: JWT missing id claim")
+    return null
   } catch (error) {
     console.log("[v0] decodeJWT: Error decoding JWT =", error instanceof Error ? error.message : String(error))
     return null

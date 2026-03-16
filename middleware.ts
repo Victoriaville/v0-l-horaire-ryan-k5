@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { decodeJWT } from "@/lib/jwt"
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // This must be the FIRST check before anything else
@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
   let userId: string | null = null
 
   if (cookieValue) {
-    const decoded = decodeJWT(cookieValue)
+    const decoded = await decodeJWT(cookieValue)
     if (decoded && decoded.id) {
       userId = decoded.id
       console.log("[v0] middleware: userId extracted from JWT =", userId)
