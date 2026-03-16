@@ -8,8 +8,12 @@ import { ReplacementsBadge } from "@/components/replacements-badge"
 import { ExchangesBadge } from "@/components/exchanges-badge"
 import { AbsencesBadge } from "@/components/absences-badge"
 import { NotificationErrorsBadge } from "@/components/notification-errors-badge"
-import { MobileNav } from "@/components/mobile-nav"
+import dynamic from "next/dynamic"
 import { Suspense } from "react"
+
+const MobileNav = dynamic(() => import("@/components/mobile-nav").then((mod) => mod.MobileNav), {
+  ssr: false,
+})
 import { TelegramConnectionBanner } from "@/components/telegram-connection-banner"
 import { TelegramConnectionModal } from "@/components/telegram-connection-modal"
 import { checkUserTelegramStatus } from "@/app/actions/telegram-status"
@@ -45,14 +49,16 @@ export default async function DashboardLayout({
         <div className="container mx-auto px-4 py-3 md:py-4">
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-3">
-              <MobileNav
-                userName={`${user.first_name} ${user.last_name}`}
-                isAdmin={user.isAdmin}
-                replacementsBadgeCount={replacementsBadgeCount}
-                exchangesBadgeCount={exchangesBadgeCount}
-                absencesBadgeCount={absencesBadgeCount}
-                notificationErrorsCount={notificationErrorsCount}
-              />
+              <Suspense fallback={null}>
+                <MobileNav
+                  userName={`${user.first_name} ${user.last_name}`}
+                  isAdmin={user.isAdmin}
+                  replacementsBadgeCount={replacementsBadgeCount}
+                  exchangesBadgeCount={exchangesBadgeCount}
+                  absencesBadgeCount={absencesBadgeCount}
+                  notificationErrorsCount={notificationErrorsCount}
+                />
+              </Suspense>
 
               <div className="w-8 h-8 md:w-10 md:h-10 bg-red-600 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

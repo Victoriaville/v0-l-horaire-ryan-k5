@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
 import { useState } from "react"
+import { CalendarDays } from "lucide-react"
 
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
@@ -59,7 +60,10 @@ export default function LoginPage() {
               </svg>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Horaire SSIV</CardTitle>
+          <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
+            <CalendarDays className="h-6 w-6 text-red-600" />
+            Horaire SSIV
+          </CardTitle>
           <CardDescription className="text-center">Connectez-vous à votre compte</CardDescription>
         </CardHeader>
         <CardContent>
