@@ -8,40 +8,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
 import { useState } from "react"
-import { useFormStatus } from "react-dom"
-
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={pending}>
-      {pending ? "Connexion..." : "Se connecter"}
-    </Button>
-  )
-}
 
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
+  const [isPending, setIsPending] = useState(false)
 
-  console.log("[v0] LoginPage: Component rendered")
-
-  async function handleLogin(formData: FormData) {
-    console.log("[v0] LoginPage: handleLogin called")
-    console.log("[v0] LoginPage: formData email =", formData.get("email"))
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setLoginError("")
+    setIsPending(true)
+    
     try {
-      console.log("[v0] LoginPage: Calling login() server action")
+      const formData = new FormData(e.currentTarget)
+      console.log("[v0] LoginPage: Submitting login with email:", formData.get("email"))
       const result = await login(formData)
-      console.log("[v0] LoginPage: login result =", result)
+      console.log("[v0] LoginPage: login() returned:", result)
+      
       if (result?.error) {
-        console.log("[v0] LoginPage: Setting error:", result.error)
+        console.log("[v0] LoginPage: Got error from login:", result.error)
         setLoginError(result.error)
-      } else {
-        console.log("[v0] LoginPage: Login successful, result is:", result)
       }
     } catch (error) {
-      console.error("[v0] LoginPage: Error during login:", error)
+      console.error("[v0] LoginPage: Caught error:", error)
       setLoginError("Une erreur est survenue lors de la connexion")
+    } finally {
+      setIsPending(false)
     }
   }
 
@@ -78,7 +69,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form action={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
@@ -87,7 +78,9 @@ export default function LoginPage() {
               <Label htmlFor="password">Mot de passe</Label>
               <Input id="password" name="password" type="password" />
             </div>
-            <SubmitButton />
+            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={isPending}>
+              {isPending ? "Connexion..." : "Se connecter"}
+            </Button>
           </form>
         </CardContent>
       </Card>
