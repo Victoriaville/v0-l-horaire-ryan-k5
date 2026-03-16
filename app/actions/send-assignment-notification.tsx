@@ -41,8 +41,6 @@ export async function sendAssignmentNotification(replacementId: number) {
     const userPrefs = await sql`
       SELECT 
         enable_email,
-        enable_telegram,
-        telegram_chat_id,
         enable_app,
         notify_replacement_accepted
       FROM notification_preferences
@@ -120,8 +118,6 @@ export async function sendAssignmentNotification(replacementId: number) {
         u.last_name,
         u.email,
         np.enable_email,
-        np.enable_telegram,
-        np.telegram_chat_id,
         np.enable_app,
         np.notify_replacement_rejected
       FROM replacement_applications ra
