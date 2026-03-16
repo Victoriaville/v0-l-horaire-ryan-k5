@@ -23,15 +23,21 @@ function SubmitButton() {
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
 
+  console.log("[v0] LoginPage: Component rendered")
+
   async function handleLogin(formData: FormData) {
-    console.log("[v0] LoginPage: handleLogin called with formData")
+    console.log("[v0] LoginPage: handleLogin called")
+    console.log("[v0] LoginPage: formData email =", formData.get("email"))
     setLoginError("")
     try {
+      console.log("[v0] LoginPage: Calling login() server action")
       const result = await login(formData)
       console.log("[v0] LoginPage: login result =", result)
       if (result?.error) {
         console.log("[v0] LoginPage: Setting error:", result.error)
         setLoginError(result.error)
+      } else {
+        console.log("[v0] LoginPage: Login successful, result is:", result)
       }
     } catch (error) {
       console.error("[v0] LoginPage: Error during login:", error)
