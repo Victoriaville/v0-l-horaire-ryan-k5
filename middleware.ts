@@ -5,11 +5,6 @@ import { decodeJWT } from "@/lib/jwt"
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // This must be the FIRST check before anything else
-  if (pathname === "/api/telegram/webhook") {
-    return NextResponse.next()
-  }
-
   // Get the JWT from the cookie
   const cookieValue = request.cookies.get("userId")?.value
 
@@ -39,5 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/telegram/webhook).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }

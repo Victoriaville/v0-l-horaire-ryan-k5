@@ -125,7 +125,7 @@ export default async function NotificationDetailPage({ params }: { params: { id:
                       key={channel}
                       className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800"
                     >
-                      ✓ {channel === "in_app" ? "App" : channel === "telegram" ? "Telegram" : channel}
+                      ✓ {channel === "in_app" ? "App" : channel}
                     </span>
                   ))}
                 </div>
@@ -141,7 +141,7 @@ export default async function NotificationDetailPage({ params }: { params: { id:
                       key={channel}
                       className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800"
                     >
-                      ✗ {channel === "in_app" ? "App" : channel === "telegram" ? "Telegram" : channel}
+                      ✗ {channel === "in_app" ? "App" : channel}
                     </span>
                   ))}
                 </div>
