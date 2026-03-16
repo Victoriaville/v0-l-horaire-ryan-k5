@@ -3,8 +3,7 @@
 import { cookies } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { createHmac } from "crypto"
-import { toBase64Url, decodeJWT } from "@/lib/jwt"
+import { createJWT, decodeJWT } from "@/lib/jwt"
 
 export interface User {
   id: number
@@ -155,28 +154,8 @@ async function createSession(userId: number): Promise<string> {
   
   console.log("[v0] createSession: Final cookie options =", cookieOptions)
 
-  // Create a simple JWT payload
-  const jwtPayload = {
-    id: userId.toString(),
-    iat: Math.floor(Date.now() / 1000),
-  }
-  
-  // Convert to base64url using helper function
-  const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }))
-  const payload = toBase64Url(JSON.stringify(jwtPayload))
-  
-  // Create a simple signature using the secret
-  const secret = process.env.JWT_SECRET || "your-secret-key"
-  const crypto = await import("crypto")
-  const hmacSignature = crypto
-    .createHmac("sha256", secret)
-    .update(`${header}.${payload}`)
-    .digest("base64")
-  // Convert base64 to base64url
-  const signature = hmacSignature.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
-  
-  const jwt = `${header}.${payload}.${signature}`
-  
+  // Create JWT using jose (edge-runtime compatible)
+  const jwt = await createJWT(userId.toString())
   console.log("[v0] createSession: JWT created successfully")
 
   cookieStore.set("session", sessionToken, cookieOptions)
@@ -199,7 +178,7 @@ export async function getSession(): Promise<User | null> {
     }
 
     // Decode and verify the JWT
-    const decoded = decodeJWT(jwtToken)
+    const decoded = await decodeJWT(jwtToken)
     if (!decoded || !decoded.id) {
       console.log("[v0] getSession: Failed to decode JWT")
       return null
