@@ -28,7 +28,6 @@ interface AssignedReplacementsTabProps {
 
 function formatConfirmationChannel(channel: string): string {
   const channelLabels: Record<string, string> = {
-    'telegram': 'Telegram',
     'sms': 'SMS',
     'somum': 'SOMUM',
     'manual': 'Manuel',
