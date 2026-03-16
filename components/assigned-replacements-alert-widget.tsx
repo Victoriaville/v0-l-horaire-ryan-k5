@@ -3,17 +3,11 @@ import { formatLocalDate } from "@/lib/date-utils"
 import { getAssignedReplacementsNeedingAttention } from "@/app/actions/replacements"
 
 export async function AssignedReplacementsAlertWidget() {
-  console.log("[v0] AssignedReplacementsAlertWidget: Fetching replacements needing attention")
   const { items: replacements, total } = await getAssignedReplacementsNeedingAttention()
-  console.log("[v0] AssignedReplacementsAlertWidget: Received replacements:", replacements?.length || 0)
-  console.log("[v0] AssignedReplacementsAlertWidget: Replacements data:", JSON.stringify(replacements, null, 2))
 
   if (replacements.length === 0) {
-    console.log("[v0] AssignedReplacementsAlertWidget: No replacements found, hiding widget")
     return null
   }
-
-  console.log("[v0] AssignedReplacementsAlertWidget: Displaying widget with", replacements.length, "items")
 
   return (
     <div className="bg-orange-50/30 dark:bg-orange-950/10 px-3 py-2 rounded-md">
