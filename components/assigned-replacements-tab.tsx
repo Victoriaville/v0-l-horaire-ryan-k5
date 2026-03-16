@@ -26,6 +26,17 @@ interface AssignedReplacementsTabProps {
   unsentCount: number
 }
 
+function formatConfirmationChannel(channel: string): string {
+  const channelLabels: Record<string, string> = {
+    'telegram': 'Telegram',
+    'sms': 'SMS',
+    'somum': 'SOMUM',
+    'manual': 'Manuel',
+    'email': 'Email'
+  }
+  return channelLabels[channel] || channel
+}
+
 function formatCreatedAt(createdAt: string) {
   const date = new Date(createdAt)
   const now = new Date()
@@ -426,8 +437,8 @@ export function AssignedReplacementsTab({
                           {replacement.confirmed_via && (
                             <>
                               <span className="text-muted-foreground">•</span>
-                              <span className="text-muted-foreground capitalize">
-                                {replacement.confirmed_via === "telegram" ? "Telegram" : replacement.confirmed_via}
+                              <span className="text-muted-foreground">
+                                {formatConfirmationChannel(replacement.confirmed_via)}
                               </span>
                             </>
                           )}
