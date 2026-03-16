@@ -101,7 +101,6 @@ export async function sendManualNotification(message: string, recipientIds: numb
       channels: {
         inApp: boolean
         email: boolean | "disabled"
-        telegram: boolean | "disabled"
       }
       status: "success" | "partial" | "failed" | "skipped"
     }> = []
@@ -130,7 +129,7 @@ export async function sendManualNotification(message: string, recipientIds: numb
 
           deliveryDetails.push({
             name: "Utilisateur inconnu",
-            channels: { inApp: false, email: "disabled", telegram: "disabled" },
+            channels: { inApp: false, email: "disabled" },
             status: "skipped",
           })
         } else {
@@ -195,7 +194,7 @@ export async function sendManualNotification(message: string, recipientIds: numb
 
             deliveryDetails.push({
               name: user.name,
-              channels: { inApp: false, email: "disabled", telegram: "disabled" },
+              channels: { inApp: false, email: "disabled" },
               status: "failed",
             })
           }
@@ -246,7 +245,7 @@ export async function sendManualNotification(message: string, recipientIds: numb
 
         deliveryDetails.push({
           name: "Erreur",
-          channels: { inApp: false, email: false, telegram: false },
+          channels: { inApp: false, email: false },
           status: "failed",
         })
       }
