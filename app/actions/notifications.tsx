@@ -13,7 +13,6 @@ import {
   // Removed getExchangeRequestEmail, getExchangeApprovedEmail, getExchangeRejectedEmail, getExchangeRequestConfirmationEmail
 } from "@/lib/email"
 import { parseLocalDate } from "@/lib/date-utils"
-import { sendTelegramMessage } from "@/lib/telegram"
 // crypto is available globally in Node.js
 
 export async function getUserNotifications(userId: number) {
@@ -150,13 +149,10 @@ export async function createNotification(
         u.first_name,
         u.last_name,
         np.enable_email,
-        np.enable_telegram,
-        np.telegram_chat_id,
         np.notify_replacement_available,
         np.notify_replacement_accepted,
         np.notify_replacement_rejected,
-        np.notify_schedule_change,
-        u.telegram_required
+        np.notify_schedule_change
       FROM users u
       LEFT JOIN notification_preferences np ON u.id = np.user_id
       WHERE u.id = ${userId}
@@ -180,51 +176,6 @@ export async function createNotification(
 
     const user = userPrefs[0]
     const fullName = `${user.first_name} ${user.last_name}`
-
-    console.log("[v0] User Telegram preferences:", {
-      enable_telegram: user.enable_telegram,
-      telegram_chat_id: user.telegram_chat_id,
-      type: type,
-    })
-
-    if (user.enable_telegram === true && user.telegram_chat_id) {
-      console.log("[v0] Attempting to send Telegram notification...")
-      try {
-        // Generate apply token for replacement_available notifications
-        let applyToken: string | undefined
-        if (type === "replacement_available" && relatedId) {
-          applyToken = crypto.randomUUID()
-          const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          console.log("[v0] Creating token for Telegram - replacement_id:", relatedId, "user_id:", userId, "token:", applyToken)
-
-          try {
-            await sql`
-              INSERT INTO application_tokens (token, replacement_id, user_id, expires_at)
-              VALUES (${applyToken}, ${relatedId}, ${userId}, ${expiresAt})
-              ON CONFLICT (user_id, replacement_id) 
-              DO UPDATE SET token = ${applyToken}, expires_at = ${expiresAt}, used = false
-            `
-            console.log("[v0] Token created successfully for Telegram")
-          } catch (error) {
-            console.error("[v0] Error creating application token for Telegram:", error)
-            applyToken = undefined
-          }
-        } else {
-          console.log("[v0] Token generation skipped - type:", type, "relatedId:", relatedId)
-        }
-
-        await sendTelegramNotificationMessage(type, user.telegram_chat_id, fullName, message, relatedId, applyToken)
-        channelsSent.push("telegram")
-        console.log("[v0] Telegram sent successfully!")
-      } catch (telegramError) {
-        console.error("[v0] Telegram sending failed:", telegramError)
-        channelsFailed.push("telegram")
-        errorMessage = telegramError instanceof Error ? telegramError.message : String(telegramError)
-        console.log("[v0] Telegram added to channelsFailed:", channelsFailed)
-      }
-    } else {
-      console.log("[v0] Telegram NOT enabled or no chat_id - skipping Telegram send")
-    }
 
     console.log("[v0] Final notification status:", {
       channelsSent,
@@ -267,10 +218,8 @@ export async function createNotification(
 export async function getUserPreferences(userId: number) {
   const prefs = await sql`
     SELECT 
-      np.*,
-      u.telegram_required
+      np.*
     FROM notification_preferences np
-    LEFT JOIN users u ON u.id = np.user_id
     WHERE np.user_id = ${userId}
   `
   return prefs[0] || null
@@ -281,7 +230,6 @@ export async function updateUserPreferences(
   preferences: {
     enable_app?: boolean
     enable_email?: boolean
-    enable_telegram?: boolean
     notify_replacement_available?: boolean
     notify_replacement_accepted?: boolean
     notify_replacement_rejected?: boolean
@@ -305,7 +253,6 @@ export async function updateUserPreferences(
           user_id,
           enable_app,
           enable_email,
-          enable_telegram,
           notify_replacement_available,
           notify_replacement_accepted,
           notify_replacement_rejected
@@ -313,7 +260,6 @@ export async function updateUserPreferences(
           ${userId},
           ${preferences.enable_app ?? true},
           ${preferences.enable_email ?? false},
-          ${preferences.enable_telegram ?? false},
           ${preferences.notify_replacement_available ?? false},
           ${preferences.notify_replacement_accepted ?? false},
           ${preferences.notify_replacement_rejected ?? false}
@@ -325,7 +271,6 @@ export async function updateUserPreferences(
         SET
           enable_app = ${preferences.enable_app ?? existing[0].enable_app},
           enable_email = ${preferences.enable_email ?? existing[0].enable_email},
-          enable_telegram = ${preferences.enable_telegram ?? existing[0].enable_telegram},
           notify_replacement_available = ${preferences.notify_replacement_available ?? existing[0].notify_replacement_available},
           notify_replacement_accepted = ${preferences.notify_replacement_accepted ?? existing[0].notify_replacement_accepted},
           notify_replacement_rejected = ${preferences.notify_replacement_rejected ?? existing[0].notify_replacement_rejected},
@@ -391,12 +336,9 @@ export async function createBatchNotificationsInApp(
               u.email,
               u.first_name,
               u.last_name,
-              np.enable_telegram,
-              np.telegram_chat_id,
               np.notify_replacement_available,
               np.notify_replacement_accepted,
-              np.notify_replacement_rejected,
-              u.telegram_required
+              np.notify_replacement_rejected
             FROM users u
             LEFT JOIN notification_preferences np ON u.id = np.user_id
             WHERE u.id = ${userId}
@@ -422,52 +364,9 @@ export async function createBatchNotificationsInApp(
             if (!shouldReceive) {
               deliveryStatus = "skipped"
               errorMessage = "User opted out of this notification type"
-            } else if (user.enable_telegram === true && user.telegram_chat_id) {
-              // Send Telegram with retry
-              console.log(`[v0] Sending Telegram to ${fullName} (${userId})`)
-              
-              // Generate apply token for replacement_available notifications
-              let applyToken: string | undefined
-              if (type === "replacement_available" && relatedId) {
-                applyToken = crypto.randomUUID()
-                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                
-                try {
-                  await sql`
-                    INSERT INTO application_tokens (token, replacement_id, user_id, expires_at)
-                    VALUES (${applyToken}, ${relatedId}, ${userId}, ${expiresAt})
-                    ON CONFLICT (user_id, replacement_id) 
-                    DO UPDATE SET token = ${applyToken}, expires_at = ${expiresAt}, used = false
-                  `
-                  console.log("[v0] Token created for batch Telegram:", applyToken)
-                } catch (error) {
-                  console.error("[v0] Error creating application token for batch Telegram:", error)
-                  applyToken = undefined
-                }
-              }
-              
-              const telegramResult = await sendTelegramWithRetry(
-                type,
-                user.telegram_chat_id,
-                fullName,
-                message,
-                relatedId || null,
-                applyToken,
-              )
-
-              if (telegramResult.success) {
-                channelsSent.push("telegram")
-                deliveryStatus = "success"
-                console.log(`[v0] ✓ Telegram delivered to ${fullName}`)
-              } else {
-                channelsFailed.push("telegram")
-                errorMessage = telegramResult.error || "Telegram send failed"
-                deliveryStatus = "partial"
-                console.error(`[v0] ✗ Telegram failed for ${fullName}: ${errorMessage}`)
-              }
             } else {
               deliveryStatus = "success"
-              console.log(`[v0] Telegram not enabled for ${fullName}, in-app only`)
+              channelsSent.push("in_app")
             }
           }
 
@@ -494,7 +393,7 @@ export async function createBatchNotificationsInApp(
               await sql`
                 UPDATE notifications 
                 SET delivery_status = 'failed',
-                    channels_failed = ${["telegram", "in_app"]},
+                    channels_failed = ${["in_app"]},
                     error_message = ${errorMsg}
                 WHERE id = ${notificationId}
               `
@@ -513,12 +412,6 @@ export async function createBatchNotificationsInApp(
     const failed = results.filter(
       (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.success),
     ).length
-    const telegramSent = results.filter(
-      (r) => r.status === "fulfilled" && r.value.channelsSent?.includes("telegram"),
-    ).length
-    const telegramFailed = results.filter(
-      (r) => r.status === "fulfilled" && r.value.channelsFailed?.includes("telegram"),
-    ).length
 
     const duration = Date.now() - startTime
     console.log(`[v0] ═══════════════════════════════════════════════`)
@@ -526,8 +419,6 @@ export async function createBatchNotificationsInApp(
     console.log(`[v0] Total users: ${userIds.length}`)
     console.log(`[v0] Successful: ${successful}`)
     console.log(`[v0] Failed: ${failed}`)
-    console.log(`[v0] Telegram sent: ${telegramSent}`)
-    console.log(`[v0] Telegram failed: ${telegramFailed}`)
     console.log(`[v0] Duration: ${duration}ms (avg ${Math.round(duration / userIds.length)}ms/user)`)
     console.log(`[v0] ═══════════════════════════════════════════════`)
 
@@ -672,9 +563,7 @@ export async function sendBatchReplacementEmails(
         u.first_name,
         u.last_name,
         COALESCE(np.enable_email, true) as enable_email,
-        COALESCE(np.notify_replacement_available, true) as notify_replacement_available,
-        np.telegram_chat_id,
-        COALESCE(np.enable_telegram, false) as enable_telegram
+        COALESCE(np.notify_replacement_available, true) as notify_replacement_available
       FROM users u
       LEFT JOIN notification_preferences np ON u.id = np.user_id
       WHERE u.email IS NOT NULL
@@ -789,214 +678,6 @@ export async function sendBatchReplacementEmails(
   }
 }
 
-async function sendTelegramNotificationMessage(
-  type: string,
-  chatId: string,
-  name: string,
-  message: string,
-  relatedId?: number,
-  applyToken?: string,
-) {
-  console.log("[v0] sendTelegramNotificationMessage called - type:", type, "chatId:", chatId)
-
-  let telegramMessage = ""
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://v0-l-horaire-ryan.vercel.app"
-
-  switch (type) {
-    case "replacement_available":
-      if (relatedId) {
-        const replacement = await sql`
-          SELECT 
-            r.shift_date, 
-            r.shift_type, 
-            r.is_partial, 
-            r.start_time, 
-            r.end_time,
-            u.first_name || ' ' || u.last_name as firefighter_to_replace
-          FROM replacements r
-          LEFT JOIN users u ON r.user_id = u.id
-          WHERE r.id = ${relatedId}
-        `
-
-        if (replacement.length > 0) {
-          const r = replacement[0]
-          const date = parseLocalDate(r.shift_date).toLocaleDateString("fr-CA", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
-
-          const getShiftTypeLabel = (type: string) => {
-            switch (type) {
-              case "day":
-                return "Jour (7h-17h)"
-              case "night":
-                return "Nuit (17h-7h)"
-              case "full_24h":
-                return "24h (7h-7h)"
-              default:
-                return type
-            }
-          }
-          const shiftTypeLabel = getShiftTypeLabel(r.shift_type)
-          const partialInfo =
-            r.is_partial && r.start_time && r.end_time
-              ? `\n⏰ Heures: ${r.start_time.substring(0, 5)} - ${r.end_time.substring(0, 5)}`
-              : ""
-
-          telegramMessage = `🚒 <b>Nouveau remplacement disponible</b>
-
-📅 Date: ${date}
-🕐 Quart: ${shiftTypeLabel}${partialInfo}
-👤 Remplace: ${r.firefighter_to_replace || "Pompier supplémentaire"}
-
-<a href="${appUrl}/apply-replacement?token=${applyToken}">Postuler</a>`
-          console.log("[v0] Telegram message with token URL:", {
-            token: applyToken,
-            url: `${appUrl}/apply-replacement?token=${applyToken}`,
-          })
-        }
-      }
-      break
-
-    case "replacement_accepted":
-    case "application_approved":
-      if (relatedId) {
-        const replacement = await sql`
-          SELECT
-            r.shift_date,
-            r.shift_type,
-            r.is_partial,
-            r.start_time,
-            r.end_time,
-            u.first_name || ' ' || u.last_name as firefighter_to_replace
-          FROM replacements r
-          LEFT JOIN users u ON r.user_id = u.id
-          WHERE r.id = ${relatedId}
-        `
-
-        if (replacement.length > 0) {
-          const r = replacement[0]
-          const date = parseLocalDate(r.shift_date).toLocaleDateString("fr-CA", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
-
-          const getShiftTypeLabel = (type: string) => {
-            switch (type) {
-              case "day":
-                return "Jour (7h-17h)"
-              case "night":
-                return "Nuit (17h-7h)"
-              case "full_24h":
-                return "24h (7h-7h)"
-              default:
-                return type
-            }
-          }
-          const shiftTypeLabel = getShiftTypeLabel(r.shift_type)
-          const partialInfo =
-            r.is_partial && r.start_time && r.end_time
-              ? `\n⏰ Heures: ${r.start_time.substring(0, 5)} - ${r.end_time.substring(0, 5)}`
-              : ""
-
-          telegramMessage = `✅ <b>Candidature acceptée</b>
-
-Félicitations! Votre candidature a été acceptée.
-
-📅 Date: ${date}
-🕐 Quart: ${shiftTypeLabel}${partialInfo}
-👤 Remplace: ${r.firefighter_to_replace || "Pompier supplémentaire"}`
-
-          await sendTelegramMessage(chatId, telegramMessage, {
-            parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "✓ Confirmer la réception",
-                    callback_data: `confirm_replacement_${relatedId}`,
-                  },
-                ],
-              ],
-            },
-          })
-          return // Exit early since we already sent the message with button
-        }
-      }
-      break
-
-    case "replacement_rejected":
-    case "application_rejected":
-      if (relatedId) {
-        const replacement = await sql`
-          SELECT 
-            r.shift_date, 
-            r.shift_type, 
-            r.is_partial, 
-            r.start_time, 
-            r.end_time,
-            u.first_name || ' ' || u.last_name as firefighter_to_replace
-          FROM replacements r
-          LEFT JOIN users u ON r.user_id = u.id
-          WHERE r.id = ${relatedId}
-        `
-
-        if (replacement.length > 0) {
-          const r = replacement[0]
-          const date = parseLocalDate(r.shift_date).toLocaleDateString("fr-CA", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
-
-          const getShiftTypeLabel = (type: string) => {
-            switch (type) {
-              case "day":
-                return "Jour (7h-17h)"
-              case "night":
-                return "Nuit (17h-7h)"
-              case "full_24h":
-                return "24h (7h-7h)"
-              default:
-                return type
-            }
-          }
-          const shiftTypeLabel = getShiftTypeLabel(r.shift_type)
-          const partialInfo =
-            r.is_partial && r.start_time && r.end_time
-              ? `\n⏰ Heures: ${r.start_time.substring(0, 5)} - ${r.end_time.substring(0, 5)}`
-              : ""
-
-          telegramMessage = `❌ <b>Candidature refusée</b>
-
-Votre candidature pour ce remplacement a été refusée.
-
-📅 Date: ${date}
-🕐 Quart: ${shiftTypeLabel}${partialInfo}
-👤 Remplace: ${r.firefighter_to_replace || "Pompier supplémentaire"}`
-        }
-      }
-      break
-
-    case "manual_message":
-      telegramMessage = `📢 <b>Message de l'administration</b>
-
-${message}`
-      break
-
-    // This notification type is no longer supported
-  }
-
-  // Send message without button for other notification types
-  await sendTelegramMessage(chatId, telegramMessage || message, {
-    parse_mode: "HTML",
-  })
-}
 
 async function notifyAdminsOfEmailFailure(recipientEmail: string, notificationType: string, error: any) {
   try {
@@ -1225,36 +906,4 @@ async function sendEmailNotification(
   } else {
     console.log("[v0] No email content generated for type:", type)
   }
-}
-
-async function sendTelegramWithRetry(
-  type: string,
-  chatId: string,
-  fullName: string,
-  message: string,
-  relatedId: number | null,
-  applyToken?: string,
-  maxRetries = 3,
-): Promise<{ success: boolean; error?: string }> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[v0] Telegram attempt ${attempt}/${maxRetries} for chat ${chatId}`)
-      await sendTelegramNotificationMessage(type, chatId, fullName, message, relatedId, applyToken)
-      console.log(`[v0] Telegram sent successfully on attempt ${attempt}`)
-      return { success: true }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`[v0] Telegram attempt ${attempt} failed:`, errorMessage)
-
-      if (attempt < maxRetries) {
-        // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, attempt - 1) * 1000
-        console.log(`[v0] Waiting ${delay}ms before retry...`)
-        await new Promise((resolve) => setTimeout(resolve, delay))
-      } else {
-        return { success: false, error: errorMessage }
-      }
-    }
-  }
-  return { success: false, error: "Max retries exceeded" }
 }

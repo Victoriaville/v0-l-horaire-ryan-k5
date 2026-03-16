@@ -101,7 +101,6 @@ export async function sendManualNotification(message: string, recipientIds: numb
       channels: {
         inApp: boolean
         email: boolean | "disabled"
-        telegram: boolean | "disabled"
       }
       status: "success" | "partial" | "failed" | "skipped"
     }> = []
@@ -117,9 +116,7 @@ export async function sendManualNotification(message: string, recipientIds: numb
           SELECT 
             u.id,
             u.first_name || ' ' || u.last_name as name,
-            np.enable_email,
-            np.enable_telegram,
-            np.telegram_chat_id
+            np.enable_email
           FROM users u
           LEFT JOIN notification_preferences np ON u.id = np.user_id
           WHERE u.id = ${recipientId}
@@ -132,24 +129,15 @@ export async function sendManualNotification(message: string, recipientIds: numb
 
           deliveryDetails.push({
             name: "Utilisateur inconnu",
-            channels: { inApp: false, email: "disabled", telegram: "disabled" },
+            channels: { inApp: false, email: "disabled" },
             status: "skipped",
           })
         } else {
           const user = userPrefs[0]
 
-          console.log("[v0] Sending to user:", {
-            id: user.id,
-            name: user.name,
-            enableEmail: user.enable_email,
-            enableTelegram: user.enable_telegram,
-            telegramChatId: user.telegram_chat_id,
-          })
-
           const channelStatus = {
             inApp: false,
             email: user.enable_email === true ? false : ("disabled" as const),
-            telegram: user.enable_telegram === true && user.telegram_chat_id ? false : ("disabled" as const),
           }
 
           try {
@@ -171,17 +159,11 @@ export async function sendManualNotification(message: string, recipientIds: numb
               channelStatus.email = true
             }
 
-            if (user.enable_telegram === true && user.telegram_chat_id) {
-              channelsSent.push("telegram")
-              channelStatus.telegram = true
-            }
-
             console.log("[v0] createNotification called successfully for user", recipientId, "channels:", channelsSent)
 
             const enabledChannels = [
               true, // in_app always enabled
               user.enable_email === true,
-              user.enable_telegram === true && user.telegram_chat_id,
             ].filter(Boolean).length
 
             const sentChannels = channelsSent.length
@@ -212,7 +194,7 @@ export async function sendManualNotification(message: string, recipientIds: numb
 
             deliveryDetails.push({
               name: user.name,
-              channels: { inApp: false, email: "disabled", telegram: "disabled" },
+              channels: { inApp: false, email: "disabled" },
               status: "failed",
             })
           }
@@ -256,14 +238,14 @@ export async function sendManualNotification(message: string, recipientIds: numb
             ${recipientId},
             ${"failed"},
             ${[]},
-            ${["in_app", "email", "telegram"]},
+            ${["in_app", "email"]},
             ${error instanceof Error ? error.message : String(error)}
           )
         `
 
         deliveryDetails.push({
           name: "Erreur",
-          channels: { inApp: false, email: false, telegram: false },
+          channels: { inApp: false, email: false },
           status: "failed",
         })
       }
