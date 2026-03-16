@@ -321,6 +321,10 @@ export async function login(formData: FormData) {
     // If password_hash is NULL, allow login with email only
 
     await createSession(user.id)
+    console.log("[v0] login: Session created successfully for user", user.id)
+    
+    // Redirect after successful login
+    redirect("/dashboard")
   } catch (error) {
     console.error("[v0] Login error:", error)
 
@@ -330,8 +334,6 @@ export async function login(formData: FormData) {
 
     return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
   }
-
-  redirect("/dashboard")
 }
 
 export async function register(formData: FormData) {
