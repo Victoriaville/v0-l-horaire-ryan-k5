@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import Link from "next/link"
@@ -25,7 +24,7 @@ export function MobileNav({
   absencesBadgeCount = 0,
   notificationErrorsCount = 0,
 }: MobileNavProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = React.useState(false)
   const pathname = usePathname()
 
   const navItems = [
