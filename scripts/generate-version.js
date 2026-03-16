@@ -6,8 +6,12 @@
  * Uses Eastern Time (EST/EDT) - auto-adjusts for daylight saving
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Get current date and time in Eastern Time (EST/EDT)
 const now = new Date();
@@ -39,12 +43,13 @@ const versionContent = `/**
 export const APP_VERSION = '${version}';
 `;
 
-// Write the file - use process.cwd() to get the root directory
-const versionPath = path.join(process.cwd(), 'lib', 'version.ts');
+// Write the file - use the root directory (parent of scripts)
+const rootDir = path.resolve(__dirname, '..');
+const versionPath = path.join(rootDir, 'lib', 'version.ts');
 
 try {
   // Ensure lib directory exists
-  const libDir = path.join(process.cwd(), 'lib');
+  const libDir = path.join(rootDir, 'lib');
   if (!fs.existsSync(libDir)) {
     fs.mkdirSync(libDir, { recursive: true });
   }

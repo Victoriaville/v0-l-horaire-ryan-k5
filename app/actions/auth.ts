@@ -3,6 +3,8 @@
 import { cookies } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { createHmac } from "crypto"
+import { toBase64Url, decodeJWT } from "@/lib/jwt"
 
 export interface User {
   id: number
@@ -153,8 +155,32 @@ async function createSession(userId: number): Promise<string> {
   
   console.log("[v0] createSession: Final cookie options =", cookieOptions)
 
+  // Create a simple JWT payload
+  const jwtPayload = {
+    id: userId.toString(),
+    iat: Math.floor(Date.now() / 1000),
+  }
+  
+  // Convert to base64url using helper function
+  const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }))
+  const payload = toBase64Url(JSON.stringify(jwtPayload))
+  
+  // Create a simple signature using the secret
+  const secret = process.env.JWT_SECRET || "your-secret-key"
+  const crypto = await import("crypto")
+  const hmacSignature = crypto
+    .createHmac("sha256", secret)
+    .update(`${header}.${payload}`)
+    .digest("base64")
+  // Convert base64 to base64url
+  const signature = hmacSignature.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+  
+  const jwt = `${header}.${payload}.${signature}`
+  
+  console.log("[v0] createSession: JWT created successfully")
+
   cookieStore.set("session", sessionToken, cookieOptions)
-  cookieStore.set("userId", userId.toString(), cookieOptions)
+  cookieStore.set("userId", jwt, cookieOptions)
 
   return sessionToken
 }
@@ -165,11 +191,22 @@ const CACHE_TTL = 60000 // 60 seconds (increased from 5 seconds)
 export async function getSession(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
-    const userId = cookieStore.get("userId")?.value
+    const jwtToken = cookieStore.get("userId")?.value
 
-    if (!userId) {
+    if (!jwtToken) {
+      console.log("[v0] getSession: No JWT token found in cookie")
       return null
     }
+
+    // Decode and verify the JWT
+    const decoded = decodeJWT(jwtToken)
+    if (!decoded || !decoded.id) {
+      console.log("[v0] getSession: Failed to decode JWT")
+      return null
+    }
+
+    const userId = Number.parseInt(decoded.id)
+    console.log("[v0] getSession: Extracted userId from JWT =", userId)
 
     // Check cache first
     const cacheKey = `user_${userId}`
@@ -177,6 +214,7 @@ export async function getSession(): Promise<User | null> {
     const now = Date.now()
 
     if (cached && now - cached.timestamp < CACHE_TTL) {
+      console.log("[v0] getSession: Returning cached user")
       return cached.user
     }
 
@@ -189,7 +227,7 @@ export async function getSession(): Promise<User | null> {
         const result = await sql`
           SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone
           FROM users
-          WHERE id = ${Number.parseInt(userId)}
+          WHERE id = ${userId}
         `
 
         const user = result.length > 0 ? (result[0] as User) : null
@@ -253,16 +291,21 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
+  console.log("[v0] login: Called with email:", email)
+
   if (!email) {
     return { error: "Email requis" }
   }
 
   try {
+    console.log("[v0] login: Querying database for user")
     const result = await sql`
       SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
       FROM users
       WHERE email = ${email}
     `
+
+    console.log("[v0] login: Query returned", result.length, "results")
 
     if (result.length === 0) {
       return { error: "Email incorrect" }
@@ -282,7 +325,9 @@ export async function login(formData: FormData) {
     }
     // If password_hash is NULL, allow login with email only
 
+    console.log("[v0] login: Creating session for user", user.id)
     await createSession(user.id)
+    console.log("[v0] login: Session created successfully for user", user.id)
   } catch (error) {
     console.error("[v0] Login error:", error)
 
@@ -293,6 +338,8 @@ export async function login(formData: FormData) {
     return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
   }
 
+  // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
+  console.log("[v0] login: About to redirect to dashboard")
   redirect("/dashboard")
 }
 
@@ -335,6 +382,7 @@ export async function register(formData: FormData) {
     return { error: "Une erreur est survenue lors de l'inscription. Veuillez réessayer." }
   }
 
+  // Redirect after successful registration - OUTSIDE try/catch so redirect exception is not caught
   redirect("/dashboard")
 }
 
