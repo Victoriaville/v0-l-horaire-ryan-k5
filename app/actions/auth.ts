@@ -113,29 +113,14 @@ async function createSession(userId: number): Promise<string> {
   const sessionToken = generateUUID()
   const cookieStore = await cookies()
 
-  // Extract domain from NEXT_PUBLIC_APP_URL for proper cookie domain setting
-  let cookieDomain: string | undefined
+  // Detect HTTPS from the APP URL
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
-  
-  console.log("[v0] createSession: NEXT_PUBLIC_APP_URL =", appUrl)
-  
-  if (appUrl) {
-    try {
-      cookieDomain = new URL(appUrl).hostname
-      console.log("[v0] createSession: Extracted domain =", cookieDomain)
-    } catch (error) {
-      console.error("[v0] createSession: Invalid NEXT_PUBLIC_APP_URL:", error)
-    }
-  } else {
-    console.warn("[v0] createSession: NEXT_PUBLIC_APP_URL is not defined - will use default domain handling")
-  }
-
-  // Detect HTTPS from the APP URL - works on HTTP and HTTPS
-  const isHttps = appUrl?.startsWith("https://") ?? false
+  const isHttps = appUrl?.startsWith("https://") ?? true
   
   console.log("[v0] createSession: isHttps =", isHttps)
 
-  // Build cookie options - domain is optional and will be set only if explicitly configured
+  // Build cookie options - DO NOT set domain explicitly as this breaks cookie persistence on Vercel
+  // Let Next.js handle cookie domain automatically based on the request
   const cookieOptions: any = {
     httpOnly: true,
     secure: isHttps,
@@ -144,15 +129,7 @@ async function createSession(userId: number): Promise<string> {
     path: "/",
   }
   
-  // Only add domain if we have one from NEXT_PUBLIC_APP_URL
-  if (cookieDomain) {
-    cookieOptions.domain = cookieDomain
-    console.log("[v0] createSession: Setting cookie domain =", cookieDomain)
-  } else {
-    console.log("[v0] createSession: No domain configured, letting browser handle cookie domain")
-  }
-  
-  console.log("[v0] createSession: Final cookie options =", cookieOptions)
+  console.log("[v0] createSession: Final cookie options (domain auto-handled by Next.js) =", cookieOptions)
 
   // Create JWT using jose (edge-runtime compatible)
   const jwt = await createJWT(userId.toString())
