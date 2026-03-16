@@ -322,9 +322,6 @@ export async function login(formData: FormData) {
 
     await createSession(user.id)
     console.log("[v0] login: Session created successfully for user", user.id)
-    
-    // Redirect after successful login
-    redirect("/dashboard")
   } catch (error) {
     console.error("[v0] Login error:", error)
 
@@ -334,6 +331,9 @@ export async function login(formData: FormData) {
 
     return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
   }
+
+  // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
+  redirect("/dashboard")
 }
 
 export async function register(formData: FormData) {
@@ -375,6 +375,7 @@ export async function register(formData: FormData) {
     return { error: "Une erreur est survenue lors de l'inscription. Veuillez réessayer." }
   }
 
+  // Redirect after successful registration - OUTSIDE try/catch so redirect exception is not caught
   redirect("/dashboard")
 }
 
