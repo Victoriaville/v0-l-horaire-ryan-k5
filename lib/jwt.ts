@@ -1,3 +1,5 @@
+import { createHmac } from "crypto"
+
 // Helper functions for base64url encoding/decoding that work everywhere
 export function toBase64Url(str: string): string {
   return Buffer.from(str, "utf-8")
@@ -18,8 +20,6 @@ export function fromBase64Url(str: string): string {
 // Utility function to decode and verify JWT (NOT a server action, just a utility)
 export function decodeJWT(token: string): { id: string } | null {
   try {
-    const { createHmac } = require("crypto")
-    
     const parts = token.split(".")
     if (parts.length !== 3) {
       console.log("[v0] decodeJWT: Invalid JWT format - wrong number of parts")
