@@ -121,10 +121,12 @@ async function createSession(userId: number): Promise<string> {
 
   // Build cookie options - DO NOT set domain explicitly as this breaks cookie persistence on Vercel
   // Let Next.js handle cookie domain automatically based on the request
+  // Important: When secure=true (HTTPS), use sameSite="none" to ensure cookies persist across navigation
+  // in v0 perso and other multi-domain environments
   const cookieOptions: any = {
     httpOnly: true,
     secure: isHttps,
-    sameSite: "lax" as const,
+    sameSite: isHttps ? "none" : "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
   }
