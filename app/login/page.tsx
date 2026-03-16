@@ -23,6 +23,22 @@ function SubmitButton() {
 export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
 
+  async function handleLogin(formData: FormData) {
+    console.log("[v0] LoginPage: handleLogin called with formData")
+    setLoginError("")
+    try {
+      const result = await login(formData)
+      console.log("[v0] LoginPage: login result =", result)
+      if (result?.error) {
+        console.log("[v0] LoginPage: Setting error:", result.error)
+        setLoginError(result.error)
+      }
+    } catch (error) {
+      console.error("[v0] LoginPage: Error during login:", error)
+      setLoginError("Une erreur est survenue lors de la connexion")
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-4 relative">
       {/* Version Display - Bottom Right */}
@@ -56,17 +72,7 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form
-            action={async (formData) => {
-              console.log("[v0] LoginPage: Form submitted")
-              const result = await login(formData)
-              if (result?.error) {
-                console.log("[v0] LoginPage: Login error:", result.error)
-                setLoginError(result.error)
-              }
-            }}
-            className="space-y-4"
-          >
+          <form action={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
