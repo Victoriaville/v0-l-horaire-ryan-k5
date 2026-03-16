@@ -291,16 +291,21 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
+  console.log("[v0] login: Called with email:", email)
+
   if (!email) {
     return { error: "Email requis" }
   }
 
   try {
+    console.log("[v0] login: Querying database for user")
     const result = await sql`
       SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
       FROM users
       WHERE email = ${email}
     `
+
+    console.log("[v0] login: Query returned", result.length, "results")
 
     if (result.length === 0) {
       return { error: "Email incorrect" }
@@ -320,6 +325,7 @@ export async function login(formData: FormData) {
     }
     // If password_hash is NULL, allow login with email only
 
+    console.log("[v0] login: Creating session for user", user.id)
     await createSession(user.id)
     console.log("[v0] login: Session created successfully for user", user.id)
   } catch (error) {
@@ -333,6 +339,7 @@ export async function login(formData: FormData) {
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
+  console.log("[v0] login: About to redirect to dashboard")
   redirect("/dashboard")
 }
 
