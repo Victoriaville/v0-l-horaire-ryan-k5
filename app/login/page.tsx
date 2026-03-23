@@ -21,16 +21,12 @@ export default function LoginPage() {
     
     try {
       const formData = new FormData(e.currentTarget)
-      console.log("[v0] LoginPage: Submitting login with email:", formData.get("email"))
       const result = await login(formData)
-      console.log("[v0] LoginPage: login() returned:", result)
       
       if (result?.error) {
-        console.log("[v0] LoginPage: Got error from login:", result.error)
         setLoginError(result.error)
       }
     } catch (error) {
-      console.error("[v0] LoginPage: Caught error:", error)
       setLoginError("Une erreur est survenue lors de la connexion")
     } finally {
       setIsPending(false)

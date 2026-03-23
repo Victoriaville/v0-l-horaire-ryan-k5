@@ -1,9 +1,10 @@
 "use server"
 
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { createJWT, decodeJWT } from "@/lib/jwt"
+import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
 
 export interface User {
   id: number
@@ -104,7 +105,6 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
     return true
   } catch (error) {
-    console.error("[v0] Password verification error:", error)
     return false
   }
 }
@@ -219,13 +219,6 @@ export async function getSession(): Promise<User | null> {
 
     return null
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error("[v0] getSession: Error occurred:", errorMessage)
-
-    if (errorMessage.includes("Too Many") || errorMessage.includes("rate limit")) {
-      console.error("[v0] getSession: Rate limiting detected. Too many database requests.")
-    }
-
     return null
   }
 }
@@ -241,7 +234,17 @@ export async function login(formData: FormData) {
   const password = formData.get("password") as string
 
   if (!email) {
-    return { error: "Email requis" }
+    return { error: "Identifiants invalides" }
+  }
+
+  // Get client IP for rate limiting
+  const headersInstance = await headers()
+  const ip = getClientIP(headersInstance)
+
+  // Check if IP is rate limited
+  const rateLimitCheck = isRateLimited(ip)
+  if (rateLimitCheck.isLocked) {
+    return { error: "Compte temporairement verrouillé. Veuillez réessayer dans 15 minutes." }
   }
 
   try {
@@ -251,33 +254,41 @@ export async function login(formData: FormData) {
       WHERE email = ${email}
     `
 
+    // Check if user exists
     if (result.length === 0) {
-      return { error: "Email incorrect" }
+      recordFailedAttempt(ip)
+      return { error: "Identifiants invalides" }
     }
 
     const user = result[0]
 
+    // Check if password is required
     if (user.password_hash !== null && user.password_hash !== undefined) {
       // If user has a password set, verify it
       if (!password) {
-        return { error: "Mot de passe requis pour cet utilisateur" }
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
       }
       const isValid = await verifyPassword(password, user.password_hash)
       if (!isValid) {
-        return { error: "Mot de passe incorrect" }
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
       }
     }
     // If password_hash is NULL, allow login with email only
 
+    // Successful login - reset rate limit
+    resetRateLimit(ip)
     await createSession(user.id)
   } catch (error) {
-    console.error("[v0] Login error:", error)
+    // Record failed attempt on error
+    recordFailedAttempt(ip)
 
     if (error instanceof Error && error.message.includes("Too Many Requests")) {
-      return { error: "Trop de tentatives de connexion. Veuillez réessayer dans quelques instants." }
+      return { error: "Identifiants invalides" }
     }
 
-    return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
+    return { error: "Identifiants invalides" }
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
@@ -301,7 +312,7 @@ export async function register(formData: FormData) {
     `
 
     if (existing.length > 0) {
-      return { error: "Cet email est déjà utilisé" }
+      return { error: "Identifiants invalides" }
     }
 
     const passwordHash = await hashPassword(password)
@@ -314,13 +325,7 @@ export async function register(formData: FormData) {
 
     await createSession(result[0].id)
   } catch (error) {
-    console.error("[v0] Register error:", error)
-
-    if (error instanceof Error && error.message.includes("Too Many Requests")) {
-      return { error: "Trop de requêtes. Veuillez réessayer dans quelques instants." }
-    }
-
-    return { error: "Une erreur est survenue lors de l'inscription. Veuillez réessayer." }
+    return { error: "Identifiants invalides" }
   }
 
   // Redirect after successful registration - OUTSIDE try/catch so redirect exception is not caught
@@ -368,10 +373,9 @@ export async function createOrResetAdmin() {
       password: "admin123",
     }
   } catch (error) {
-    console.error("[v0] Error creating/resetting admin:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erreur inconnue",
+      error: "Identifiants invalides",
     }
   }
 }
