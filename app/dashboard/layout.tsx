@@ -8,12 +8,8 @@ import { ReplacementsBadge } from "@/components/replacements-badge"
 import { ExchangesBadge } from "@/components/exchanges-badge"
 import { AbsencesBadge } from "@/components/absences-badge"
 import { NotificationErrorsBadge } from "@/components/notification-errors-badge"
-import dynamic from "next/dynamic"
 import { Suspense } from "react"
-
-const MobileNav = dynamic(() => import("@/components/mobile-nav").then((mod) => mod.MobileNav), {
-  ssr: false,
-})
+import { MobileNavWrapper } from "./mobile-nav-wrapper"
 
 export default async function DashboardLayout({
   children,
@@ -43,7 +39,7 @@ export default async function DashboardLayout({
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-3">
               <Suspense fallback={null}>
-                <MobileNav
+                <MobileNavWrapper
                   userName={`${user.first_name} ${user.last_name}`}
                   isAdmin={user.isAdmin}
                   replacementsBadgeCount={replacementsBadgeCount}
