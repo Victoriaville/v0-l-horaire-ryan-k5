@@ -40,9 +40,9 @@ This project uses environment variables for security. **Never commit secrets to 
 1. Clone the repository
 2. Create a `.env.local` file in the root directory
 3. Add the following:
-   ```
+   \`\`\`
    JWT_SECRET=your-64-character-secret-key-provided-by-maintainer
-   ```
+   \`\`\`
    Replace `your-64-character-secret-key-provided-by-maintainer` with the actual key from the maintainer.
 
 4. **Important**: `.env.local` is in `.gitignore` and will never be committed to GitHub
