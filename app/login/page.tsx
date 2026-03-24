@@ -21,20 +21,30 @@ export default function LoginPage() {
     
     try {
       const formData = new FormData(e.currentTarget)
-      console.log("[v0] LoginPage: Submitting login with email:", formData.get("email"))
+      const email = formData.get("email") as string
+      
+      // Client-side validation with generic message
+      if (!email || !isValidEmail(email)) {
+        setLoginError("Identifiants invalides")
+        setIsPending(false)
+        return
+      }
+      
       const result = await login(formData)
-      console.log("[v0] LoginPage: login() returned:", result)
       
       if (result?.error) {
-        console.log("[v0] LoginPage: Got error from login:", result.error)
         setLoginError(result.error)
       }
     } catch (error) {
-      console.error("[v0] LoginPage: Caught error:", error)
       setLoginError("Une erreur est survenue lors de la connexion")
     } finally {
       setIsPending(false)
     }
+  }
+
+  // Simple email validation function (not too strict to avoid false positives)
+  const isValidEmail = (email: string): boolean => {
+    return email.includes("@") && email.includes(".")
   }
 
   return (
@@ -76,7 +86,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
+              <Input id="email" name="email" type="text" placeholder="pompier@caserne.ca" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>

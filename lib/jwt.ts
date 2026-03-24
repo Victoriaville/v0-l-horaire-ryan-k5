@@ -3,11 +3,15 @@ import { SignJWT, jwtVerify } from "jose"
 // Utility function to create JWT (server-only)
 export async function createJWT(id: string): Promise<string> {
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error("JWT_SECRET environment variable is not set. Please configure it in your .env.local or Vercel settings.")
+    }
+    const encodedSecret = new TextEncoder().encode(secret)
     const token = await new SignJWT({ id })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
-      .sign(secret)
+      .sign(encodedSecret)
     return token
   } catch (error) {
     throw error
