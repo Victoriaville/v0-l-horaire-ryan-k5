@@ -21,6 +21,15 @@ export default function LoginPage() {
     
     try {
       const formData = new FormData(e.currentTarget)
+      const email = formData.get("email") as string
+      
+      // Client-side validation with generic message
+      if (!email || !isValidEmail(email)) {
+        setLoginError("Identifiants invalides")
+        setIsPending(false)
+        return
+      }
+      
       const result = await login(formData)
       
       if (result?.error) {
@@ -31,6 +40,11 @@ export default function LoginPage() {
     } finally {
       setIsPending(false)
     }
+  }
+
+  // Simple email validation function (not too strict to avoid false positives)
+  const isValidEmail = (email: string): boolean => {
+    return email.includes("@") && email.includes(".")
   }
 
   return (
@@ -72,7 +86,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
+              <Input id="email" name="email" type="text" placeholder="pompier@caserne.ca" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
