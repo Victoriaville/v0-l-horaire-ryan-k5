@@ -28,3 +28,35 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+
+## Environment Setup
+
+### Important: Environment Variables
+
+This project uses environment variables for security. **Never commit secrets to GitHub.**
+
+### For Local Development
+
+1. Clone the repository
+2. Create a `.env.local` file in the root directory
+3. Add the following:
+   ```
+   JWT_SECRET=your-64-character-secret-key-provided-by-maintainer
+   ```
+   Replace `your-64-character-secret-key-provided-by-maintainer` with the actual key from the maintainer.
+
+4. **Important**: `.env.local` is in `.gitignore` and will never be committed to GitHub
+
+### For Production (Vercel)
+
+The `JWT_SECRET` is already configured in Vercel project settings under **Environment Variables**. No action needed - Vercel handles this automatically.
+
+### Getting the Environment Variables
+
+**Contact the project maintainer to receive the `JWT_SECRET` through a secure channel** (Slack DM, in-person, or secure password manager - never through GitHub, email, or public channels).
+
+### Why This Matters
+
+- **Security**: The secret key is never exposed on GitHub
+- **Flexibility**: Different environments can have different secrets
+- **Safety**: If the secret is compromised, only one copy needs to be rotated
