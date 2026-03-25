@@ -247,9 +247,6 @@ const VALID_ROLES = [
 // Regex email simple mais efficace
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// Regex téléphone : chiffres, espaces, tirets, parenthèses, +
-const PHONE_REGEX = /^[0-9\s\-().+]{7,20}$/
-
 function validateFirefighterData(data: {
   firstName: string
   lastName: string
@@ -275,8 +272,15 @@ function validateFirefighterData(data: {
   if (data.email.trim().length > 255) {
     return "L'adresse email ne peut pas dépasser 255 caractères"
   }
-  if (data.phone && data.phone.trim().length > 0 && !PHONE_REGEX.test(data.phone.trim())) {
-    return "Le numéro de téléphone est invalide"
+  if (data.phone && data.phone.trim().length > 0) {
+    // Extraire uniquement les chiffres et vérifier qu'il y en a au moins 10
+    const digitsOnly = data.phone.replace(/\D/g, "")
+    if (digitsOnly.length < 10) {
+      return "Le numéro de téléphone doit contenir au moins 10 chiffres (ex: 819-555-1234)"
+    }
+    if (digitsOnly.length > 15) {
+      return "Le numéro de téléphone ne peut pas dépasser 15 chiffres"
+    }
   }
   if (!VALID_ROLES.includes(data.role)) {
     return `Le rôle "${data.role}" n'est pas valide`
