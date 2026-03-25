@@ -1,33 +1,56 @@
 import crypto from 'crypto'
-import bcrypt from 'bcrypt'
 
 /**
- * Hash a password using bcrypt
- * bcrypt is more reliable than argon2 in serverless environments
+ * Hash a password using Argon2id via WebAssembly
+ * Uses argon2-wasm for universal compatibility (works in Vercel, Node.js, browsers, etc.)
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with bcrypt')
-    const hash = await bcrypt.hash(password, 12)
-    return hash
+    console.log('[v0] Hashing password with Argon2id WASM')
+    const argon2 = await import('argon2-wasm')
+    
+    // Generate random salt
+    const salt = crypto.randomBytes(16)
+    
+    // Hash with Argon2id parameters
+    const hash = await argon2.hash({
+      password: Buffer.from(password),
+      salt: salt,
+      time: 3,
+      mem: 65536, // 64MB
+      parallelism: 4,
+      hashLen: 32,
+      type: argon2.ArgonType.Argon2id,
+    })
+    
+    return hash.toString('base64')
   } catch (error) {
-    console.error('[v0] Error hashing password with bcrypt:', error)
-    throw new Error('Password hashing failed - bcrypt not available')
+    console.error('[v0] Error hashing password with Argon2id WASM:', error)
+    throw new Error('Password hashing failed - Argon2id WASM not available')
   }
 }
 
 /**
- * Verify a password against a bcrypt hash
+ * Verify a password against an Argon2id hash
  */
 export async function verifyPassword(
   password: string,
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with bcrypt')
-    return await bcrypt.compare(password, hash)
+    console.log('[v0] Verifying password with Argon2id WASM')
+    const argon2 = await import('argon2-wasm')
+    
+    // Decode the hash from base64
+    const hashBuffer = Buffer.from(hash, 'base64')
+    
+    // Verify the password
+    return await argon2.verify({
+      password: Buffer.from(password),
+      hash: hashBuffer,
+    })
   } catch (error) {
-    console.error('[v0] Error verifying bcrypt password:', error)
+    console.error('[v0] Error verifying Argon2id WASM password:', error)
     return false
   }
 }
