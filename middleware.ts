@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { decodeJWT } from "@/lib/jwt"
+import { decryptToken } from "@/lib/jwe"
 
 // Edge Runtime compatible session function (no WASM dependencies)
 // Only used for middleware checks, not password operations
@@ -19,15 +20,19 @@ async function getSessionForMiddleware(userId: string) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Get the JWT from the cookie
-  const cookieValue = request.cookies.get("userId")?.value
+  // Get the encrypted JWT from the cookie
+  const encryptedCookieValue = request.cookies.get("userId")?.value
 
   let userId: string | null = null
 
-  if (cookieValue) {
-    const decoded = await decodeJWT(cookieValue)
-    if (decoded && decoded.id) {
-      userId = decoded.id
+  if (encryptedCookieValue) {
+    // SECURE: Decrypt the JWT first, then decode
+    const jwtToken = await decryptToken(encryptedCookieValue)
+    if (jwtToken) {
+      const decoded = await decodeJWT(jwtToken)
+      if (decoded && decoded.id) {
+        userId = decoded.id
+      }
     }
   }
 

@@ -5,6 +5,19 @@ import "./globals.css"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
 
+// Validate required environment variables at startup
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET environment variable is not set. Please configure it in your .env.local or Vercel settings."
+  )
+}
+
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error(
+    "ENCRYPTION_KEY environment variable is not set. Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+  )
+}
+
 const geistSans = Inter({
   subsets: ["latin"],
   variable: "--font-geist-sans",

@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { createJWT, decodeJWT } from "@/lib/jwt"
+import { encryptToken, decryptToken } from "@/lib/jwe"
 import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
 import { hashPassword as hashPasswordArgon2, verifyPassword as verifyPasswordArgon2, verifyPBKDF2 } from "@/lib/password-crypto"
 
@@ -71,8 +72,12 @@ async function createSession(userId: number): Promise<string> {
   // Create JWT using jose (edge-runtime compatible)
   const jwt = await createJWT(userId.toString())
 
+  // SECURE: Encrypt the JWT before storing in cookie
+  // This ensures the JWT is completely opaque and cannot be read without the encryption key
+  const encryptedJwt = await encryptToken(jwt)
+
   cookieStore.set("session", sessionToken, cookieOptions)
-  cookieStore.set("userId", jwt, cookieOptions)
+  cookieStore.set("userId", encryptedJwt, cookieOptions)
 
   return sessionToken
 }
@@ -83,8 +88,14 @@ const CACHE_TTL = 60000 // 60 seconds (increased from 5 seconds)
 export async function getSession(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
-    const jwtToken = cookieStore.get("userId")?.value
+    const encryptedJwtToken = cookieStore.get("userId")?.value
 
+    if (!encryptedJwtToken) {
+      return null
+    }
+
+    // SECURE: Decrypt the JWT first, then decode
+    const jwtToken = await decryptToken(encryptedJwtToken)
     if (!jwtToken) {
       return null
     }
