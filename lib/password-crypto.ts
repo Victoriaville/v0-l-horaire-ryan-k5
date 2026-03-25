@@ -1,42 +1,34 @@
-import crypto from 'crypto';
+import crypto from 'crypto'
+import bcrypt from 'bcrypt'
 
 /**
- * Hash a password using Argon2id
- * Note: Using crypto.pbkdf2Sync as a fallback since argon2 native bindings may not compile
- * For production, consider using a service like Auth0 or implementing via WebAssembly
+ * Hash a password using bcrypt
+ * bcrypt is more reliable than argon2 in serverless environments
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    // Dynamic import of argon2
-    const argon2 = await import('argon2');
-    const hash = await argon2.hash(password, {
-      type: argon2.argon2id,
-      memoryCost: 65536, // 64 MB
-      timeCost: 3,
-      parallelism: 4,
-    });
-    return hash;
+    console.log('[v0] Hashing password with bcrypt')
+    const hash = await bcrypt.hash(password, 12)
+    return hash
   } catch (error) {
-    console.error('[v0] Error hashing password with Argon2id:', error);
-    // Fallback to a secure hash if argon2 fails
-    throw new Error('Password hashing failed - Argon2id not available');
+    console.error('[v0] Error hashing password with bcrypt:', error)
+    throw new Error('Password hashing failed - bcrypt not available')
   }
 }
 
 /**
- * Verify a password against an Argon2id hash
+ * Verify a password against a bcrypt hash
  */
 export async function verifyPassword(
   password: string,
   hash: string
 ): Promise<boolean> {
   try {
-    // Dynamic import of argon2
-    const argon2 = await import('argon2');
-    return await argon2.verify(hash, password);
+    console.log('[v0] Verifying password with bcrypt')
+    return await bcrypt.compare(password, hash)
   } catch (error) {
-    console.error('[v0] Error verifying Argon2id password:', error);
-    return false;
+    console.error('[v0] Error verifying bcrypt password:', error)
+    return false
   }
 }
 
@@ -51,39 +43,39 @@ export async function verifyPBKDF2(
 ): Promise<boolean> {
   try {
     // The hash is base64 encoded (salt + derived key)
-    const buffer = Buffer.from(hash, 'base64');
+    const buffer = Buffer.from(hash, 'base64')
 
     if (buffer.length !== 48) {
-      console.error('[v0] Invalid PBKDF2 hash length');
-      return false;
+      console.error('[v0] Invalid PBKDF2 hash length')
+      return false
     }
 
     // Extract salt (first 16 bytes) and stored hash (last 32 bytes)
-    const salt = buffer.slice(0, 16);
-    const storedHash = buffer.slice(16, 48);
+    const salt = buffer.slice(0, 16)
+    const storedHash = buffer.slice(16, 48)
 
     // Derive key using same parameters as original
-    const derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+    const derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256')
 
     // Compare timing-safe (manual comparison if timingSafeEqual is not available)
     if (derivedKey.length !== storedHash.length) {
-      return false;
+      return false
     }
 
     try {
-      return crypto.timingSafeEqual(derivedKey, storedHash);
+      return crypto.timingSafeEqual(derivedKey, storedHash)
     } catch {
       // Fallback: manual constant-time comparison
-      let equal = true;
+      let equal = true
       for (let i = 0; i < derivedKey.length; i++) {
         if (derivedKey[i] !== storedHash[i]) {
-          equal = false;
+          equal = false
         }
       }
-      return equal;
+      return equal
     }
   } catch (error) {
-    console.error('[v0] Error verifying PBKDF2 password:', error);
-    return false;
+    console.error('[v0] Error verifying PBKDF2 password:', error)
+    return false
   }
 }
