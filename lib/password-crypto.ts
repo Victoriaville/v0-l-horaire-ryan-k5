@@ -1,22 +1,33 @@
 import crypto from 'crypto'
 
 /**
- * Hash a password using Argon2id
- * Uses @node-rs/argon2 which is optimized for Vercel and serverless environments
+ * Hash a password using Argon2id via pure WASM
+ * Uses argon2wasm - pure WASM implementation compatible with Node.js, Web, and Deno
+ * No native bindings or module loading issues
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with Argon2id')
-    const argon2 = await import('@node-rs/argon2')
+    console.log('[v0] Hashing password with Argon2id WASM')
+    const { hash } = await import('argon2wasm')
     
     // Hash with Argon2id parameters
-    // Default options from @node-rs/argon2 are already optimized
-    const hash = await argon2.hash(password)
+    // time: 3 (iterations), mem: 65536 (64MB), parallelism: 4
+    const hashResult = await hash({
+      pass: password,
+      salt: crypto.randomBytes(16),
+      time: 3,
+      mem: 65536,
+      parallelism: 4,
+      hashLen: 32,
+      type: 2, // 2 = Argon2id
+    })
     
-    return hash
+    // Convert Uint8Array to base64 string for storage
+    const hashBytes = new Uint8Array(hashResult)
+    return Buffer.from(hashBytes).toString('base64')
   } catch (error) {
-    console.error('[v0] Error hashing password with Argon2id:', error)
-    throw new Error('Password hashing failed - Argon2id not available')
+    console.error('[v0] Error hashing password with Argon2id WASM:', error)
+    throw new Error('Password hashing failed - Argon2id WASM not available')
   }
 }
 
@@ -28,13 +39,19 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with Argon2id')
-    const argon2 = await import('@node-rs/argon2')
+    console.log('[v0] Verifying password with Argon2id WASM')
+    const { verify } = await import('argon2wasm')
     
-    // Verify the password against the hash
-    return await argon2.verify(hash, password)
+    // Decode the hash from base64
+    const hashBytes = Buffer.from(hash, 'base64')
+    
+    // Verify the password
+    return await verify({
+      pass: password,
+      hash: hashBytes,
+    })
   } catch (error) {
-    console.error('[v0] Error verifying Argon2id password:', error)
+    console.error('[v0] Error verifying Argon2id WASM password:', error)
     return false
   }
 }
