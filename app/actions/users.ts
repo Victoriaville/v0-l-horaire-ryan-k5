@@ -252,6 +252,18 @@ function extractPhoneDigits(phone: string): string {
   return phone.replace(/\D/g, "")
 }
 
+// Fonction pour formater le téléphone en (XXX) XXX-XXXX
+function formatPhoneNumber(phone: string | null): string | null {
+  if (!phone || phone.trim().length === 0) {
+    return null
+  }
+  const digits = extractPhoneDigits(phone.trim())
+  if (digits.length !== 10) {
+    return null // Normalement impossible car validation passe avant
+  }
+  return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`
+}
+
 function validateFirefighterData(data: {
   firstName: string
   lastName: string
@@ -319,7 +331,7 @@ export async function addFirefighter(data: {
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim(),
       email: data.email.trim().toLowerCase(),
-      phone: data.phone?.trim() || null,
+      phone: formatPhoneNumber(data.phone),
       role: data.role,
       teamId: data.teamId,
     }
@@ -464,7 +476,7 @@ export async function updateFirefighter(
     firstName: data.firstName.trim(),
     lastName: data.lastName.trim(),
     email: data.email.trim().toLowerCase(),
-    phone: data.phone?.trim() || null,
+    phone: formatPhoneNumber(data.phone),
     role: data.role,
     teamIds: data.teamIds,
   }
