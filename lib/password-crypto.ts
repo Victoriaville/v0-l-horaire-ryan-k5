@@ -8,8 +8,6 @@ import { argon2id, argon2Verify } from 'hash-wasm'
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with Argon2id (hash-wasm)')
-
     // Generate random salt (16 bytes) using Node.js crypto.randomBytes
     const salt = new Uint8Array(crypto.randomBytes(16))
 
@@ -40,8 +38,6 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with Argon2id (hash-wasm)')
-
     // argon2Verify handles encoded format (extracts salt/params automatically)
     const isValid = await argon2Verify({ password, hash })
     return isValid

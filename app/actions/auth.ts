@@ -215,24 +215,19 @@ export async function login(formData: FormData) {
       // Check if password needs to be reset (security upgrade or admin reset)
       if (user.password_force_reset) {
         // Password is valid, but user must change it
-        console.log("[v0] Auth login: password_force_reset detected for user:", user.email)
         // Create a real session for authentication
         resetRateLimit(ip)
-        console.log("[v0] Auth login: Creating session for user with force reset")
         await createSession(user.id)
         
-        console.log("[v0] Auth login: Setting flag to redirect to password page")
         // Set flag to redirect AFTER exiting the try/catch
+        // Don't return here - let function continue to redirect logic
         shouldRedirectToPassword = true
         userId = user.id
-        // Don't return here - let function continue to redirect logic
       } else {
         // Only create session if NOT a forced reset (already created above)
         // Successful login - reset rate limit
-        console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
         resetRateLimit(ip)
         await createSession(user.id)
-        console.log("[v0] Auth login: Session created, will redirect to dashboard")
       }
     }
   } catch (error) {
@@ -248,12 +243,10 @@ export async function login(formData: FormData) {
 
   // Check if we need to redirect to password page OUTSIDE the try/catch
   if (shouldRedirectToPassword) {
-    console.log("[v0] Auth login: Redirecting to password page")
     redirect("/dashboard/settings/password?reason=admin_reset")
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
-  console.log("[v0] Auth login: Redirecting to dashboard after successful login")
   redirect("/dashboard")
 }
 
