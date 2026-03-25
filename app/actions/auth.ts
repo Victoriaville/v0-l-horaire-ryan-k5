@@ -223,9 +223,12 @@ export async function login(formData: FormData) {
         console.log("[v0] Creating session before password reset redirect")
         await createSession(user.id)
         
-        console.log("[v0] Session created, redirecting to password reset page")
-        // Redirect to password reset page
-        redirect("/dashboard/settings/password?reason=admin_reset")
+        console.log("[v0] Session created, returning requirePasswordReset flag")
+        // Return flag for client to handle redirect
+        return {
+          requirePasswordReset: true,
+          message: "Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe",
+        }
       }
     }
     // If password_hash is NULL, allow login with email only
