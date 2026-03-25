@@ -1,37 +1,50 @@
 import crypto from 'crypto'
+import fs from 'fs'
+import { createRequire } from 'module'
+
+// Load argon2id using Node.js setupWasm (no bundler needed)
+// Per official docs: in Node.js, use setupWasm + fs.readFileSync to load .wasm binaries
+async function loadArgon2id() {
+  const setupWasm = (await import('argon2id/lib/setup.js')).default
+  const require = createRequire(import.meta.url)
+  const simdPath = require.resolve('argon2id/dist/simd.wasm')
+  const noSimdPath = require.resolve('argon2id/dist/no-simd.wasm')
+
+  return setupWasm(
+    (importObject: WebAssembly.Imports) =>
+      WebAssembly.instantiate(fs.readFileSync(simdPath), importObject),
+    (importObject: WebAssembly.Imports) =>
+      WebAssembly.instantiate(fs.readFileSync(noSimdPath), importObject),
+  )
+}
 
 /**
- * Hash a password using Argon2id
- * Uses argon2id (by OpenPGP) - WASM binary inlined as base64, no external file loading
- * Works in Vercel, v0, and all modern Node.js/browser environments
- * Solves the v0 ESM loader MIME type issue by inlining WASM
+ * Hash a password using Argon2id via Node.js WASM (no bundler)
+ * Uses argon2id (by OpenPGP) loaded directly from disk via fs.readFileSync
+ * Avoids ESM loader MIME type issues in v0/Vercel environments
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with Argon2id (inlined WASM)')
-    const setupWasm = await import('argon2id')
-    const argon2id = await setupWasm.default()
-    
+    console.log('[v0] Hashing password with Argon2id (Node WASM)')
+    const argon2id = await loadArgon2id()
+
     // Generate random salt (16 bytes)
     const salt = crypto.randomBytes(16)
-    
-    // Hash with Argon2id parameters (RFC 9106 recommended)
-    // passes: 2 (iterations/time cost)
-    // memorySize: 2^16 = 65536 KB = 64 MB (memory cost)
-    // parallelism: 4 (degree of parallelism)
+
+    // Hash with Argon2id parameters (RFC 9106)
     const hash = argon2id({
       password: new TextEncoder().encode(password),
-      salt: salt,
+      salt: new Uint8Array(salt),
       parallelism: 4,
       passes: 2,
       memorySize: Math.pow(2, 16), // 64MB
     })
-    
+
     // Combine salt + hash for storage (format: salt || hash)
     const combined = new Uint8Array(salt.length + hash.length)
-    combined.set(salt, 0)
+    combined.set(new Uint8Array(salt), 0)
     combined.set(hash, salt.length)
-    
+
     return Buffer.from(combined).toString('base64')
   } catch (error) {
     console.error('[v0] Error hashing password with Argon2id:', error)
@@ -47,17 +60,16 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with Argon2id (inlined WASM)')
-    const setupWasm = await import('argon2id')
-    const argon2id = await setupWasm.default()
-    
+    console.log('[v0] Verifying password with Argon2id (Node WASM)')
+    const argon2id = await loadArgon2id()
+
     // Decode the combined hash from base64
     const combined = Buffer.from(hash, 'base64')
-    
-    // Extract salt (first 16 bytes) and hash (rest)
+
+    // Extract salt (first 16 bytes) and stored hash (rest)
     const salt = new Uint8Array(combined.buffer, combined.byteOffset, 16)
     const storedHash = new Uint8Array(combined.buffer, combined.byteOffset + 16)
-    
+
     // Re-hash the password with the extracted salt
     const newHash = argon2id({
       password: new TextEncoder().encode(password),
@@ -66,24 +78,16 @@ export async function verifyPassword(
       passes: 2,
       memorySize: Math.pow(2, 16),
     })
-    
-    // Compare hashes (timing-safe comparison)
-    if (newHash.length !== storedHash.length) {
-      return false
-    }
-    
+
+    // Compare hashes (timing-safe)
+    if (newHash.length !== storedHash.length) return false
+
     try {
-      return crypto.timingSafeEqual(
-        Buffer.from(newHash),
-        Buffer.from(storedHash)
-      )
+      return crypto.timingSafeEqual(Buffer.from(newHash), Buffer.from(storedHash))
     } catch {
-      // Fallback: manual constant-time comparison
       let equal = true
       for (let i = 0; i < newHash.length; i++) {
-        if (newHash[i] !== storedHash[i]) {
-          equal = false
-        }
+        if (newHash[i] !== storedHash[i]) equal = false
       }
       return equal
     }
