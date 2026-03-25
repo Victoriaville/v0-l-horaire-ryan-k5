@@ -65,8 +65,23 @@ export async function verifyPBKDF2(
     // Derive key using same parameters as original
     const derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
 
-    // Compare timing-safe
-    return crypto.timingSafeEqual(derivedKey, storedHash);
+    // Compare timing-safe (manual comparison if timingSafeEqual is not available)
+    if (derivedKey.length !== storedHash.length) {
+      return false;
+    }
+
+    try {
+      return crypto.timingSafeEqual(derivedKey, storedHash);
+    } catch {
+      // Fallback: manual constant-time comparison
+      let equal = true;
+      for (let i = 0; i < derivedKey.length; i++) {
+        if (derivedKey[i] !== storedHash[i]) {
+          equal = false;
+        }
+      }
+      return equal;
+    }
   } catch (error) {
     console.error('[v0] Error verifying PBKDF2 password:', error);
     return false;
