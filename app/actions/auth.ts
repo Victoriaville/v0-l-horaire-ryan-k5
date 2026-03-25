@@ -216,26 +216,16 @@ export async function login(formData: FormData) {
       // Check if password needs to be reset (security upgrade or admin reset)
       if (user.password_force_reset) {
         // Password is valid, but user must change it
-        // Create a temporary session token just for password reset
+        console.log("[v0] Password force reset detected for user:", user.email)
+        
+        // Create a real session for authentication
         resetRateLimit(ip)
-        const sessionToken = generateUUID()
-        const cookieStore = await cookies()
-        cookieStore.set("session_temp_reset", sessionToken, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          maxAge: 900, // 15 minutes to complete password reset
-        })
-        cookieStore.set("userId", String(user.id), {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          maxAge: 900,
-        })
-        return {
-          requirePasswordReset: true,
-          message: "Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe",
-        }
+        console.log("[v0] Creating session before password reset redirect")
+        await createSession(user.id)
+        
+        console.log("[v0] Session created, redirecting to password reset page")
+        // Redirect to password reset page
+        redirect("/dashboard/settings/password?reason=admin_reset")
       }
     }
     // If password_hash is NULL, allow login with email only
