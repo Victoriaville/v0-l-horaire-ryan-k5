@@ -1,26 +1,18 @@
 import crypto from 'crypto'
 import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
 
-// Load argon2id using Node.js setupWasm (ESM compatible)
-// Uses import.meta.url instead of createRequire for ESM compatibility
+// Load argon2id using Node.js setupWasm
+// Pass the wasm file paths as strings directly to fs.readFileSync (no require.resolve or fileURLToPath needed)
 async function loadArgon2id() {
   const setupWasm = (await import('argon2id/lib/setup.js')).default
-  const __filename = fileURLToPath(import.meta.url)
-  const __dirname = path.dirname(__filename)
-  
-  // Resolve node_modules path - go up from lib to root, then into node_modules
-  const nodeModulesPath = path.resolve(__dirname, '..', 'node_modules', 'argon2id', 'dist')
-  
-  const simdPath = path.join(nodeModulesPath, 'simd.wasm')
-  const noSimdPath = path.join(nodeModulesPath, 'no-simd.wasm')
 
+  // Per official docs: pass simd + no-simd wasm paths as strings to fs.readFileSync
+  // Using package-relative paths that Node.js resolves from node_modules
   return setupWasm(
     (importObject: WebAssembly.Imports) =>
-      WebAssembly.instantiate(fs.readFileSync(simdPath), importObject),
+      WebAssembly.instantiate(fs.readFileSync('node_modules/argon2id/dist/simd.wasm'), importObject),
     (importObject: WebAssembly.Imports) =>
-      WebAssembly.instantiate(fs.readFileSync(noSimdPath), importObject),
+      WebAssembly.instantiate(fs.readFileSync('node_modules/argon2id/dist/no-simd.wasm'), importObject),
   )
 }
 
