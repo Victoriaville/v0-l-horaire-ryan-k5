@@ -22,6 +22,11 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
+  // Force password reset if needed
+  if (user.password_force_reset) {
+    redirect("/dashboard/settings/password?reason=admin_reset")
+  }
+
   const { getReplacementsAdminActionCount } = await import("@/app/actions/replacements")
   const { getPendingExchangesCount } = await import("@/app/actions/exchanges")
   const { getPendingLeavesCount } = await import("@/app/actions/leaves")

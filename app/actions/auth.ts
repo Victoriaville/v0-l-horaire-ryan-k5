@@ -16,6 +16,7 @@ export interface User {
   is_admin: boolean
   is_owner?: boolean // Added optional is_owner field for owner permissions
   phone?: string
+  password_force_reset?: boolean // Flag to force password reset on next login
 }
 
 function generateUUID(): string {
@@ -112,7 +113,7 @@ export async function getSession(): Promise<User | null> {
       try {
         // Cache miss or expired, fetch from database
         const result = await sql`
-          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone
+          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone, password_force_reset
           FROM users
           WHERE id = ${userId}
         `
@@ -216,14 +217,10 @@ export async function login(formData: FormData) {
       // Check if password needs to be reset (security upgrade or admin reset)
       if (user.password_force_reset) {
         // Password is valid, but user must change it
-        console.log("[v0] Password force reset detected for user:", user.email)
-        
         // Create a real session for authentication
         resetRateLimit(ip)
-        console.log("[v0] Creating session before password reset redirect")
         await createSession(user.id)
         
-        console.log("[v0] Session created, returning requirePasswordReset flag")
         // Return flag for client to handle redirect
         return {
           requirePasswordReset: true,

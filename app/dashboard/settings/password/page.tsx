@@ -18,8 +18,6 @@ export default function PasswordSettingsPage() {
   const searchParams = useSearchParams()
   const isForced = searchParams.get("reason") === "admin_reset" || searchParams.get("reason") === "force_reset"
 
-  console.log("[v0] PasswordSettingsPage rendered. isForced:", isForced, "searchParams:", searchParams.toString())
-
   const [isLoading, setIsLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
