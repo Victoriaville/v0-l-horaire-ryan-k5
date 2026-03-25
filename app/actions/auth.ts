@@ -225,16 +225,16 @@ export async function login(formData: FormData) {
         // Set flag to redirect AFTER exiting the try/catch
         shouldRedirectToPassword = true
         userId = user.id
-        return // Exit early to prevent normal redirect
+        // Don't return here - let function continue to redirect logic
+      } else {
+        // Only create session if NOT a forced reset (already created above)
+        // Successful login - reset rate limit
+        console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
+        resetRateLimit(ip)
+        await createSession(user.id)
+        console.log("[v0] Auth login: Session created, will redirect to dashboard")
       }
     }
-    // If password_hash is NULL, allow login with email only
-
-    // Successful login - reset rate limit
-    console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
-    resetRateLimit(ip)
-    await createSession(user.id)
-    console.log("[v0] Auth login: Session created, will redirect to dashboard")
   } catch (error) {
     // Record failed attempt on error
     recordFailedAttempt(ip)
