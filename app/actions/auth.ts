@@ -5,6 +5,7 @@ import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { createJWT, decodeJWT } from "@/lib/jwt"
 import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
+import { hashPassword as hashPasswordArgon2, verifyPassword as verifyPasswordArgon2, verifyPBKDF2 } from "@/lib/password-crypto"
 
 export interface User {
   id: number
@@ -26,85 +27,22 @@ function generateUUID(): string {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-
-  // Generate a random salt
-  const salt = new Uint8Array(16)
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    crypto.getRandomValues(salt)
-  } else {
-    // Fallback for environments without crypto.getRandomValues
-    for (let i = 0; i < salt.length; i++) {
-      salt[i] = Math.floor(Math.random() * 256)
-    }
-  }
-
-  // Import the password as a key
-  const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-  // Derive bits using PBKDF2
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: salt,
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    key,
-    256,
-  )
-
-  // Combine salt and hash
-  const hashArray = new Uint8Array(derivedBits)
-  const combined = new Uint8Array(salt.length + hashArray.length)
-  combined.set(salt)
-  combined.set(hashArray, salt.length)
-
-  // Convert to base64
-  return Buffer.from(combined).toString("base64")
+  // Use Argon2id for new passwords (more secure than PBKDF2)
+  return await hashPasswordArgon2(password)
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(password)
-
-    // Decode the stored hash
-    const combined = Buffer.from(hash, "base64")
-    const salt = combined.slice(0, 16)
-    const storedHash = combined.slice(16)
-
-    // Import the password as a key
-    const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-    // Derive bits using the same parameters
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: 100000,
-        hash: "SHA-256",
-      },
-      key,
-      256,
-    )
-
-    const derivedHash = new Uint8Array(derivedBits)
-
-    // Compare the hashes
-    if (derivedHash.length !== storedHash.length) {
-      return false
+    // Detect format: Argon2id starts with $argon2id$, PBKDF2 is base64
+    if (hash.startsWith("$argon2id$")) {
+      // Modern Argon2id hash
+      return await verifyPasswordArgon2(password, hash)
+    } else {
+      // Legacy PBKDF2 hash (base64 format)
+      return await verifyPBKDF2(password, hash)
     }
-
-    for (let i = 0; i < derivedHash.length; i++) {
-      if (derivedHash[i] !== storedHash[i]) {
-        return false
-      }
-    }
-
-    return true
   } catch (error) {
+    console.error("[v0] Error verifying password:", error)
     return false
   }
 }
@@ -249,7 +187,7 @@ export async function login(formData: FormData) {
 
   try {
     const result = await sql`
-      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
+      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner, password_force_reset
       FROM users
       WHERE email = ${email}
     `
@@ -273,6 +211,31 @@ export async function login(formData: FormData) {
       if (!isValid) {
         recordFailedAttempt(ip)
         return { error: "Identifiants invalides" }
+      }
+
+      // Check if password needs to be reset (security upgrade or admin reset)
+      if (user.password_force_reset) {
+        // Password is valid, but user must change it
+        // Create a temporary session token just for password reset
+        resetRateLimit(ip)
+        const sessionToken = generateUUID()
+        const cookieStore = await cookies()
+        cookieStore.set("session_temp_reset", sessionToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 900, // 15 minutes to complete password reset
+        })
+        cookieStore.set("userId", String(user.id), {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 900,
+        })
+        return {
+          requirePasswordReset: true,
+          message: "Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe",
+        }
       }
     }
     // If password_hash is NULL, allow login with email only
