@@ -1,59 +1,32 @@
 import crypto from 'crypto'
-import fs from 'fs'
-
-// Load argon2id using Node.js setupWasm
-// Uses import.meta.resolve() - native ESM API in Node.js 18+ to resolve package paths
-// This avoids the ENOENT issue caused by incorrect relative paths to node_modules
-async function loadArgon2id() {
-  const setupWasm = (await import('argon2id/lib/setup.js')).default
-
-  // Resolve the absolute paths to the .wasm files using import.meta.resolve
-  // This returns a file:// URL which we strip to get an absolute path
-  const simdUrl = import.meta.resolve('argon2id/dist/simd.wasm')
-  const noSimdUrl = import.meta.resolve('argon2id/dist/no-simd.wasm')
-
-  // Strip the file:// prefix to get a filesystem path
-  const simdPath = simdUrl.replace('file://', '')
-  const noSimdPath = noSimdUrl.replace('file://', '')
-
-  console.log('[v0] Resolved WASM paths:', simdPath, noSimdPath)
-
-  return setupWasm(
-    (importObject: WebAssembly.Imports) =>
-      WebAssembly.instantiate(fs.readFileSync(simdPath), importObject),
-    (importObject: WebAssembly.Imports) =>
-      WebAssembly.instantiate(fs.readFileSync(noSimdPath), importObject),
-  )
-}
+import { argon2id, argon2Verify } from 'hash-wasm'
 
 /**
- * Hash a password using Argon2id via Node.js WASM (no bundler)
- * Uses argon2id (by OpenPGP) loaded directly from disk via fs.readFileSync
- * Avoids ESM loader MIME type issues in v0/Vercel environments
+ * Hash a password using Argon2id via hash-wasm
+ * hash-wasm bundles WASM as base64 strings directly in the JS - no external file loading,
+ * no MIME type issues, no path resolution problems. Works in v0, Vercel, Node.js, browsers.
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with Argon2id (Node WASM)')
-    const argon2id = await loadArgon2id()
+    console.log('[v0] Hashing password with Argon2id (hash-wasm)')
 
     // Generate random salt (16 bytes)
-    const salt = crypto.randomBytes(16)
+    const salt = new Uint8Array(16)
+    crypto.getRandomValues(salt)
 
-    // Hash with Argon2id parameters (RFC 9106)
-    const hash = argon2id({
-      password: new TextEncoder().encode(password),
-      salt: new Uint8Array(salt),
+    // Hash with Argon2id parameters - outputType "encoded" stores all params in the string
+    // so verification works without storing salt separately
+    const hash = await argon2id({
+      password,
+      salt,
       parallelism: 4,
-      passes: 2,
-      memorySize: Math.pow(2, 16), // 64MB
+      iterations: 3,
+      memorySize: 65536, // 64MB
+      hashLength: 32,
+      outputType: 'encoded', // standard $argon2id$... format, includes salt and params
     })
 
-    // Combine salt + hash for storage (format: salt || hash)
-    const combined = new Uint8Array(salt.length + hash.length)
-    combined.set(new Uint8Array(salt), 0)
-    combined.set(hash, salt.length)
-
-    return Buffer.from(combined).toString('base64')
+    return hash
   } catch (error) {
     console.error('[v0] Error hashing password with Argon2id:', error)
     throw new Error('Password hashing failed - Argon2id not available')
@@ -68,37 +41,11 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with Argon2id (Node WASM)')
-    const argon2id = await loadArgon2id()
+    console.log('[v0] Verifying password with Argon2id (hash-wasm)')
 
-    // Decode the combined hash from base64
-    const combined = Buffer.from(hash, 'base64')
-
-    // Extract salt (first 16 bytes) and stored hash (rest)
-    const salt = new Uint8Array(combined.buffer, combined.byteOffset, 16)
-    const storedHash = new Uint8Array(combined.buffer, combined.byteOffset + 16)
-
-    // Re-hash the password with the extracted salt
-    const newHash = argon2id({
-      password: new TextEncoder().encode(password),
-      salt: salt,
-      parallelism: 4,
-      passes: 2,
-      memorySize: Math.pow(2, 16),
-    })
-
-    // Compare hashes (timing-safe)
-    if (newHash.length !== storedHash.length) return false
-
-    try {
-      return crypto.timingSafeEqual(Buffer.from(newHash), Buffer.from(storedHash))
-    } catch {
-      let equal = true
-      for (let i = 0; i < newHash.length; i++) {
-        if (newHash[i] !== storedHash[i]) equal = false
-      }
-      return equal
-    }
+    // argon2Verify handles encoded format (extracts salt/params automatically)
+    const isValid = await argon2Verify({ password, hash })
+    return isValid
   } catch (error) {
     console.error('[v0] Error verifying Argon2id password:', error)
     return false
@@ -115,7 +62,6 @@ export async function verifyPBKDF2(
   hash: string
 ): Promise<boolean> {
   try {
-    // The hash is base64 encoded (salt + derived key)
     const buffer = Buffer.from(hash, 'base64')
 
     if (buffer.length !== 48) {
@@ -123,27 +69,18 @@ export async function verifyPBKDF2(
       return false
     }
 
-    // Extract salt (first 16 bytes) and stored hash (last 32 bytes)
     const salt = buffer.slice(0, 16)
     const storedHash = buffer.slice(16, 48)
-
-    // Derive key using same parameters as original
     const derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256')
 
-    // Compare timing-safe
-    if (derivedKey.length !== storedHash.length) {
-      return false
-    }
+    if (derivedKey.length !== storedHash.length) return false
 
     try {
       return crypto.timingSafeEqual(derivedKey, storedHash)
     } catch {
-      // Fallback: manual constant-time comparison
       let equal = true
       for (let i = 0; i < derivedKey.length; i++) {
-        if (derivedKey[i] !== storedHash[i]) {
-          equal = false
-        }
+        if (derivedKey[i] !== storedHash[i]) equal = false
       }
       return equal
     }
