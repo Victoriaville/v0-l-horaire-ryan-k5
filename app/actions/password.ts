@@ -23,8 +23,11 @@ export async function changeOwnPassword(
       return { success: false, message: "Utilisateur non trouvé" }
     }
 
+    console.log("[v0] changeOwnPassword: Found user, hash type:", typeof result[0].password_hash, "hash preview:", result[0].password_hash?.substring(0, 50))
+
     // Verify current password
     const isValid = await verifyPassword(currentPassword, result[0].password_hash)
+    console.log("[v0] changeOwnPassword: Password verification result:", isValid)
     if (!isValid) {
       return { success: false, message: "Mot de passe actuel incorrect" }
     }
