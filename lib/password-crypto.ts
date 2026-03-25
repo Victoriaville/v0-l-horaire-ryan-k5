@@ -1,14 +1,20 @@
 import crypto from 'crypto'
 import fs from 'fs'
-import { createRequire } from 'module'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-// Load argon2id using Node.js setupWasm (no bundler needed)
-// Per official docs: in Node.js, use setupWasm + fs.readFileSync to load .wasm binaries
+// Load argon2id using Node.js setupWasm (ESM compatible)
+// Uses import.meta.url instead of createRequire for ESM compatibility
 async function loadArgon2id() {
   const setupWasm = (await import('argon2id/lib/setup.js')).default
-  const require = createRequire(import.meta.url)
-  const simdPath = require.resolve('argon2id/dist/simd.wasm')
-  const noSimdPath = require.resolve('argon2id/dist/no-simd.wasm')
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+  
+  // Resolve node_modules path - go up from lib to root, then into node_modules
+  const nodeModulesPath = path.resolve(__dirname, '..', 'node_modules', 'argon2id', 'dist')
+  
+  const simdPath = path.join(nodeModulesPath, 'simd.wasm')
+  const noSimdPath = path.join(nodeModulesPath, 'no-simd.wasm')
 
   return setupWasm(
     (importObject: WebAssembly.Imports) =>
