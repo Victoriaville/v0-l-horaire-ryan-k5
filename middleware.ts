@@ -33,15 +33,13 @@ export async function middleware(request: NextRequest) {
 
   // Check if user needs password reset and is not already on the password page
   if (pathname.startsWith("/dashboard") && !pathname.includes("/settings/password")) {
-    console.log("[v0] Middleware: Checking password reset for dashboard route:", pathname)
     try {
       const user = await getSession()
       if (user?.password_force_reset) {
-        console.log("[v0] Middleware: password_force_reset=TRUE detected, redirecting to password page")
         return NextResponse.redirect(new URL("/dashboard/settings/password?reason=admin_reset", request.url))
       }
     } catch (error) {
-      console.log("[v0] Middleware: Error getting session:", error)
+      // Error getting session, continue
     }
   }
 

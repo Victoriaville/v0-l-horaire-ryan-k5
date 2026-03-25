@@ -18,14 +18,10 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const user = await getSession()
-  console.log("[v0] Dashboard layout: User session retrieved:", user?.email, "password_force_reset:", user?.password_force_reset)
 
   if (!user) {
-    console.log("[v0] Dashboard layout: No user, redirecting to login")
     redirect("/login")
   }
-
-  console.log("[v0] Dashboard layout: User authenticated:", user.email)
 
   const { getReplacementsAdminActionCount } = await import("@/app/actions/replacements")
   const { getPendingExchangesCount } = await import("@/app/actions/exchanges")
