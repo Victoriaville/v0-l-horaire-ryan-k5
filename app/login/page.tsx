@@ -33,15 +33,20 @@ export default function LoginPage() {
       }
 
       const result = await login(formData)
+      console.log("[v0] Login result:", result)
 
       // Check if password reset is required
       if (result?.requirePasswordReset) {
+        console.log("[v0] Password reset required, redirecting to password change page")
         // Redirect to password reset page with forced flag
         router.push("/dashboard/settings/password?reason=admin_reset")
+        console.log("[v0] router.push called")
         return
       }
 
+      console.log("[v0] No password reset required")
       if (result?.error) {
+        console.log("[v0] Login error:", result.error)
         setLoginError(result.error)
       }
     } catch (error) {
