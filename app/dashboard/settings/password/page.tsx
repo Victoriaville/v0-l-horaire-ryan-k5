@@ -134,14 +134,11 @@ export default function PasswordSettingsPage() {
       setNewPassword("")
       setConfirmPassword("")
 
+      // Redirect immediately without setTimeout to avoid beforeunload dialog
       if (!isForced) {
-        setTimeout(() => {
-          router.push("/dashboard/settings")
-        }, 2000)
+        router.push("/dashboard/settings")
       } else {
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 2000)
+        router.push("/dashboard")
       }
     } else {
       toast.error(result.message)
