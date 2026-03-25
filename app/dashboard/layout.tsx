@@ -25,13 +25,7 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  // Force password reset if needed
-  if (user.password_force_reset) {
-    console.log("[v0] Dashboard layout: password_force_reset=TRUE detected for user:", user.email, "- REDIRECTING to password page")
-    redirect("/dashboard/settings/password?reason=admin_reset")
-  }
-
-  console.log("[v0] Dashboard layout: Proceeding with normal dashboard layout rendering")
+  console.log("[v0] Dashboard layout: User authenticated:", user.email)
 
   const { getReplacementsAdminActionCount } = await import("@/app/actions/replacements")
   const { getPendingExchangesCount } = await import("@/app/actions/exchanges")
