@@ -1,53 +1,35 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { changeOwnPassword } from "@/app/actions/password"
-import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 
-export default function PasswordSettingsPage() {
+export default function ChangePasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isForced = searchParams.get("reason") === "admin_reset" || searchParams.get("reason") === "force_reset"
 
-  const [isLoading, setIsLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Disable back button and page exit if forced reset
-  useEffect(() => {
-    if (!isForced) return
-
-    // Prevent back button
-    const handlePopState = () => {
+  // If forced reset, disable browser back button
+  if (isForced) {
+    if (typeof window !== "undefined") {
       window.history.pushState(null, "", window.location.href)
+      window.addEventListener("popstate", (event) => {
+        window.history.pushState(null, "", window.location.href)
+      })
     }
-    window.history.pushState(null, "", window.location.href)
-    window.addEventListener("popstate", handlePopState)
-
-    // Prevent page unload
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ""
-      return ""
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload)
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState)
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [isForced])
+  }
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -71,6 +53,7 @@ export default function PasswordSettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setSuccess("")
 
     // Validation
     if (!currentPassword) {
@@ -99,50 +82,44 @@ export default function PasswordSettingsPage() {
       return
     }
 
-    setIsLoading(true)
-    const result = await changeOwnPassword(currentPassword, newPassword)
-    setIsLoading(false)
+    try {
+      setIsLoading(true)
+      const result = await changeOwnPassword(currentPassword, newPassword)
 
-    if (result.success) {
-      toast.success(result.message)
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
+      if (result.success) {
+        setSuccess(result.message)
+        setCurrentPassword("")
+        setNewPassword("")
+        setConfirmPassword("")
 
-      // Redirect after 2 seconds if not forced reset
-      if (!isForced) {
-        setTimeout(() => {
-          router.push("/dashboard/settings")
-        }, 2000)
+        // Redirect after 2 seconds if not forced reset, otherwise stay on page
+        if (!isForced) {
+          setTimeout(() => {
+            router.push("/dashboard/settings")
+          }, 2000)
+        }
       } else {
-        // If forced reset, redirect to dashboard
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 2000)
+        setError(result.message)
       }
-    } else {
-      toast.error(result.message)
-      setError(result.message)
+    } catch (err) {
+      setError("Une erreur est survenue lors du changement de mot de passe")
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Changer le mot de passe</h1>
-        {isForced ? (
-          <p className="text-amber-600 font-semibold">
-            Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe avant de continuer.
-          </p>
-        ) : (
-          <p className="text-muted-foreground">Modifiez votre mot de passe</p>
-        )}
-      </div>
-
-      <Card className="max-w-2xl">
+    <div className="p-4 md:p-6 max-w-md mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle>Mot de passe</CardTitle>
-          <CardDescription>Assurez-vous d'utiliser un mot de passe sécurisé et conforme aux critères</CardDescription>
+          <CardTitle>Changer le mot de passe</CardTitle>
+          {isForced ? (
+            <CardDescription className="text-amber-600 font-semibold">
+              Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe avant de continuer.
+            </CardDescription>
+          ) : (
+            <CardDescription>Mettez à jour votre mot de passe de compte</CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,19 +129,20 @@ export default function PasswordSettingsPage() {
               </Alert>
             )}
 
-            {isForced && (
-              <Alert className="border-amber-200 bg-amber-50">
-                <AlertDescription className="text-amber-900">
-                  Vous ne pouvez pas quitter cette page tant que vous n'avez pas mis à jour votre mot de passe.
-                </AlertDescription>
+            {success && (
+              <Alert className="bg-green-50 border-green-200">
+                <AlertDescription className="text-green-800">{success}</AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+              <label htmlFor="current-password" className="text-sm font-medium">
+                Mot de passe actuel
+              </label>
               <Input
-                id="currentPassword"
+                id="current-password"
                 type="password"
+                placeholder="Entrez votre mot de passe actuel"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 disabled={isLoading}
@@ -173,34 +151,38 @@ export default function PasswordSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+              <label htmlFor="new-password" className="text-sm font-medium">
+                Nouveau mot de passe
+              </label>
               <Input
-                id="newPassword"
+                id="new-password"
                 type="password"
+                placeholder="Entrez votre nouveau mot de passe"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={isLoading}
                 required
               />
               <div className="text-xs text-muted-foreground space-y-1 mt-2">
-                <p className="font-semibold">Le mot de passe doit contenir:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  <li className={newPassword.length >= 8 ? "text-green-600" : ""}>Au moins 8 caractères</li>
-                  <li className={/[A-Z]/.test(newPassword) ? "text-green-600" : ""}>Au moins une majuscule (A-Z)</li>
-                  <li className={/[a-z]/.test(newPassword) ? "text-green-600" : ""}>Au moins une minuscule (a-z)</li>
-                  <li className={/[0-9]/.test(newPassword) ? "text-green-600" : ""}>Au moins un chiffre (0-9)</li>
-                  <li className={/[!@#$%^&*]/.test(newPassword) ? "text-green-600" : ""}>
-                    Au moins un caractère spécial (!@#$%^&*)
-                  </li>
+                <p>Le mot de passe doit contenir:</p>
+                <ul className="list-disc list-inside">
+                  <li>Au moins 8 caractères</li>
+                  <li>Au moins une majuscule (A-Z)</li>
+                  <li>Au moins une minuscule (a-z)</li>
+                  <li>Au moins un chiffre (0-9)</li>
+                  <li>Au moins un caractère spécial (!@#$%^&*)</li>
                 </ul>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
+              <label htmlFor="confirm-password" className="text-sm font-medium">
+                Confirmer le nouveau mot de passe
+              </label>
               <Input
-                id="confirmPassword"
+                id="confirm-password"
                 type="password"
+                placeholder="Confirmez votre nouveau mot de passe"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
@@ -208,7 +190,7 @@ export default function PasswordSettingsPage() {
               />
             </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full bg-red-600 hover:bg-red-700">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" />
@@ -229,6 +211,14 @@ export default function PasswordSettingsPage() {
               >
                 Annuler
               </Button>
+            )}
+
+            {isForced && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-sm text-amber-900">
+                  Vous ne pouvez pas quitter cette page tant que vous n'avez pas mis à jour votre mot de passe.
+                </p>
+              </div>
             )}
           </form>
         </CardContent>

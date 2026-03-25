@@ -35,7 +35,7 @@ export async function changeOwnPassword(
     // Update password
     await sql`
       UPDATE users
-      SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP
+      SET password_hash = ${newPasswordHash}, password_force_reset = FALSE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${user.id}
     `
 
@@ -62,7 +62,7 @@ export async function resetFirefighterPassword(
     // Update password
     await sql`
       UPDATE users
-      SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP
+      SET password_hash = ${newPasswordHash}, password_force_reset = TRUE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${userId}
     `
 
