@@ -17,15 +17,20 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const user = await getSession()
+  console.log("[v0] Dashboard layout: User session retrieved:", user?.email, "password_force_reset:", user?.password_force_reset)
 
   if (!user) {
+    console.log("[v0] Dashboard layout: No user, redirecting to login")
     redirect("/login")
   }
 
   // Force password reset if needed
   if (user.password_force_reset) {
+    console.log("[v0] Dashboard layout: Detected password_force_reset=TRUE for user:", user.email, "- REDIRECTING to password page")
     redirect("/dashboard/settings/password?reason=admin_reset")
   }
+
+  console.log("[v0] Dashboard layout: User authenticated and password_force_reset=FALSE, proceeding normally")
 
   const { getReplacementsAdminActionCount } = await import("@/app/actions/replacements")
   const { getPendingExchangesCount } = await import("@/app/actions/exchanges")

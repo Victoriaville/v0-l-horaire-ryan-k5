@@ -217,10 +217,13 @@ export async function login(formData: FormData) {
       // Check if password needs to be reset (security upgrade or admin reset)
       if (user.password_force_reset) {
         // Password is valid, but user must change it
+        console.log("[v0] Auth login: password_force_reset detected for user:", user.email)
         // Create a real session for authentication
         resetRateLimit(ip)
+        console.log("[v0] Auth login: Creating session for user with force reset")
         await createSession(user.id)
         
+        console.log("[v0] Auth login: Returning requirePasswordReset flag")
         // Return flag for client to handle redirect
         return {
           requirePasswordReset: true,
@@ -231,8 +234,10 @@ export async function login(formData: FormData) {
     // If password_hash is NULL, allow login with email only
 
     // Successful login - reset rate limit
+    console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
     resetRateLimit(ip)
     await createSession(user.id)
+    console.log("[v0] Auth login: Session created, redirecting to dashboard")
   } catch (error) {
     // Record failed attempt on error
     recordFailedAttempt(ip)
