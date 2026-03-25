@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,21 @@ export default function PasswordSettingsPage() {
   const [isForced, setIsForced] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
+  // Store event handler refs so we can remove them on successful password change
+  const handleBeforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null)
+  const handlePopStateRef = useRef<(() => void) | null>(null)
+
+  const removeUnloadListeners = () => {
+    if (handleBeforeUnloadRef.current) {
+      window.removeEventListener("beforeunload", handleBeforeUnloadRef.current)
+      handleBeforeUnloadRef.current = null
+    }
+    if (handlePopStateRef.current) {
+      window.removeEventListener("popstate", handlePopStateRef.current)
+      handlePopStateRef.current = null
+    }
+  }
+
   const [isLoading, setIsLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -27,39 +42,32 @@ export default function PasswordSettingsPage() {
 
   // Initialize on client side only
   useEffect(() => {
-    console.log("[v0] Password page: useEffect running, searchParams:", searchParams.toString())
     const forced = searchParams.get("reason") === "admin_reset" || searchParams.get("reason") === "force_reset"
-    console.log("[v0] Password page: isForced detected:", forced)
     setIsForced(forced)
     setIsMounted(true)
-    console.log("[v0] Password page: Component mounted, isMounted set to true")
 
     if (!forced) {
-      console.log("[v0] Password page: Not a forced reset, returning")
       return
     }
-
-    console.log("[v0] Password page: Forced reset detected, preventing back button and page unload")
     // Prevent back button
     const handlePopState = () => {
-      console.log("[v0] Password page: Popstate event blocked")
       window.history.pushState(null, "", window.location.href)
     }
     window.history.pushState(null, "", window.location.href)
     window.addEventListener("popstate", handlePopState)
+    handlePopStateRef.current = handlePopState
 
     // Prevent page unload
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log("[v0] Password page: Before unload event blocked")
       e.preventDefault()
       e.returnValue = ""
       return ""
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
+    handleBeforeUnloadRef.current = handleBeforeUnload
 
     return () => {
-      window.removeEventListener("popstate", handlePopState)
-      window.removeEventListener("beforeunload", handleBeforeUnload)
+      removeUnloadListeners()
     }
   }, [searchParams])
 
@@ -114,33 +122,28 @@ export default function PasswordSettingsPage() {
     }
 
     setIsLoading(true)
-    console.log("[v0] Password page: Calling changeOwnPassword")
     const result = await changeOwnPassword(currentPassword, newPassword)
-    console.log("[v0] Password page: changeOwnPassword result:", result)
     setIsLoading(false)
 
     if (result.success) {
-      console.log("[v0] Password page: Password changed successfully, redirecting")
+      // Remove unload listeners immediately so no warning appears during redirect
+      removeUnloadListeners()
+
       toast.success(result.message)
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
 
-      // Redirect after 2 seconds if not forced reset
       if (!isForced) {
-        console.log("[v0] Password page: Not forced, redirecting to settings")
         setTimeout(() => {
           router.push("/dashboard/settings")
         }, 2000)
       } else {
-        // If forced reset, redirect to dashboard
-        console.log("[v0] Password page: Forced reset, redirecting to dashboard")
         setTimeout(() => {
           router.push("/dashboard")
         }, 2000)
       }
     } else {
-      console.log("[v0] Password page: Password change failed:", result.message)
       toast.error(result.message)
       setError(result.message)
     }
@@ -148,11 +151,8 @@ export default function PasswordSettingsPage() {
 
   // Don't render until mounted on client to avoid hydration mismatch
   if (!isMounted) {
-    console.log("[v0] Password page: Not mounted yet, returning null")
     return null
   }
-
-  console.log("[v0] Password page: Rendering page with isForced:", isForced)
 
   return (
     <div className="p-6">
