@@ -261,43 +261,6 @@ export async function login(formData: FormData) {
   redirect("/dashboard")
 }
 
-export async function register(formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const firstName = formData.get("firstName") as string
-  const lastName = formData.get("lastName") as string
-  const phone = formData.get("phone") as string
-
-  if (!email || !password || !firstName || !lastName) {
-    return { error: "Tous les champs sont requis" }
-  }
-
-  try {
-    const existing = await sql`
-      SELECT id FROM users WHERE email = ${email}
-    `
-
-    if (existing.length > 0) {
-      return { error: "Identifiants invalides" }
-    }
-
-    const passwordHash = await hashPassword(password)
-
-    const result = await sql`
-      INSERT INTO users (email, password_hash, first_name, last_name, phone, role)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${phone || null}, 'firefighter')
-      RETURNING id
-    `
-
-    await createSession(result[0].id)
-  } catch (error) {
-    return { error: "Identifiants invalides" }
-  }
-
-  // Redirect after successful registration - OUTSIDE try/catch so redirect exception is not caught
-  redirect("/dashboard")
-}
-
 export async function logout() {
   await destroySession()
   redirect("/login")
