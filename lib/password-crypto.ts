@@ -10,9 +10,8 @@ export async function hashPassword(password: string): Promise<string> {
   try {
     console.log('[v0] Hashing password with Argon2id (hash-wasm)')
 
-    // Generate random salt (16 bytes)
-    const salt = new Uint8Array(16)
-    crypto.getRandomValues(salt)
+    // Generate random salt (16 bytes) using Node.js crypto.randomBytes
+    const salt = new Uint8Array(crypto.randomBytes(16))
 
     // Hash with Argon2id parameters - outputType "encoded" stores all params in the string
     // so verification works without storing salt separately
