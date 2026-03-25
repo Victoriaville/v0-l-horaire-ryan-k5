@@ -16,7 +16,8 @@ import { Spinner } from "@/components/ui/spinner"
 export default function PasswordSettingsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isForced = searchParams.get("reason") === "admin_reset" || searchParams.get("reason") === "force_reset"
+  const [isForced, setIsForced] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
@@ -24,9 +25,13 @@ export default function PasswordSettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
 
-  // Disable back button and page exit if forced reset
+  // Initialize on client side only
   useEffect(() => {
-    if (!isForced) return
+    const forced = searchParams.get("reason") === "admin_reset" || searchParams.get("reason") === "force_reset"
+    setIsForced(forced)
+    setIsMounted(true)
+
+    if (!forced) return
 
     // Prevent back button
     const handlePopState = () => {
@@ -47,7 +52,7 @@ export default function PasswordSettingsPage() {
       window.removeEventListener("popstate", handlePopState)
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [isForced])
+  }, [searchParams])
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -124,6 +129,11 @@ export default function PasswordSettingsPage() {
       toast.error(result.message)
       setError(result.message)
     }
+  }
+
+  // Don't render until mounted on client to avoid hydration mismatch
+  if (!isMounted) {
+    return null
   }
 
   return (
