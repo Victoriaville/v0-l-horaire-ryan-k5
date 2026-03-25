@@ -134,6 +134,9 @@ importers:
       argon2-wasm:
         specifier: 0.9.0
         version: 0.9.0
+      argon2id:
+        specifier: 1.0.1
+        version: 1.0.1
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.27(postcss@8.5.8)
@@ -1397,6 +1400,9 @@ packages:
   argon2@0.44.0:
     resolution: {integrity: sha512-zHPGN3S55sihSQo0dBbK0A5qpi2R31z7HZDZnry3ifOyj8bZZnpZND2gpmhnRGO1V/d555RwBqIK5W4Mrmv3ig==}
     engines: {node: '>=16.17.0'}
+
+  argon2id@1.0.1:
+    resolution: {integrity: sha512-rsiD3lX+0L0CsiZARp3bf9EGxprtuWAT7PpiJd+Fk53URV0/USOQkBIP1dLTV8t6aui0ECbymQ9W9YCcTd6XgA==}
 
   aria-hidden@1.2.6:
     resolution: {integrity: sha512-ik3ZgC9dY/lYVVM++OISsaYDeg1tb0VtP5uL3ouh1koGOaUMDPpbFIei4JkFimWUFPn90sbMNMXQAIVOlnYKJA==}
@@ -3571,6 +3577,8 @@ snapshots:
       cross-env: 10.1.0
       node-addon-api: 8.6.0
       node-gyp-build: 4.8.4
+
+  argon2id@1.0.1: {}
 
   aria-hidden@1.2.6:
     dependencies:
