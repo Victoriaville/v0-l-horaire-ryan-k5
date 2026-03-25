@@ -1,32 +1,48 @@
 import crypto from 'crypto'
-import bcryptjs from 'bcryptjs'
+import { argon2id, argon2Verify } from 'hash-wasm'
 
 /**
- * Hash a password using bcrypt
+ * Hash a password using Argon2id via hash-wasm
+ * hash-wasm bundles WASM as base64 strings directly in the JS - no external file loading,
+ * no MIME type issues, no path resolution problems. Works in v0, Vercel, Node.js, browsers.
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    const salt = await bcryptjs.genSalt(10)
-    const hash = await bcryptjs.hash(password, salt)
+    // Generate random salt (16 bytes) using Node.js crypto.randomBytes
+    const salt = new Uint8Array(crypto.randomBytes(16))
+
+    // Hash with Argon2id parameters - outputType "encoded" stores all params in the string
+    // so verification works without storing salt separately
+    const hash = await argon2id({
+      password,
+      salt,
+      parallelism: 4,
+      iterations: 3,
+      memorySize: 65536, // 64MB
+      hashLength: 32,
+      outputType: 'encoded', // standard $argon2id$... format, includes salt and params
+    })
+
     return hash
   } catch (error) {
-    console.error('[v0] Error hashing password with bcrypt:', error)
-    throw new Error('Password hashing failed')
+    console.error('[v0] Error hashing password with Argon2id:', error)
+    throw new Error('Password hashing failed - Argon2id not available')
   }
 }
 
 /**
- * Verify a password against a bcrypt hash
+ * Verify a password against an Argon2id hash
  */
 export async function verifyPassword(
   password: string,
   hash: string
 ): Promise<boolean> {
   try {
-    const isValid = await bcryptjs.compare(password, hash)
+    // argon2Verify handles encoded format (extracts salt/params automatically)
+    const isValid = await argon2Verify({ password, hash })
     return isValid
   } catch (error) {
-    console.error('[v0] Error verifying bcrypt password:', error)
+    console.error('[v0] Error verifying Argon2id password:', error)
     return false
   }
 }
