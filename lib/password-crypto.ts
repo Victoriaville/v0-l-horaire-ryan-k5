@@ -1,32 +1,22 @@
 import crypto from 'crypto'
 
 /**
- * Hash a password using Argon2id via WebAssembly
- * Uses argon2-wasm for universal compatibility (works in Vercel, Node.js, browsers, etc.)
+ * Hash a password using Argon2id
+ * Uses @node-rs/argon2 which is optimized for Vercel and serverless environments
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    console.log('[v0] Hashing password with Argon2id WASM')
-    const argon2 = await import('argon2-wasm')
-    
-    // Generate random salt
-    const salt = crypto.randomBytes(16)
+    console.log('[v0] Hashing password with Argon2id')
+    const argon2 = await import('@node-rs/argon2')
     
     // Hash with Argon2id parameters
-    const hash = await argon2.hash({
-      password: Buffer.from(password),
-      salt: salt,
-      time: 3,
-      mem: 65536, // 64MB
-      parallelism: 4,
-      hashLen: 32,
-      type: argon2.ArgonType.Argon2id,
-    })
+    // Default options from @node-rs/argon2 are already optimized
+    const hash = await argon2.hash(password)
     
-    return hash.toString('base64')
+    return hash
   } catch (error) {
-    console.error('[v0] Error hashing password with Argon2id WASM:', error)
-    throw new Error('Password hashing failed - Argon2id WASM not available')
+    console.error('[v0] Error hashing password with Argon2id:', error)
+    throw new Error('Password hashing failed - Argon2id not available')
   }
 }
 
@@ -38,19 +28,13 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    console.log('[v0] Verifying password with Argon2id WASM')
-    const argon2 = await import('argon2-wasm')
+    console.log('[v0] Verifying password with Argon2id')
+    const argon2 = await import('@node-rs/argon2')
     
-    // Decode the hash from base64
-    const hashBuffer = Buffer.from(hash, 'base64')
-    
-    // Verify the password
-    return await argon2.verify({
-      password: Buffer.from(password),
-      hash: hashBuffer,
-    })
+    // Verify the password against the hash
+    return await argon2.verify(hash, password)
   } catch (error) {
-    console.error('[v0] Error verifying Argon2id WASM password:', error)
+    console.error('[v0] Error verifying Argon2id password:', error)
     return false
   }
 }
