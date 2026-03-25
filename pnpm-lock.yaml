@@ -128,6 +128,9 @@ importers:
       argon2:
         specifier: 0.44.0
         version: 0.44.0
+      argon2-browser:
+        specifier: 1.18.0
+        version: 1.18.0
       argon2-wasm:
         specifier: 0.9.0
         version: 0.9.0
@@ -1384,6 +1387,9 @@ packages:
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
+
+  argon2-browser@1.18.0:
+    resolution: {integrity: sha512-ImVAGIItnFnvET1exhsQB7apRztcoC5TnlSqernMJDUjbc/DLq3UEYeXFrLPrlaIl8cVfwnXb6wX2KpFf2zxHw==}
 
   argon2-wasm@0.9.0:
     resolution: {integrity: sha512-bt5xqrDt5FnA1gdLLouOwi2NN1h9BeML8DmKth7CCYhygoXUEDeIxEMB++q+CUPQ8U5gju065Z0MjI+hVSXX7A==}
@@ -3554,6 +3560,8 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+
+  argon2-browser@1.18.0: {}
 
   argon2-wasm@0.9.0: {}
 
