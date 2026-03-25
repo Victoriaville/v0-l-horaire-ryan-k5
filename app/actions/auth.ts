@@ -172,9 +172,90 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  if (!email) {
+  const headersInstance = await headers()
+  const ip = getClientIP(headersInstance)
+
+  // Check if IP is rate limited
+  const rateLimitCheck = isRateLimited(ip)
+  if (rateLimitCheck.isLocked) {
+    return { error: "Compte temporairement verrouillé. Veuillez réessayer dans 15 minutes." }
+  }
+
+  let shouldRedirectToPassword = false
+  let userId: number | null = null
+
+  try {
+    const result = await sql`
+      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner, password_force_reset
+      FROM users
+      WHERE email = ${email}
+    `
+
+    // Check if user exists
+    if (result.length === 0) {
+      recordFailedAttempt(ip)
+      return { error: "Identifiants invalides" }
+    }
+
+    const user = result[0]
+
+    // Check if password is required
+    if (user.password_hash !== null && user.password_hash !== undefined) {
+      // If user has a password set, verify it
+      if (!password) {
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
+      }
+      const isValid = await verifyPassword(password, user.password_hash)
+      if (!isValid) {
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
+      }
+
+      // Check if password needs to be reset (security upgrade or admin reset)
+      if (user.password_force_reset) {
+        // Password is valid, but user must change it
+        console.log("[v0] Auth login: password_force_reset detected for user:", user.email)
+        // Create a real session for authentication
+        resetRateLimit(ip)
+        console.log("[v0] Auth login: Creating session for user with force reset")
+        await createSession(user.id)
+        
+        console.log("[v0] Auth login: Setting flag to redirect to password page")
+        // Set flag to redirect AFTER exiting the try/catch
+        shouldRedirectToPassword = true
+        userId = user.id
+        return // Exit early to prevent normal redirect
+      }
+    }
+    // If password_hash is NULL, allow login with email only
+
+    // Successful login - reset rate limit
+    console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
+    resetRateLimit(ip)
+    await createSession(user.id)
+    console.log("[v0] Auth login: Session created, will redirect to dashboard")
+  } catch (error) {
+    // Record failed attempt on error
+    recordFailedAttempt(ip)
+
+    if (error instanceof Error && error.message.includes("Too Many Requests")) {
+      return { error: "Identifiants invalides" }
+    }
+
     return { error: "Identifiants invalides" }
   }
+
+  // Check if we need to redirect to password page OUTSIDE the try/catch
+  if (shouldRedirectToPassword) {
+    console.log("[v0] Auth login: Redirecting to password page")
+    redirect("/dashboard/settings/password?reason=admin_reset")
+  }
+
+  // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
+  console.log("[v0] Auth login: Redirecting to dashboard after successful login")
+  redirect("/dashboard")
+}
 
   // Get client IP for rate limiting
   const headersInstance = await headers()
