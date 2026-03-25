@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { formatPhoneDisplay, getPhoneErrorMessage } from "@/lib/phone-utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -37,6 +38,8 @@ interface EditFirefighterDialogProps {
 export function EditFirefighterDialog({ firefighter, availableTeams }: EditFirefighterDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -57,6 +60,15 @@ export function EditFirefighterDialog({ firefighter, availableTeams }: EditFiref
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+
+    // Valider le téléphone avant de soumettre
+    const phoneValidationError = getPhoneErrorMessage(formData.phone)
+    if (phoneValidationError) {
+      setPhoneError(phoneValidationError)
+      return
+    }
+
     setIsLoading(true)
 
     const result = await updateFirefighter(firefighter.id, {
@@ -75,6 +87,7 @@ export function EditFirefighterDialog({ firefighter, availableTeams }: EditFiref
       setOpen(false)
       router.refresh()
     } else {
+      setError(result.message)
       toast.error(result.message)
     }
   }
@@ -132,9 +145,14 @@ export function EditFirefighterDialog({ firefighter, availableTeams }: EditFiref
               id="phone"
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => {
+                const formatted = formatPhoneDisplay(e.target.value)
+                setFormData({ ...formData, phone: formatted })
+                setPhoneError(getPhoneErrorMessage(formatted))
+              }}
               placeholder="(819) 555-1234"
             />
+            {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
           </div>
 
           <div className="space-y-2">
@@ -173,6 +191,8 @@ export function EditFirefighterDialog({ firefighter, availableTeams }: EditFiref
               ))}
             </div>
           </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
