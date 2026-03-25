@@ -247,6 +247,11 @@ const VALID_ROLES = [
 // Regex email simple mais efficace
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Fonction pour extraire les chiffres du téléphone
+function extractPhoneDigits(phone: string): string {
+  return phone.replace(/\D/g, "")
+}
+
 function validateFirefighterData(data: {
   firstName: string
   lastName: string
@@ -272,14 +277,11 @@ function validateFirefighterData(data: {
   if (data.email.trim().length > 255) {
     return "L'adresse email ne peut pas dépasser 255 caractères"
   }
+  // Validation stricte du téléphone : exactement 10 chiffres
   if (data.phone && data.phone.trim().length > 0) {
-    // Extraire uniquement les chiffres et vérifier qu'il y en a au moins 10
-    const digitsOnly = data.phone.replace(/\D/g, "")
-    if (digitsOnly.length < 10) {
-      return "Le numéro de téléphone doit contenir au moins 10 chiffres (ex: 819-555-1234)"
-    }
-    if (digitsOnly.length > 15) {
-      return "Le numéro de téléphone ne peut pas dépasser 15 chiffres"
+    const phoneDigits = extractPhoneDigits(data.phone.trim())
+    if (phoneDigits.length !== 10) {
+      return "Le numéro de téléphone doit contenir exactement 10 chiffres"
     }
   }
   if (!VALID_ROLES.includes(data.role)) {
