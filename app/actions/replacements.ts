@@ -1793,7 +1793,8 @@ export async function getReplacementsAdminActionCount() {
     const totalCount = Number(pendingRequests[0]?.count || 0) + Number(expiredReplacements[0]?.count || 0) + Number(assignedReplacements[0]?.count || 0)
     return totalCount
   } catch (error) {
-    console.error("getReplacementsAdminActionCount: Error", error)
+    console.error("getReplacementsAdminActionCount: Error", error instanceof Error ? error.message : String(error))
+    // Return 0 on error to allow dashboard to load even if replacement count fails
     return 0
   }
 }
