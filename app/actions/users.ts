@@ -242,6 +242,15 @@ export async function addFirefighter(data: {
   teamId: number | null
 }): Promise<{ success: boolean; message: string }> {
   try {
+    // SECURITY: Check that the current user is an admin
+    const currentUser = await getSession()
+    if (!currentUser || !currentUser.is_admin) {
+      return {
+        success: false,
+        message: "Non autorisé. Seuls les administrateurs peuvent ajouter des pompiers.",
+      }
+    }
+
     // Check if user already exists
     const existing = await sql`SELECT id FROM users WHERE email = ${data.email}`
 
@@ -281,17 +290,15 @@ export async function addFirefighter(data: {
       `
     }
 
-    const currentUser = await getSession()
-    if (currentUser) {
-      await createAuditLog({
-        userId: currentUser.id,
-        actionType: "USER_CREATED",
-        tableName: "users",
-        recordId: userId,
-        description: `Pompier ajouté: ${data.firstName} ${data.lastName} (${data.email})`,
-        newValues: { firstName: data.firstName, lastName: data.lastName, email: data.email, role: data.role },
-      })
-    }
+    // Log the action (currentUser is already verified as admin above)
+    await createAuditLog({
+      userId: currentUser.id,
+      actionType: "USER_CREATED",
+      tableName: "users",
+      recordId: userId,
+      description: `Pompier ajouté: ${data.firstName} ${data.lastName} (${data.email})`,
+      newValues: { firstName: data.firstName, lastName: data.lastName, email: data.email, role: data.role },
+    })
 
     try {
       revalidatePath("/dashboard/firefighters")

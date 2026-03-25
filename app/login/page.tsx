@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
 import { useState } from "react"
 import { CalendarDays } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [loginError, setLoginError] = useState("")
   const [isPending, setIsPending] = useState(false)
 
@@ -18,23 +20,25 @@ export default function LoginPage() {
     e.preventDefault()
     setLoginError("")
     setIsPending(true)
-    
+
     try {
       const formData = new FormData(e.currentTarget)
       const email = formData.get("email") as string
-      
+
       // Client-side validation with generic message
       if (!email || !isValidEmail(email)) {
         setLoginError("Identifiants invalides")
         setIsPending(false)
         return
       }
-      
+
       const result = await login(formData)
-      
+
+      // If result exists with error, show it (login returns error or redirects, never returns success message on redirect)
       if (result?.error) {
         setLoginError(result.error)
       }
+      // Note: If login() was successful, it calls redirect() server-side which takes over and the client never reaches here
     } catch (error) {
       setLoginError("Une erreur est survenue lors de la connexion")
     } finally {
