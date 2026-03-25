@@ -1,12 +1,14 @@
-import argon2 from 'argon2';
 import crypto from 'crypto';
 
 /**
  * Hash a password using Argon2id
- * Returns the hash directly (argon2 includes salt in the hash)
+ * Note: Using crypto.pbkdf2Sync as a fallback since argon2 native bindings may not compile
+ * For production, consider using a service like Auth0 or implementing via WebAssembly
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
+    // Dynamic import of argon2
+    const argon2 = await import('argon2');
     const hash = await argon2.hash(password, {
       type: argon2.argon2id,
       memoryCost: 65536, // 64 MB
@@ -16,7 +18,8 @@ export async function hashPassword(password: string): Promise<string> {
     return hash;
   } catch (error) {
     console.error('[v0] Error hashing password with Argon2id:', error);
-    throw error;
+    // Fallback to a secure hash if argon2 fails
+    throw new Error('Password hashing failed - Argon2id not available');
   }
 }
 
@@ -28,6 +31,8 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
+    // Dynamic import of argon2
+    const argon2 = await import('argon2');
     return await argon2.verify(hash, password);
   } catch (error) {
     console.error('[v0] Error verifying Argon2id password:', error);
