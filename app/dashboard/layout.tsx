@@ -10,6 +10,7 @@ import { AbsencesBadge } from "@/components/absences-badge"
 import { NotificationErrorsBadge } from "@/components/notification-errors-badge"
 import { Suspense } from "react"
 import { MobileNavWrapper } from "./mobile-nav-wrapper"
+import { headers } from "next/headers"
 
 export default async function DashboardLayout({
   children,

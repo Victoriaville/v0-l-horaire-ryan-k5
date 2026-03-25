@@ -5,6 +5,7 @@ import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { createJWT, decodeJWT } from "@/lib/jwt"
 import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
+import { hashPassword as hashPasswordArgon2, verifyPassword as verifyPasswordArgon2, verifyPBKDF2 } from "@/lib/password-crypto"
 
 export interface User {
   id: number
@@ -15,6 +16,7 @@ export interface User {
   is_admin: boolean
   is_owner?: boolean // Added optional is_owner field for owner permissions
   phone?: string
+  password_force_reset?: boolean // Flag to force password reset on next login
 }
 
 function generateUUID(): string {
@@ -26,85 +28,22 @@ function generateUUID(): string {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-
-  // Generate a random salt
-  const salt = new Uint8Array(16)
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    crypto.getRandomValues(salt)
-  } else {
-    // Fallback for environments without crypto.getRandomValues
-    for (let i = 0; i < salt.length; i++) {
-      salt[i] = Math.floor(Math.random() * 256)
-    }
-  }
-
-  // Import the password as a key
-  const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-  // Derive bits using PBKDF2
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: salt,
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    key,
-    256,
-  )
-
-  // Combine salt and hash
-  const hashArray = new Uint8Array(derivedBits)
-  const combined = new Uint8Array(salt.length + hashArray.length)
-  combined.set(salt)
-  combined.set(hashArray, salt.length)
-
-  // Convert to base64
-  return Buffer.from(combined).toString("base64")
+  // Use Argon2id for new passwords (more secure than PBKDF2)
+  return await hashPasswordArgon2(password)
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(password)
-
-    // Decode the stored hash
-    const combined = Buffer.from(hash, "base64")
-    const salt = combined.slice(0, 16)
-    const storedHash = combined.slice(16)
-
-    // Import the password as a key
-    const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-    // Derive bits using the same parameters
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: 100000,
-        hash: "SHA-256",
-      },
-      key,
-      256,
-    )
-
-    const derivedHash = new Uint8Array(derivedBits)
-
-    // Compare the hashes
-    if (derivedHash.length !== storedHash.length) {
-      return false
+    // Detect format: Argon2id starts with $argon2id$, PBKDF2 is base64
+    if (hash.startsWith("$argon2id$")) {
+      // Modern Argon2id hash
+      return await verifyPasswordArgon2(password, hash)
+    } else {
+      // Legacy PBKDF2 hash (base64 format)
+      return await verifyPBKDF2(password, hash)
     }
-
-    for (let i = 0; i < derivedHash.length; i++) {
-      if (derivedHash[i] !== storedHash[i]) {
-        return false
-      }
-    }
-
-    return true
   } catch (error) {
+    console.error("[v0] Error verifying password:", error)
     return false
   }
 }
@@ -174,7 +113,7 @@ export async function getSession(): Promise<User | null> {
       try {
         // Cache miss or expired, fetch from database
         const result = await sql`
-          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone
+          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone, password_force_reset
           FROM users
           WHERE id = ${userId}
         `
@@ -233,11 +172,6 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  if (!email) {
-    return { error: "Identifiants invalides" }
-  }
-
-  // Get client IP for rate limiting
   const headersInstance = await headers()
   const ip = getClientIP(headersInstance)
 
@@ -247,9 +181,12 @@ export async function login(formData: FormData) {
     return { error: "Compte temporairement verrouillé. Veuillez réessayer dans 15 minutes." }
   }
 
+  let shouldRedirectToPassword = false
+  let userId: number | null = null
+
   try {
     const result = await sql`
-      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
+      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner, password_force_reset
       FROM users
       WHERE email = ${email}
     `
@@ -274,12 +211,25 @@ export async function login(formData: FormData) {
         recordFailedAttempt(ip)
         return { error: "Identifiants invalides" }
       }
-    }
-    // If password_hash is NULL, allow login with email only
 
-    // Successful login - reset rate limit
-    resetRateLimit(ip)
-    await createSession(user.id)
+      // Check if password needs to be reset (security upgrade or admin reset)
+      if (user.password_force_reset) {
+        // Password is valid, but user must change it
+        // Create a real session for authentication
+        resetRateLimit(ip)
+        await createSession(user.id)
+        
+        // Set flag to redirect AFTER exiting the try/catch
+        // Don't return here - let function continue to redirect logic
+        shouldRedirectToPassword = true
+        userId = user.id
+      } else {
+        // Only create session if NOT a forced reset (already created above)
+        // Successful login - reset rate limit
+        resetRateLimit(ip)
+        await createSession(user.id)
+      }
+    }
   } catch (error) {
     // Record failed attempt on error
     recordFailedAttempt(ip)
@@ -289,6 +239,11 @@ export async function login(formData: FormData) {
     }
 
     return { error: "Identifiants invalides" }
+  }
+
+  // Check if we need to redirect to password page OUTSIDE the try/catch
+  if (shouldRedirectToPassword) {
+    redirect("/dashboard/settings/password?reason=admin_reset")
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught

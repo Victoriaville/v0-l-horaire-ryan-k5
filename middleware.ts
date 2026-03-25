@@ -2,6 +2,20 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { decodeJWT } from "@/lib/jwt"
 
+// Edge Runtime compatible session function (no WASM dependencies)
+// Only used for middleware checks, not password operations
+async function getSessionForMiddleware(userId: string) {
+  try {
+    const { sql } = await import("@/lib/db")
+    const result = await sql`
+      SELECT id, email, first_name, last_name, role, is_admin, password_force_reset FROM users WHERE id = ${parseInt(userId)}
+    `
+    return result[0] || null
+  } catch (error) {
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
@@ -28,6 +42,20 @@ export async function middleware(request: NextRequest) {
   // Redirect to dashboard if authenticated and trying to access auth pages
   if (userId && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
+  }
+
+  // Check if user needs password reset and is not already on the password page
+  if (pathname.startsWith("/dashboard") && !pathname.includes("/settings/password")) {
+    try {
+      if (userId) {
+        const user = await getSessionForMiddleware(userId)
+        if (user?.password_force_reset) {
+          return NextResponse.redirect(new URL("/dashboard/settings/password?reason=admin_reset", request.url))
+        }
+      }
+    } catch (error) {
+      // Error getting session, continue
+    }
   }
 
   return NextResponse.next()
