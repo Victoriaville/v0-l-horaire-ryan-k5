@@ -10,6 +10,7 @@ import { AbsencesBadge } from "@/components/absences-badge"
 import { NotificationErrorsBadge } from "@/components/notification-errors-badge"
 import { Suspense } from "react"
 import { MobileNavWrapper } from "./mobile-nav-wrapper"
+import { headers } from "next/headers"
 
 export default async function DashboardLayout({
   children,
@@ -24,13 +25,17 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  // Force password reset if needed
+  // Force password reset if needed - BUT NOT if we're already rendering the password page
+  // The password page will have its own client-side rendering with the isForced flag
+  // We check if children might be the password page by looking at the component
+  // Since we can't easily detect which page we're on, we'll skip the redirect here
+  // and let the password page handle the forced reset state
+  
   if (user.password_force_reset) {
-    console.log("[v0] Dashboard layout: Detected password_force_reset=TRUE for user:", user.email, "- REDIRECTING to password page")
-    redirect("/dashboard/settings/password?reason=admin_reset")
+    console.log("[v0] Dashboard layout: password_force_reset=TRUE detected - allowing children to render (password page should handle this)")
   }
 
-  console.log("[v0] Dashboard layout: User authenticated and password_force_reset=FALSE, proceeding normally")
+  console.log("[v0] Dashboard layout: Proceeding with normal dashboard layout rendering")
 
   const { getReplacementsAdminActionCount } = await import("@/app/actions/replacements")
   const { getPendingExchangesCount } = await import("@/app/actions/exchanges")

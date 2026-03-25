@@ -35,21 +35,14 @@ export default function LoginPage() {
       const result = await login(formData)
       console.log("[v0] Login page: Result from login action:", result)
 
-      // Check if password reset is required
-      if (result?.requirePasswordReset) {
-        console.log("[v0] Login page: Password reset required, redirecting to password page")
-        // Redirect to password reset page with forced flag
-        router.push("/dashboard/settings/password?reason=admin_reset")
-        console.log("[v0] Login page: router.push() called")
-        return
-      }
-
-      console.log("[v0] Login page: No password reset required")
+      // If result exists with error, show it (login returns error or redirects, never returns success message on redirect)
       if (result?.error) {
         console.log("[v0] Login page: Login error:", result.error)
         setLoginError(result.error)
       }
+      // Note: If login() was successful, it calls redirect() server-side which takes over and the client never reaches here
     } catch (error) {
+      console.log("[v0] Login page: Caught error:", error)
       setLoginError("Une erreur est survenue lors de la connexion")
     } finally {
       setIsPending(false)

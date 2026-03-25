@@ -223,12 +223,9 @@ export async function login(formData: FormData) {
         console.log("[v0] Auth login: Creating session for user with force reset")
         await createSession(user.id)
         
-        console.log("[v0] Auth login: Returning requirePasswordReset flag")
-        // Return flag for client to handle redirect
-        return {
-          requirePasswordReset: true,
-          message: "Pour des raisons de sécurité, vous devez mettre à jour votre mot de passe",
-        }
+        console.log("[v0] Auth login: Redirecting to password page")
+        // Redirect to password reset page - this will execute OUTSIDE the try/catch
+        redirect("/dashboard/settings/password?reason=admin_reset")
       }
     }
     // If password_hash is NULL, allow login with email only
@@ -237,7 +234,7 @@ export async function login(formData: FormData) {
     console.log("[v0] Auth login: Successful login for user:", user?.email, "- creating session")
     resetRateLimit(ip)
     await createSession(user.id)
-    console.log("[v0] Auth login: Session created, redirecting to dashboard")
+    console.log("[v0] Auth login: Session created, will redirect to dashboard")
   } catch (error) {
     // Record failed attempt on error
     recordFailedAttempt(ip)
@@ -245,11 +242,17 @@ export async function login(formData: FormData) {
     if (error instanceof Error && error.message.includes("Too Many Requests")) {
       return { error: "Identifiants invalides" }
     }
+    
+    // Check if this is a redirect() error - if so, rethrow it
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+      throw error
+    }
 
     return { error: "Identifiants invalides" }
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
+  console.log("[v0] Auth login: Redirecting to dashboard after successful login")
   redirect("/dashboard")
 }
 
