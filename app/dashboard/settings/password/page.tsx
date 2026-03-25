@@ -134,11 +134,12 @@ export default function PasswordSettingsPage() {
       setNewPassword("")
       setConfirmPassword("")
 
-      // Redirect immediately without setTimeout to avoid beforeunload dialog
+      // Use window.location.href for a hard navigation that bypasses beforeunload
+      // This ensures no browser warning appears after successful password change
       if (!isForced) {
-        router.push("/dashboard/settings")
+        window.location.href = "/dashboard/settings"
       } else {
-        router.push("/dashboard")
+        window.location.href = "/dashboard"
       }
     } else {
       toast.error(result.message)
