@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createLeaveRequest } from "@/app/actions/leaves"
+import { validateLeafDates, getPastDateWarning } from "@/lib/leave-validation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +17,55 @@ export default function NewLeavePage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const [pastDateWarning, setPastDateWarning] = useState<string | null>(null)
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setStartDate(value)
+    setValidationError(null)
+    
+    if (value && endDate) {
+      const error = validateLeafDates(value, endDate)
+      if (error) {
+        setValidationError(error)
+      }
+    }
+
+    if (value) {
+      const warning = getPastDateWarning(value)
+      setPastDateWarning(warning)
+    }
+  }
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEndDate(value)
+    setValidationError(null)
+    
+    if (startDate && value) {
+      const error = validateLeafDates(startDate, value)
+      if (error) {
+        setValidationError(error)
+      }
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
+    setValidationError(null)
+    
+    // Validation finale avant envoi
+    const formStartDate = formData.get("startDate") as string
+    const formEndDate = formData.get("endDate") as string
+    
+    const error = validateLeafDates(formStartDate, formEndDate)
+    if (error) {
+      setValidationError(error)
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const result = await createLeaveRequest(formData)
@@ -65,13 +113,37 @@ export default function NewLeavePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="startDate">Date de début</Label>
-                  <Input id="startDate" name="startDate" type="date" required disabled={isSubmitting} />
+                  <Input 
+                    id="startDate" 
+                    name="startDate" 
+                    type="date" 
+                    required 
+                    disabled={isSubmitting}
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">Date de fin</Label>
-                  <Input id="endDate" name="endDate" type="date" required disabled={isSubmitting} />
+                  <Input 
+                    id="endDate" 
+                    name="endDate" 
+                    type="date" 
+                    required 
+                    disabled={isSubmitting}
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                  />
                 </div>
               </div>
+
+              {validationError && (
+                <div className="text-sm text-destructive font-medium">{validationError}</div>
+              )}
+
+              {pastDateWarning && !validationError && (
+                <div className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">{pastDateWarning}</div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="leaveType">Type d'absence</Label>

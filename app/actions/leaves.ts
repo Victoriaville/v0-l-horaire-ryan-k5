@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { createNotification } from "./notifications"
 import { parseLocalDate } from "@/lib/date-utils"
 import { sendEmail } from "@/lib/email"
+import { validateLeafDates } from "@/lib/leave-validation"
 
 async function checkOverlappingLeaves(userId: number, startDate: string, endDate: string, excludeLeaveId?: number) {
   const query = excludeLeaveId
@@ -74,8 +75,10 @@ export async function createLeaveRequest(formData: FormData) {
 
   const targetUserId = user.is_admin && userId ? Number.parseInt(userId) : user.id
 
-  if (!startDate || !endDate) {
-    return { error: "Les dates sont requises" }
+  // Validation des dates
+  const dateValidationError = validateLeafDates(startDate, endDate)
+  if (dateValidationError) {
+    return { error: dateValidationError }
   }
 
   const hasOverlap = await checkOverlappingLeaves(targetUserId, startDate, endDate)
@@ -436,10 +439,24 @@ export async function deleteLeave(leaveId: number) {
   }
 }
 
-export async function updateLeave(leaveId: number, startDate: string, endDate: string, reason: string) {
+export async function updateLeave(
+  leaveId: number,
+  startDate: string,
+  endDate: string,
+  leaveType: string,
+  reason: string,
+  startTime: string,
+  endTime: string,
+) {
   const user = await getSession()
   if (!user) {
     return { error: "Non authentifié" }
+  }
+
+  // Validation des dates
+  const dateValidationError = validateLeafDates(startDate, endDate)
+  if (dateValidationError) {
+    return { error: dateValidationError }
   }
 
   const leaveResult = await sql`
@@ -468,14 +485,17 @@ export async function updateLeave(leaveId: number, startDate: string, endDate: s
   try {
     await sql`
       UPDATE leaves
-      SET 
+      SET
         start_date = ${startDate},
         end_date = ${endDate},
+        leave_type = ${leaveType},
+        start_time = ${startTime || null},
+        end_time = ${endTime || null},
         reason = ${reason || null},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${leaveId}
     `
-    revalidatePath("/dashboard/absences")
+    revalidatePath("/dashboard/leaves")
 
     try {
       invalidateCache()

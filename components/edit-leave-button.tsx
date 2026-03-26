@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { validateLeafDates, getPastDateWarning } from "@/lib/leave-validation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -41,18 +42,62 @@ export function EditLeaveButton({
 }: EditLeaveButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [formStartDate, setFormStartDate] = useState(startDate)
+  const [formEndDate, setFormEndDate] = useState(endDate)
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const [pastDateWarning, setPastDateWarning] = useState<string | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormStartDate(value)
+    setValidationError(null)
+
+    if (value && formEndDate) {
+      const error = validateLeafDates(value, formEndDate)
+      if (error) {
+        setValidationError(error)
+      }
+    }
+
+    if (value) {
+      const warning = getPastDateWarning(value)
+      setPastDateWarning(warning)
+    }
+  }
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormEndDate(value)
+    setValidationError(null)
+
+    if (formStartDate && value) {
+      const error = validateLeafDates(formStartDate, value)
+      if (error) {
+        setValidationError(error)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setValidationError(null)
+
+    // Validation finale avant envoi
+    const error = validateLeafDates(formStartDate, formEndDate)
+    if (error) {
+      setValidationError(error)
+      return
+    }
+
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
     const result = await updateLeave(
       leaveId,
-      formData.get("startDate") as string,
-      formData.get("endDate") as string,
+      formStartDate,
+      formEndDate,
       formData.get("leaveType") as string,
       formData.get("reason") as string,
       formData.get("startTime") as string,
@@ -97,16 +142,33 @@ export function EditLeaveButton({
                 id="startDate"
                 name="startDate"
                 type="date"
-                defaultValue={startDate}
+                value={formStartDate}
+                onChange={handleStartDateChange}
                 required
                 disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="endDate">Date de fin</Label>
-              <Input id="endDate" name="endDate" type="date" defaultValue={endDate} required disabled={isLoading} />
+              <Input 
+                id="endDate" 
+                name="endDate" 
+                type="date" 
+                value={formEndDate}
+                onChange={handleEndDateChange}
+                required 
+                disabled={isLoading} 
+              />
             </div>
           </div>
+
+          {validationError && (
+            <div className="text-sm text-destructive font-medium">{validationError}</div>
+          )}
+
+          {pastDateWarning && !validationError && (
+            <div className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">{pastDateWarning}</div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="leaveType">Type d'absence</Label>
