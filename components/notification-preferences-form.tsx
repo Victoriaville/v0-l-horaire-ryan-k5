@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { updateUserPreferences } from "@/app/actions/notifications"
-import { generateTelegramLink, disconnectTelegram } from "@/app/actions/telegram"
-import { Bell, MessageSquare, ExternalLink } from "lucide-react"
+import { Bell } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface NotificationPreferencesFormProps {
@@ -19,17 +18,12 @@ export function NotificationPreferencesForm({ userId, initialPreferences }: Noti
   const [preferences, setPreferences] = useState({
     enable_app: initialPreferences?.enable_app ?? true,
     enable_email: initialPreferences?.enable_email ?? false,
-    enable_telegram: initialPreferences?.enable_telegram ?? true,
-    telegram_chat_id: initialPreferences?.telegram_chat_id ?? null,
-    telegram_required: initialPreferences?.telegram_required ?? true,
     notify_replacement_available: true,
     notify_replacement_accepted: true,
     notify_replacement_rejected: initialPreferences?.notify_replacement_rejected ?? false,
   })
 
   const [savingToggles, setSavingToggles] = useState<Set<string>>(new Set())
-  const [connectingTelegram, setConnectingTelegram] = useState(false)
-  const [disconnectingTelegram, setDisconnectingTelegram] = useState(false)
 
   const handleToggle = async (key: string, value: boolean) => {
     const newPreferences = { ...preferences, [key]: value }
@@ -48,47 +42,7 @@ export function NotificationPreferencesForm({ userId, initialPreferences }: Noti
     }, 500)
   }
 
-  const handleTelegramConnect = async () => {
-    setConnectingTelegram(true)
-    try {
-      const result = await generateTelegramLink()
-      if (result.success && result.link) {
-        window.location.href = result.link
-      } else {
-        console.error("Failed to generate Telegram link:", result.error)
-        alert("Erreur lors de la génération du lien Telegram")
-      }
-    } catch (error) {
-      console.error("Error connecting Telegram:", error)
-      alert("Erreur lors de la connexion à Telegram")
-    } finally {
-      setConnectingTelegram(false)
-    }
-  }
 
-  const handleTelegramDisconnect = async () => {
-    if (preferences.telegram_required) {
-      return
-    }
-
-    setDisconnectingTelegram(true)
-    try {
-      const result = await disconnectTelegram()
-      if (result.success) {
-        const newPreferences = {
-          ...preferences,
-          telegram_chat_id: null,
-          enable_telegram: false,
-        }
-        setPreferences(newPreferences)
-        await updateUserPreferences(userId, newPreferences)
-      }
-    } catch (error) {
-      console.error("Error disconnecting Telegram:", error)
-    } finally {
-      setDisconnectingTelegram(false)
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -118,56 +72,6 @@ export function NotificationPreferencesForm({ userId, initialPreferences }: Noti
               onCheckedChange={(value) => handleToggle("enable_app", value)}
               disabled={savingToggles.has("enable_app")}
             />
-          </div>
-
-          <div className="flex items-center justify-between bg-red-50 dark:bg-red-950 p-4 rounded-lg border border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-3 flex-1">
-              <MessageSquare className="h-5 w-5 text-red-600 dark:text-red-400" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-base font-semibold">Notifications par Telegram</h3>
-                  {preferences.telegram_required && (
-                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">
-                      Géré par l'administrateur
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {preferences.telegram_required
-                    ? "Telegram est géré par l'administrateur"
-                    : "Connectez Telegram pour recevoir les notifications"}
-                </p>
-                {preferences.telegram_chat_id ? (
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      Connecté
-                    </Badge>
-                    {!preferences.telegram_required && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={handleTelegramDisconnect}
-                        disabled={disconnectingTelegram}
-                      >
-                        {disconnectingTelegram ? "Déconnexion..." : "Déconnecter"}
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={handleTelegramConnect}
-                    disabled={connectingTelegram}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    {connectingTelegram ? "Connexion..." : "Connecter Telegram"}
-                    <ExternalLink className="h-3 w-3 ml-2" />
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </Card>

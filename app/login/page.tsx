@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { APP_VERSION } from "@/lib/version"
 import { useState } from "react"
 import { CalendarDays } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [loginError, setLoginError] = useState("")
   const [isPending, setIsPending] = useState(false)
 
@@ -18,23 +20,35 @@ export default function LoginPage() {
     e.preventDefault()
     setLoginError("")
     setIsPending(true)
-    
+
     try {
       const formData = new FormData(e.currentTarget)
-      console.log("[v0] LoginPage: Submitting login with email:", formData.get("email"))
+      const email = formData.get("email") as string
+
+      // Client-side validation with generic message
+      if (!email || !isValidEmail(email)) {
+        setLoginError("Identifiants invalides")
+        setIsPending(false)
+        return
+      }
+
       const result = await login(formData)
-      console.log("[v0] LoginPage: login() returned:", result)
-      
+
+      // If result exists with error, show it (login returns error or redirects, never returns success message on redirect)
       if (result?.error) {
-        console.log("[v0] LoginPage: Got error from login:", result.error)
         setLoginError(result.error)
       }
+      // Note: If login() was successful, it calls redirect() server-side which takes over and the client never reaches here
     } catch (error) {
-      console.error("[v0] LoginPage: Caught error:", error)
       setLoginError("Une erreur est survenue lors de la connexion")
     } finally {
       setIsPending(false)
     }
+  }
+
+  // Simple email validation function (not too strict to avoid false positives)
+  const isValidEmail = (email: string): boolean => {
+    return email.includes("@") && email.includes(".")
   }
 
   return (
@@ -61,7 +75,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
-            <CalendarDays className="h-6 w-6 text-red-600" />
+            <CalendarDays className="h-6 w-6 text-purple-600" />
             Horaire SSIV
           </CardTitle>
           <CardDescription className="text-center">Connectez-vous à votre compte</CardDescription>
@@ -76,7 +90,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="pompier@caserne.ca" required />
+              <Input id="email" name="email" type="text" placeholder="pompier@caserne.ca" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>

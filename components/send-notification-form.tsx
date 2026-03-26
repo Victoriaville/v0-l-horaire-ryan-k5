@@ -28,7 +28,6 @@ interface DeliveryDetail {
   channels: {
     inApp: boolean
     email: boolean | "disabled"
-    telegram: boolean | "disabled" | "not_connected" | "failed" | "sent"
   }
   status: "success" | "partial" | "failed" | "skipped"
 }
@@ -123,28 +122,6 @@ export function SendNotificationForm() {
   const charCount = message.length
   const maxChars = 500
 
-  const getTelegramStatusMessage = (telegramStatus: boolean | "disabled" | "not_connected" | "failed" | "sent") => {
-    if (telegramStatus === "sent" || telegramStatus === true) {
-      return { text: "Telegram envoyé", color: "text-green-600", icon: "✓" }
-    }
-    if (telegramStatus === "disabled") {
-      return { text: "Telegram désactivé", color: "text-red-600", icon: "✗" }
-    }
-    if (telegramStatus === "not_connected") {
-      return { text: "Telegram non connecté", color: "text-red-600", icon: "✗" }
-    }
-    if (telegramStatus === "failed" || telegramStatus === false) {
-      return { text: "Échec d'envoi Telegram", color: "text-red-600", icon: "✗" }
-    }
-    return { text: "Statut inconnu", color: "text-gray-600", icon: "○" }
-  }
-
-  const getTelegramStats = () => {
-    const sent = deliveryDetails.filter((d) => d.channels.telegram === "sent" || d.channels.telegram === true).length
-    const notSent = deliveryDetails.length - sent
-    return { sent, notSent }
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {deliverySummary && (
@@ -168,23 +145,24 @@ export function SendNotificationForm() {
 
               {deliveryDetails.length > 0 && (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {deliveryDetails.map((detail, index) => {
-                    const telegramStatus = getTelegramStatusMessage(detail.channels.telegram)
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-3 p-3 rounded border ${
-                          telegramStatus.icon === "✓" ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
-                        }`}
-                      >
-                        <span className={`font-semibold text-lg ${telegramStatus.color}`}>{telegramStatus.icon}</span>
-                        <div className="flex-1">
-                          <span className="font-medium text-gray-900">{detail.name}</span>
-                          <span className={`ml-2 text-sm ${telegramStatus.color}`}>- {telegramStatus.text}</span>
-                        </div>
+                  {deliveryDetails.map((detail, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center gap-3 p-3 rounded border ${
+                        detail.status === "success" ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
+                      }`}
+                    >
+                      <span className={`font-semibold text-lg ${detail.status === "success" ? "text-green-600" : "text-red-600"}`}>
+                        {detail.status === "success" ? "✓" : "✗"}
+                      </span>
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-900">{detail.name}</span>
+                        <span className={`ml-2 text-sm ${detail.status === "success" ? "text-green-600" : "text-red-600"}`}>
+                          - {detail.status === "success" ? "Envoyé" : "Échoué"}
+                        </span>
                       </div>
-                    )
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -192,14 +170,19 @@ export function SendNotificationForm() {
                 <div className="text-sm font-semibold text-green-900">
                   Total: {deliveryDetails.length} destinataire(s)
                 </div>
-                {deliveryDetails.length > 0 && (
+                {deliverySummary && (
                   <>
                     <div className="text-sm text-green-700">
-                      • {getTelegramStats().sent} notification(s) Telegram envoyée(s)
+                      • {deliverySummary.successCount} notification(s) envoyée(s)
                     </div>
-                    {getTelegramStats().notSent > 0 && (
+                    {deliverySummary.partialCount > 0 && (
+                      <div className="text-sm text-orange-700">
+                        • {deliverySummary.partialCount} partiellement envoyée(s)
+                      </div>
+                    )}
+                    {deliverySummary.failedCount > 0 && (
                       <div className="text-sm text-red-700">
-                        • {getTelegramStats().notSent} non envoyée(s) (désactivé/non connecté/échec)
+                        • {deliverySummary.failedCount} échouée(s)
                       </div>
                     )}
                   </>

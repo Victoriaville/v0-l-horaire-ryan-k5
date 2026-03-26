@@ -1,9 +1,12 @@
 "use server"
 
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { sql } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { createJWT, decodeJWT } from "@/lib/jwt"
+import { encryptToken, decryptToken } from "@/lib/jwe"
+import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
+import { hashPassword as hashPasswordArgon2, verifyPassword as verifyPasswordArgon2, verifyPBKDF2 } from "@/lib/password-crypto"
 
 export interface User {
   id: number
@@ -14,6 +17,7 @@ export interface User {
   is_admin: boolean
   is_owner?: boolean // Added optional is_owner field for owner permissions
   phone?: string
+  password_force_reset?: boolean // Flag to force password reset on next login
 }
 
 function generateUUID(): string {
@@ -25,86 +29,22 @@ function generateUUID(): string {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-
-  // Generate a random salt
-  const salt = new Uint8Array(16)
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    crypto.getRandomValues(salt)
-  } else {
-    // Fallback for environments without crypto.getRandomValues
-    for (let i = 0; i < salt.length; i++) {
-      salt[i] = Math.floor(Math.random() * 256)
-    }
-  }
-
-  // Import the password as a key
-  const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-  // Derive bits using PBKDF2
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: salt,
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    key,
-    256,
-  )
-
-  // Combine salt and hash
-  const hashArray = new Uint8Array(derivedBits)
-  const combined = new Uint8Array(salt.length + hashArray.length)
-  combined.set(salt)
-  combined.set(hashArray, salt.length)
-
-  // Convert to base64
-  return Buffer.from(combined).toString("base64")
+  // Use Argon2id for new passwords (more secure than PBKDF2)
+  return await hashPasswordArgon2(password)
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(password)
-
-    // Decode the stored hash
-    const combined = Buffer.from(hash, "base64")
-    const salt = combined.slice(0, 16)
-    const storedHash = combined.slice(16)
-
-    // Import the password as a key
-    const key = await crypto.subtle.importKey("raw", data, { name: "PBKDF2" }, false, ["deriveBits"])
-
-    // Derive bits using the same parameters
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: 100000,
-        hash: "SHA-256",
-      },
-      key,
-      256,
-    )
-
-    const derivedHash = new Uint8Array(derivedBits)
-
-    // Compare the hashes
-    if (derivedHash.length !== storedHash.length) {
-      return false
+    // Detect format: Argon2id starts with $argon2id$, PBKDF2 is base64
+    if (hash.startsWith("$argon2id$")) {
+      // Modern Argon2id hash
+      return await verifyPasswordArgon2(password, hash)
+    } else {
+      // Legacy PBKDF2 hash (base64 format)
+      return await verifyPBKDF2(password, hash)
     }
-
-    for (let i = 0; i < derivedHash.length; i++) {
-      if (derivedHash[i] !== storedHash[i]) {
-        return false
-      }
-    }
-
-    return true
   } catch (error) {
-    console.error("[v0] Password verification error:", error)
+    console.error("[v0] Error verifying password:", error)
     return false
   }
 }
@@ -132,8 +72,12 @@ async function createSession(userId: number): Promise<string> {
   // Create JWT using jose (edge-runtime compatible)
   const jwt = await createJWT(userId.toString())
 
+  // SECURE: Encrypt the JWT before storing in cookie
+  // This ensures the JWT is completely opaque and cannot be read without the encryption key
+  const encryptedJwt = await encryptToken(jwt)
+
   cookieStore.set("session", sessionToken, cookieOptions)
-  cookieStore.set("userId", jwt, cookieOptions)
+  cookieStore.set("userId", encryptedJwt, cookieOptions)
 
   return sessionToken
 }
@@ -144,8 +88,14 @@ const CACHE_TTL = 60000 // 60 seconds (increased from 5 seconds)
 export async function getSession(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
-    const jwtToken = cookieStore.get("userId")?.value
+    const encryptedJwtToken = cookieStore.get("userId")?.value
 
+    if (!encryptedJwtToken) {
+      return null
+    }
+
+    // SECURE: Decrypt the JWT first, then decode
+    const jwtToken = await decryptToken(encryptedJwtToken)
     if (!jwtToken) {
       return null
     }
@@ -174,7 +124,7 @@ export async function getSession(): Promise<User | null> {
       try {
         // Cache miss or expired, fetch from database
         const result = await sql`
-          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone
+          SELECT id, email, first_name, last_name, role, is_admin, is_owner, phone, password_force_reset
           FROM users
           WHERE id = ${userId}
         `
@@ -219,13 +169,6 @@ export async function getSession(): Promise<User | null> {
 
     return null
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error("[v0] getSession: Error occurred:", errorMessage)
-
-    if (errorMessage.includes("Too Many") || errorMessage.includes("rate limit")) {
-      console.error("[v0] getSession: Rate limiting detected. Too many database requests.")
-    }
-
     return null
   }
 }
@@ -240,138 +183,85 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  if (!email) {
-    return { error: "Email requis" }
+  const headersInstance = await headers()
+  const ip = getClientIP(headersInstance)
+
+  // Check if IP is rate limited
+  const rateLimitCheck = isRateLimited(ip)
+  if (rateLimitCheck.isLocked) {
+    return { error: "Compte temporairement verrouillé. Veuillez réessayer dans 15 minutes." }
   }
+
+  let shouldRedirectToPassword = false
+  let userId: number | null = null
 
   try {
     const result = await sql`
-      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner
+      SELECT id, email, password_hash, first_name, last_name, role, is_admin, is_owner, password_force_reset
       FROM users
       WHERE email = ${email}
     `
 
+    // Check if user exists
     if (result.length === 0) {
-      return { error: "Email incorrect" }
+      recordFailedAttempt(ip)
+      return { error: "Identifiants invalides" }
     }
 
     const user = result[0]
 
+    // Check if password is required
     if (user.password_hash !== null && user.password_hash !== undefined) {
       // If user has a password set, verify it
       if (!password) {
-        return { error: "Mot de passe requis pour cet utilisateur" }
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
       }
       const isValid = await verifyPassword(password, user.password_hash)
       if (!isValid) {
-        return { error: "Mot de passe incorrect" }
+        recordFailedAttempt(ip)
+        return { error: "Identifiants invalides" }
+      }
+
+      // Check if password needs to be reset (security upgrade or admin reset)
+      if (user.password_force_reset) {
+        // Password is valid, but user must change it
+        // Create a real session for authentication
+        resetRateLimit(ip)
+        await createSession(user.id)
+        
+        // Set flag to redirect AFTER exiting the try/catch
+        // Don't return here - let function continue to redirect logic
+        shouldRedirectToPassword = true
+        userId = user.id
+      } else {
+        // Only create session if NOT a forced reset (already created above)
+        // Successful login - reset rate limit
+        resetRateLimit(ip)
+        await createSession(user.id)
       }
     }
-    // If password_hash is NULL, allow login with email only
-
-    await createSession(user.id)
   } catch (error) {
-    console.error("[v0] Login error:", error)
+    // Record failed attempt on error
+    recordFailedAttempt(ip)
 
     if (error instanceof Error && error.message.includes("Too Many Requests")) {
-      return { error: "Trop de tentatives de connexion. Veuillez réessayer dans quelques instants." }
+      return { error: "Identifiants invalides" }
     }
 
-    return { error: "Une erreur est survenue lors de la connexion. Veuillez réessayer." }
+    return { error: "Identifiants invalides" }
+  }
+
+  // Check if we need to redirect to password page OUTSIDE the try/catch
+  if (shouldRedirectToPassword) {
+    redirect("/dashboard/settings/password?reason=admin_reset")
   }
 
   // Redirect after successful login - OUTSIDE try/catch so redirect exception is not caught
   redirect("/dashboard")
 }
 
-export async function register(formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const firstName = formData.get("firstName") as string
-  const lastName = formData.get("lastName") as string
-  const phone = formData.get("phone") as string
-
-  if (!email || !password || !firstName || !lastName) {
-    return { error: "Tous les champs sont requis" }
-  }
-
-  try {
-    const existing = await sql`
-      SELECT id FROM users WHERE email = ${email}
-    `
-
-    if (existing.length > 0) {
-      return { error: "Cet email est déjà utilisé" }
-    }
-
-    const passwordHash = await hashPassword(password)
-
-    const result = await sql`
-      INSERT INTO users (email, password_hash, first_name, last_name, phone, role)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${phone || null}, 'firefighter')
-      RETURNING id
-    `
-
-    await createSession(result[0].id)
-  } catch (error) {
-    console.error("[v0] Register error:", error)
-
-    if (error instanceof Error && error.message.includes("Too Many Requests")) {
-      return { error: "Trop de requêtes. Veuillez réessayer dans quelques instants." }
-    }
-
-    return { error: "Une erreur est survenue lors de l'inscription. Veuillez réessayer." }
-  }
-
-  // Redirect after successful registration - OUTSIDE try/catch so redirect exception is not caught
-  redirect("/dashboard")
-}
-
 export async function logout() {
   await destroySession()
   redirect("/login")
-}
-
-export async function createOrResetAdmin() {
-  try {
-    // Hash the password using PBKDF2
-    const passwordHash = await hashPassword("admin123")
-
-    // Check if admin account exists
-    const existing = await sql`
-      SELECT id FROM users WHERE email = 'admin@caserne.ca'
-    `
-
-    if (existing.length > 0) {
-      // Update existing admin account
-      await sql`
-        UPDATE users
-        SET password_hash = ${passwordHash},
-            first_name = 'Admin',
-            last_name = 'Caserne',
-            role = 'captain',
-            is_admin = true,
-            is_owner = true
-        WHERE email = 'admin@caserne.ca'
-      `
-    } else {
-      // Create new admin account
-      await sql`
-        INSERT INTO users (email, password_hash, first_name, last_name, role, is_admin, is_owner)
-        VALUES ('admin@caserne.ca', ${passwordHash}, 'Admin', 'Caserne', 'captain', true, true)
-      `
-    }
-
-    return {
-      success: true,
-      email: "admin@caserne.ca",
-      password: "admin123",
-    }
-  } catch (error) {
-    console.error("[v0] Error creating/resetting admin:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Erreur inconnue",
-    }
-  }
 }
