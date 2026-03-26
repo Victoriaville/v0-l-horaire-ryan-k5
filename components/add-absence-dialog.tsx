@@ -22,24 +22,31 @@ interface AddAbsenceDialogProps {
 
 export function AddAbsenceDialog({ open, onOpenChange, isAdmin, firefighters, userId }: AddAbsenceDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState(userId.toString())
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMessage(null)
 
     const formData = new FormData(e.currentTarget)
     if (isAdmin) {
       formData.set("userId", selectedUserId)
     }
 
+    console.log("[v0] Submitting leave request form")
     const result = await createLeaveRequest(formData)
+    console.log("[v0] Leave request result:", result)
 
     if (result.error) {
-      toast.error(result.error)
+      console.log("[v0] Error returned:", result.error)
+      setErrorMessage(result.error)
     } else {
+      console.log("[v0] Success! Closing dialog")
       toast.success("Absence créée avec succès")
       setSelectedUserId(userId.toString())
+      setErrorMessage(null)
       onOpenChange(false)
     }
 
@@ -53,6 +60,12 @@ export function AddAbsenceDialog({ open, onOpenChange, isAdmin, firefighters, us
           <DialogTitle>Ajouter une absence</DialogTitle>
           <DialogDescription>Créer une nouvelle demande d'absence</DialogDescription>
         </DialogHeader>
+
+        {errorMessage && (
+          <div className="rounded-md bg-red-50 p-3 border border-red-200">
+            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isAdmin && (

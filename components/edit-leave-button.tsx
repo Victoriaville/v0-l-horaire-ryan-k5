@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { validateLeafDates, getPastDateWarning } from "@/lib/leave-validation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -42,81 +41,40 @@ export function EditLeaveButton({
 }: EditLeaveButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [formStartDate, setFormStartDate] = useState(startDate)
-  const [formEndDate, setFormEndDate] = useState(endDate)
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [pastDateWarning, setPastDateWarning] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setFormStartDate(value)
-    setValidationError(null)
-
-    if (value && formEndDate) {
-      const error = validateLeafDates(value, formEndDate)
-      if (error) {
-        setValidationError(error)
-      }
-    }
-
-    if (value) {
-      const warning = getPastDateWarning(value)
-      setPastDateWarning(warning)
-    }
-  }
-
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setFormEndDate(value)
-    setValidationError(null)
-
-    if (formStartDate && value) {
-      const error = validateLeafDates(formStartDate, value)
-      if (error) {
-        setValidationError(error)
-      }
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setValidationError(null)
-
-    // Validation finale avant envoi
-    const error = validateLeafDates(formStartDate, formEndDate)
-    if (error) {
-      setValidationError(error)
-      return
-    }
-
     setIsLoading(true)
+    setErrorMessage(null)
 
     const formData = new FormData(e.currentTarget)
+    console.log("[v0] Submitting leave update form")
     const result = await updateLeave(
       leaveId,
-      formStartDate,
-      formEndDate,
+      formData.get("startDate") as string,
+      formData.get("endDate") as string,
       formData.get("leaveType") as string,
       formData.get("reason") as string,
       formData.get("startTime") as string,
       formData.get("endTime") as string,
     )
+    console.log("[v0] Leave update result:", result)
 
     setIsLoading(false)
 
     if (result.error) {
-      toast({
-        title: "Erreur",
-        description: result.error,
-        variant: "destructive",
-      })
+      console.log("[v0] Error returned:", result.error)
+      setErrorMessage(result.error)
     } else {
+      console.log("[v0] Success! Closing dialog")
       toast({
         title: "Succès",
         description: "La demande a été modifiée avec succès",
       })
+      setErrorMessage(null)
       setIsOpen(false)
       router.refresh()
     }
@@ -134,6 +92,13 @@ export function EditLeaveButton({
           <DialogTitle>Modifier la demande d'absence</DialogTitle>
           <DialogDescription>Modifiez les détails de votre demande d'absence</DialogDescription>
         </DialogHeader>
+
+        {errorMessage && (
+          <div className="rounded-md bg-red-50 p-3 border border-red-200">
+            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -142,33 +107,16 @@ export function EditLeaveButton({
                 id="startDate"
                 name="startDate"
                 type="date"
-                value={formStartDate}
-                onChange={handleStartDateChange}
+                defaultValue={startDate}
                 required
                 disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="endDate">Date de fin</Label>
-              <Input 
-                id="endDate" 
-                name="endDate" 
-                type="date" 
-                value={formEndDate}
-                onChange={handleEndDateChange}
-                required 
-                disabled={isLoading} 
-              />
+              <Input id="endDate" name="endDate" type="date" defaultValue={endDate} required disabled={isLoading} />
             </div>
           </div>
-
-          {validationError && (
-            <div className="text-sm text-destructive font-medium">{validationError}</div>
-          )}
-
-          {pastDateWarning && !validationError && (
-            <div className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">{pastDateWarning}</div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="leaveType">Type d'absence</Label>

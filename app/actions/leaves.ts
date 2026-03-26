@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache"
 import { createNotification } from "./notifications"
 import { parseLocalDate } from "@/lib/date-utils"
 import { sendEmail } from "@/lib/email"
-import { validateLeafDates } from "@/lib/leave-validation"
 
 async function checkOverlappingLeaves(userId: number, startDate: string, endDate: string, excludeLeaveId?: number) {
   const query = excludeLeaveId
@@ -73,16 +72,21 @@ export async function createLeaveRequest(formData: FormData) {
   const endDate = formData.get("endDate") as string
   const reason = formData.get("reason") as string
 
-  const targetUserId = user.is_admin && userId ? Number.parseInt(userId) : user.id
+  console.log("[v0] createLeaveRequest called - userId:", userId, "startDate:", startDate, "endDate:", endDate)
 
-  // Validation des dates
-  const dateValidationError = validateLeafDates(startDate, endDate)
-  if (dateValidationError) {
-    return { error: dateValidationError }
+  const targetUserId = user.is_admin && userId ? Number.parseInt(userId) : user.id
+  console.log("[v0] targetUserId:", targetUserId, "user.id:", user.id, "is_admin:", user.is_admin)
+
+  if (!startDate || !endDate) {
+    console.log("[v0] Missing dates!")
+    return { error: "Les dates sont requises" }
   }
 
+  console.log("[v0] Checking overlapping leaves for userId:", targetUserId, "dates:", startDate, "to", endDate)
   const hasOverlap = await checkOverlappingLeaves(targetUserId, startDate, endDate)
+  console.log("[v0] Overlap check result:", hasOverlap)
   if (hasOverlap) {
+    console.log("[v0] Overlap detected! Returning error")
     return { error: "Cette absence chevauche une absence existante pour ce pompier" }
   }
 
@@ -124,7 +128,7 @@ export async function createLeaveRequest(formData: FormData) {
       await notifyAdminsOfNewLeave(leaveId, userName, startDate, endDate, user.id)
     }
 
-    revalidatePath("/dashboard/leaves")
+    revalidatePath("/dashboard/absences")
 
     try {
       invalidateCache()
@@ -439,24 +443,10 @@ export async function deleteLeave(leaveId: number) {
   }
 }
 
-export async function updateLeave(
-  leaveId: number,
-  startDate: string,
-  endDate: string,
-  leaveType: string,
-  reason: string,
-  startTime: string,
-  endTime: string,
-) {
+export async function updateLeave(leaveId: number, startDate: string, endDate: string, reason: string) {
   const user = await getSession()
   if (!user) {
     return { error: "Non authentifié" }
-  }
-
-  // Validation des dates
-  const dateValidationError = validateLeafDates(startDate, endDate)
-  if (dateValidationError) {
-    return { error: dateValidationError }
   }
 
   const leaveResult = await sql`
@@ -478,24 +468,23 @@ export async function updateLeave(
   }
 
   const hasOverlap = await checkOverlappingLeaves(leave.user_id, startDate, endDate, leaveId)
+  console.log("[v0] Overlap check for update - leaveId:", leaveId, "hasOverlap:", hasOverlap)
   if (hasOverlap) {
+    console.log("[v0] Overlap detected in update! Returning error")
     return { error: "Cette absence chevauche une absence existante" }
   }
 
   try {
     await sql`
       UPDATE leaves
-      SET
+      SET 
         start_date = ${startDate},
         end_date = ${endDate},
-        leave_type = ${leaveType},
-        start_time = ${startTime || null},
-        end_time = ${endTime || null},
         reason = ${reason || null},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${leaveId}
     `
-    revalidatePath("/dashboard/leaves")
+    revalidatePath("/dashboard/absences")
 
     try {
       invalidateCache()
