@@ -43,13 +43,15 @@ export function validateLeafDates(startDate: string, endDate: string): string | 
  * @returns true si au moins une date est dans le passé
  */
 export function isDateInPast(startDate: string): boolean {
+  // Parser la date ISO correctement pour éviter le décalage de fuseau horaire
+  const [year, month, day] = startDate.split("-").map(Number)
+  const date = new Date(year, month - 1, day) // month - 1 car JS compte les mois de 0-11
+  date.setHours(0, 0, 0, 0)
+
   const today = new Date()
   today.setHours(0, 0, 0, 0) // Ignorer l'heure
 
-  const startDateObj = new Date(startDate)
-  startDateObj.setHours(0, 0, 0, 0) // Ignorer l'heure
-
-  return startDateObj < today
+  return date < today
 }
 
 /**

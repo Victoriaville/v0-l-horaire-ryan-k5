@@ -124,7 +124,7 @@ export async function createLeaveRequest(formData: FormData) {
       await notifyAdminsOfNewLeave(leaveId, userName, startDate, endDate, user.id)
     }
 
-    revalidatePath("/dashboard/absences")
+    revalidatePath("/dashboard/leaves")
 
     try {
       invalidateCache()
