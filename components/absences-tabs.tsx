@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import useSWR from "swr"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +14,9 @@ import { ApproveLeaveButton } from "@/components/approve-leave-button"
 import { RejectLeaveButton } from "@/components/reject-leave-button"
 import { parseLocalDate, formatLocalDateTime } from "@/lib/date-utils"
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 interface AbsencesTabsProps {
-  userLeaves: any[]
-  allLeaves: any[]
   firefighters: any[]
   isAdmin: boolean
   userId: number
@@ -23,8 +24,6 @@ interface AbsencesTabsProps {
 }
 
 export function AbsencesTabs({
-  userLeaves,
-  allLeaves,
   firefighters,
   isAdmin,
   userId,
@@ -34,33 +33,24 @@ export function AbsencesTabs({
   const [showFinished, setShowFinished] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
 
-  console.log("[v0] AbsencesTabs rendered - isAdmin:", isAdmin, "userId:", userId)
-  console.log("[v0] userLeaves count:", userLeaves.length, "allLeaves count:", allLeaves.length)
-  console.log("[v0] userLeaves:", userLeaves)
-  console.log("[v0] allLeaves:", allLeaves)
+  const { data, mutate } = useSWR(
+    `/api/leaves?includeFinished=${showFinished}`,
+    fetcher
+  )
+
+  console.log("[v0] AbsencesTabs rendered - isAdmin:", isAdmin, "showFinished:", showFinished)
+  console.log("[v0] SWR data:", data)
+
+  const userLeaves = data?.userLeaves ?? []
+  const allLeaves = data?.allLeaves ?? []
 
   const leavesToDisplay = isAdmin ? allLeaves : userLeaves
-  console.log("[v0] leavesToDisplay count:", leavesToDisplay.length, "showFinished:", showFinished)
 
-  // Filter by finished status (past end dates)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // Reset time to start of day
-  
-  const filteredLeaves = showFinished
-    ? leavesToDisplay
-    : leavesToDisplay.filter((l: any) => {
-        const endDate = parseLocalDate(l.end_date)
-        endDate.setHours(0, 0, 0, 0) // Reset time to start of day
-        const isAfter = endDate > today
-        console.log("[v0] Comparing endDate:", endDate, "vs today:", today, "isAfter:", isAfter, "leave:", l)
-        return isAfter // Show only leaves that end after today (not including today)
-      })
+  console.log("[v0] leavesToDisplay count:", leavesToDisplay.length)
 
-  console.log("[v0] filteredLeaves count:", filteredLeaves.length, "showFinished:", showFinished)
-
-  const pendingLeaves = filteredLeaves.filter((l: any) => l.status === "pending")
-  const approvedLeaves = filteredLeaves.filter((l: any) => l.status === "approved")
-  const rejectedLeaves = filteredLeaves.filter((l: any) => l.status === "rejected")
+  const pendingLeaves = leavesToDisplay.filter((l: any) => l.status === "pending")
+  const approvedLeaves = leavesToDisplay.filter((l: any) => l.status === "approved")
+  const rejectedLeaves = leavesToDisplay.filter((l: any) => l.status === "rejected")
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -185,13 +175,13 @@ export function AbsencesTabs({
 
       <TabsContent value="all">
         <div className="flex justify-end mb-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               console.log("[v0] Button clicked! showFinished changing from:", showFinished, "to:", !showFinished)
               setShowFinished(!showFinished)
-            }} 
+            }}
             className="gap-2"
           >
             {showFinished ? (
@@ -207,7 +197,7 @@ export function AbsencesTabs({
             )}
           </Button>
         </div>
-        {renderLeavesList(filteredLeaves)}
+        {renderLeavesList(leavesToDisplay)}
       </TabsContent>
 
       {isAdmin && <TabsContent value="pending">{renderLeavesList(pendingLeaves)}</TabsContent>}
@@ -218,7 +208,10 @@ export function AbsencesTabs({
 
       <AddAbsenceDialog
         open={showAddDialog}
-        onOpenChange={setShowAddDialog}
+        onOpenChange={(open) => {
+          setShowAddDialog(open)
+          if (!open) mutate()
+        }}
         isAdmin={isAdmin}
         firefighters={firefighters}
         userId={userId}

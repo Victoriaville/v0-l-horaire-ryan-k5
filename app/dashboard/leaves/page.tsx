@@ -1,5 +1,4 @@
 import { getSession } from "@/app/actions/auth"
-import { getUserLeaves, getAllLeaves } from "@/app/actions/leaves"
 import { getAllFirefighters } from "@/app/actions/users"
 import { redirect } from "next/navigation"
 import { AbsencesTabs } from "@/components/absences-tabs"
@@ -10,9 +9,6 @@ export default async function LeavesPage() {
   const user = await getSession()
   if (!user) redirect("/login")
 
-  const userLeaves = await getUserLeaves(user.id, true)
-  const allLeaves = user.is_admin ? await getAllLeaves(true) : []
-  console.log("[v0] page.tsx - userLeaves count:", userLeaves.length, "allLeaves count:", allLeaves.length)
   const firefighters = user.is_admin ? await getAllFirefighters() : []
 
   return (
@@ -25,8 +21,6 @@ export default async function LeavesPage() {
       </div>
 
       <AbsencesTabs
-        userLeaves={userLeaves}
-        allLeaves={allLeaves}
         firefighters={firefighters}
         isAdmin={user.is_admin}
         userId={user.id}
