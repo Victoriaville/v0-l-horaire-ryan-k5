@@ -72,14 +72,26 @@ export async function createLeaveRequest(formData: FormData) {
   const endDate = formData.get("endDate") as string
   const reason = formData.get("reason") as string
 
+  console.log("[v0] createLeaveRequest called - userId:", userId, "startDate:", startDate, "endDate:", endDate)
+
   const targetUserId = user.is_admin && userId ? Number.parseInt(userId) : user.id
+  console.log("[v0] targetUserId:", targetUserId, "user.id:", user.id, "is_admin:", user.is_admin)
 
   if (!startDate || !endDate) {
+    console.log("[v0] Missing dates!")
     return { error: "Les dates sont requises" }
   }
 
+  if (new Date(endDate) <= new Date(startDate)) {
+    console.log("[v0] endDate is not after startDate")
+    return { error: "La date de fin doit être après la date de début" }
+  }
+
+  console.log("[v0] Checking overlapping leaves for userId:", targetUserId, "dates:", startDate, "to", endDate)
   const hasOverlap = await checkOverlappingLeaves(targetUserId, startDate, endDate)
+  console.log("[v0] Overlap check result:", hasOverlap)
   if (hasOverlap) {
+    console.log("[v0] Overlap detected! Returning error")
     return { error: "Cette absence chevauche une absence existante pour ce pompier" }
   }
 
@@ -169,6 +181,7 @@ export async function getUserLeaves(userId: number, includeFinished = false) {
 }
 
 export async function getAllLeaves(includeFinished = false) {
+  console.log("[v0] getAllLeaves called - includeFinished:", includeFinished)
   const leaves = includeFinished
     ? await sql`
         SELECT 
@@ -211,6 +224,7 @@ export async function getAllLeaves(includeFinished = false) {
           l.start_date DESC,
           l.created_at DESC
       `
+  console.log("[v0] getAllLeaves result count:", leaves.length)
   return leaves
 }
 
@@ -460,8 +474,15 @@ export async function updateLeave(leaveId: number, startDate: string, endDate: s
     return { error: "Seules les absences en attente peuvent être modifiées" }
   }
 
+  if (new Date(endDate) <= new Date(startDate)) {
+    console.log("[v0] endDate is not after startDate in update")
+    return { error: "La date de fin doit être après la date de début" }
+  }
+
   const hasOverlap = await checkOverlappingLeaves(leave.user_id, startDate, endDate, leaveId)
+  console.log("[v0] Overlap check for update - leaveId:", leaveId, "hasOverlap:", hasOverlap)
   if (hasOverlap) {
+    console.log("[v0] Overlap detected in update! Returning error")
     return { error: "Cette absence chevauche une absence existante" }
   }
 

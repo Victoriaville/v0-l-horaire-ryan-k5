@@ -41,14 +41,17 @@ export function EditLeaveButton({
 }: EditLeaveButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage(null)
 
     const formData = new FormData(e.currentTarget)
+    console.log("[v0] Submitting leave update form")
     const result = await updateLeave(
       leaveId,
       formData.get("startDate") as string,
@@ -58,20 +61,20 @@ export function EditLeaveButton({
       formData.get("startTime") as string,
       formData.get("endTime") as string,
     )
+    console.log("[v0] Leave update result:", result)
 
     setIsLoading(false)
 
     if (result.error) {
-      toast({
-        title: "Erreur",
-        description: result.error,
-        variant: "destructive",
-      })
+      console.log("[v0] Error returned:", result.error)
+      setErrorMessage(result.error)
     } else {
+      console.log("[v0] Success! Closing dialog")
       toast({
         title: "Succès",
         description: "La demande a été modifiée avec succès",
       })
+      setErrorMessage(null)
       setIsOpen(false)
       router.refresh()
     }
@@ -89,6 +92,13 @@ export function EditLeaveButton({
           <DialogTitle>Modifier la demande d'absence</DialogTitle>
           <DialogDescription>Modifiez les détails de votre demande d'absence</DialogDescription>
         </DialogHeader>
+
+        {errorMessage && (
+          <div className="rounded-md bg-red-50 p-3 border border-red-200">
+            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

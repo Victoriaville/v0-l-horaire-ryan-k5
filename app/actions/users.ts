@@ -233,6 +233,75 @@ export async function importTeam1Firefighters(): Promise<{
   }
 }
 
+// Roles valides dans le système SSIV
+const VALID_ROLES = [
+  "firefighter",
+  "lieutenant",
+  "captain",
+  "acting_captain",
+  "acting_lieutenant",
+  "pompier_regulier",
+  "other",
+]
+
+// Regex email simple mais efficace
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Fonction pour extraire les chiffres du téléphone
+function extractPhoneDigits(phone: string): string {
+  return phone.replace(/\D/g, "")
+}
+
+// Fonction pour formater le téléphone en (XXX) XXX-XXXX
+function formatPhoneNumber(phone: string | null): string | null {
+  if (!phone || phone.trim().length === 0) {
+    return null
+  }
+  const digits = extractPhoneDigits(phone.trim())
+  if (digits.length !== 10) {
+    return null // Normalement impossible car validation passe avant
+  }
+  return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`
+}
+
+function validateFirefighterData(data: {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+  role: string
+}): string | null {
+  if (!data.firstName || data.firstName.trim().length === 0) {
+    return "Le prénom est requis"
+  }
+  if (data.firstName.trim().length > 100) {
+    return "Le prénom ne peut pas dépasser 100 caractères"
+  }
+  if (!data.lastName || data.lastName.trim().length === 0) {
+    return "Le nom de famille est requis"
+  }
+  if (data.lastName.trim().length > 100) {
+    return "Le nom de famille ne peut pas dépasser 100 caractères"
+  }
+  if (!data.email || !EMAIL_REGEX.test(data.email.trim())) {
+    return "L'adresse email est invalide"
+  }
+  if (data.email.trim().length > 255) {
+    return "L'adresse email ne peut pas dépasser 255 caractères"
+  }
+  // Validation stricte du téléphone : exactement 10 chiffres
+  if (data.phone && data.phone.trim().length > 0) {
+    const phoneDigits = extractPhoneDigits(data.phone.trim())
+    if (phoneDigits.length !== 10) {
+      return "Le numéro de téléphone doit contenir exactement 10 chiffres"
+    }
+  }
+  if (!VALID_ROLES.includes(data.role)) {
+    return `Le rôle "${data.role}" n'est pas valide`
+  }
+  return null
+}
+
 export async function addFirefighter(data: {
   firstName: string
   lastName: string
@@ -251,8 +320,24 @@ export async function addFirefighter(data: {
       }
     }
 
+    // VALIDATION: Vérifier les données d'entrée
+    const validationError = validateFirefighterData(data)
+    if (validationError) {
+      return { success: false, message: validationError }
+    }
+
+    // Normaliser les données
+    const cleanData = {
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: formatPhoneNumber(data.phone),
+      role: data.role,
+      teamId: data.teamId,
+    }
+
     // Check if user already exists
-    const existing = await sql`SELECT id FROM users WHERE email = ${data.email}`
+    const existing = await sql`SELECT id FROM users WHERE email = ${cleanData.email}`
 
     if (existing.length > 0) {
       return {
@@ -268,11 +353,11 @@ export async function addFirefighter(data: {
     const result = await sql`
       INSERT INTO users (first_name, last_name, email, phone, role, is_admin, password_hash)
       VALUES (
-        ${data.firstName},
-        ${data.lastName},
-        ${data.email},
-        ${data.phone},
-        ${data.role},
+        ${cleanData.firstName},
+        ${cleanData.lastName},
+        ${cleanData.email},
+        ${cleanData.phone},
+        ${cleanData.role},
         false,
         ${passwordHash}
       )
@@ -282,10 +367,10 @@ export async function addFirefighter(data: {
     const userId = result[0].id
 
     // Add to team if specified
-    if (data.teamId) {
+    if (cleanData.teamId) {
       await sql`
         INSERT INTO team_members (user_id, team_id)
-        VALUES (${userId}, ${data.teamId})
+        VALUES (${userId}, ${cleanData.teamId})
         ON CONFLICT DO NOTHING
       `
     }
@@ -296,8 +381,8 @@ export async function addFirefighter(data: {
       actionType: "USER_CREATED",
       tableName: "users",
       recordId: userId,
-      description: `Pompier ajouté: ${data.firstName} ${data.lastName} (${data.email})`,
-      newValues: { firstName: data.firstName, lastName: data.lastName, email: data.email, role: data.role },
+      description: `Pompier ajouté: ${cleanData.firstName} ${cleanData.lastName} (${cleanData.email})`,
+      newValues: { firstName: cleanData.firstName, lastName: cleanData.lastName, email: cleanData.email, role: cleanData.role },
     })
 
     try {
@@ -380,6 +465,22 @@ export async function updateFirefighter(
     return { success: false, message: "Non autorisé" }
   }
 
+  // VALIDATION: Vérifier les données d'entrée
+  const validationError = validateFirefighterData(data)
+  if (validationError) {
+    return { success: false, message: validationError }
+  }
+
+  // Normaliser les données
+  const cleanData = {
+    firstName: data.firstName.trim(),
+    lastName: data.lastName.trim(),
+    email: data.email.trim().toLowerCase(),
+    phone: formatPhoneNumber(data.phone),
+    role: data.role,
+    teamIds: data.teamIds,
+  }
+
   try {
     const oldUser = await sql`
       SELECT first_name, last_name, email, phone, role FROM users WHERE id = ${userId}
@@ -388,11 +489,11 @@ export async function updateFirefighter(
     await sql`
       UPDATE users
       SET 
-        first_name = ${data.firstName},
-        last_name = ${data.lastName},
-        email = ${data.email},
-        phone = ${data.phone},
-        role = ${data.role},
+        first_name = ${cleanData.firstName},
+        last_name = ${cleanData.lastName},
+        email = ${cleanData.email},
+        phone = ${cleanData.phone},
+        role = ${cleanData.role},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${userId}
     `
@@ -401,7 +502,7 @@ export async function updateFirefighter(
       DELETE FROM team_members WHERE user_id = ${userId}
     `
 
-    for (const teamId of data.teamIds) {
+    for (const teamId of cleanData.teamIds) {
       await sql`
         INSERT INTO team_members (user_id, team_id)
         VALUES (${userId}, ${teamId})
@@ -414,14 +515,14 @@ export async function updateFirefighter(
       actionType: "USER_UPDATED",
       tableName: "users",
       recordId: userId,
-      description: `Pompier modifié: ${data.firstName} ${data.lastName}`,
+      description: `Pompier modifié: ${cleanData.firstName} ${cleanData.lastName}`,
       oldValues: oldUser[0],
       newValues: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        role: data.role,
+        firstName: cleanData.firstName,
+        lastName: cleanData.lastName,
+        email: cleanData.email,
+        phone: cleanData.phone,
+        role: cleanData.role,
       },
     })
 
