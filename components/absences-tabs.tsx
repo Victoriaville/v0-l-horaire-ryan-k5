@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Plus } from "lucide-react"
 import { AddAbsenceDialog } from "@/components/add-absence-dialog"
-import { EditAbsenceDialog } from "@/components/edit-absence-dialog"
-import { DeleteAbsenceButton } from "@/components/delete-absence-button"
-import { ApproveAbsenceButton } from "@/components/approve-absence-button"
-import { RejectAbsenceButton } from "@/components/reject-absence-button"
+import { EditLeaveButton } from "@/components/edit-leave-button"
+import { DeleteLeaveButton } from "@/components/delete-leave-button"
+import { ApproveLeaveButton } from "@/components/approve-leave-button"
+import { RejectLeaveButton } from "@/components/reject-leave-button"
 import { parseLocalDate, formatLocalDateTime } from "@/lib/date-utils"
 
 interface AbsencesTabsProps {
@@ -33,13 +33,17 @@ export function AbsencesTabs({
   const [activeTab, setActiveTab] = useState(initialTab)
   const [showFinished, setShowFinished] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
-  const [editingLeave, setEditingLeave] = useState<any>(null)
 
   const leavesToDisplay = isAdmin ? allLeaves : userLeaves
 
-  const pendingLeaves = leavesToDisplay.filter((l: any) => l.status === "pending")
-  const approvedLeaves = leavesToDisplay.filter((l: any) => l.status === "approved")
-  const rejectedLeaves = leavesToDisplay.filter((l: any) => l.status === "rejected")
+  // Filter by finished status (past end dates)
+  const filteredLeaves = showFinished
+    ? leavesToDisplay
+    : leavesToDisplay.filter((l: any) => new Date(parseLocalDate(l.end_date)) >= new Date())
+
+  const pendingLeaves = filteredLeaves.filter((l: any) => l.status === "pending")
+  const approvedLeaves = filteredLeaves.filter((l: any) => l.status === "approved")
+  const rejectedLeaves = filteredLeaves.filter((l: any) => l.status === "rejected")
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -107,17 +111,12 @@ export function AbsencesTabs({
             <div className="flex gap-2">
               {isAdmin && leave.status === "pending" && (
                 <>
-                  <ApproveAbsenceButton leaveId={leave.id} />
-                  <RejectAbsenceButton leaveId={leave.id} />
+                  <ApproveLeaveButton leaveId={leave.id} />
+                  <RejectLeaveButton leaveId={leave.id} />
                 </>
               )}
-              {((leave.user_id === userId && (isAdmin || leave.status === "pending")) || isAdmin) && (
-                <Button variant="outline" size="sm" onClick={() => setEditingLeave(leave)}>
-                  Modifier
-                </Button>
-              )}
               {(leave.user_id === userId || isAdmin) && (
-                <DeleteAbsenceButton leaveId={leave.id} status={leave.status} />
+                <DeleteLeaveButton leaveId={leave.id} status={leave.status} />
               )}
             </div>
           </div>
@@ -199,14 +198,6 @@ export function AbsencesTabs({
         firefighters={firefighters}
         userId={userId}
       />
-
-      {editingLeave && (
-        <EditAbsenceDialog
-          leave={editingLeave}
-          open={!!editingLeave}
-          onOpenChange={(open) => !open && setEditingLeave(null)}
-        />
-      )}
     </Tabs>
   )
 }
