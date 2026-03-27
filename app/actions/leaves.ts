@@ -181,6 +181,7 @@ export async function getUserLeaves(userId: number, includeFinished = false) {
 }
 
 export async function getAllLeaves(includeFinished = false) {
+  console.log("[v0] getAllLeaves called - includeFinished:", includeFinished)
   const leaves = includeFinished
     ? await sql`
         SELECT 
@@ -223,6 +224,7 @@ export async function getAllLeaves(includeFinished = false) {
           l.start_date DESC,
           l.created_at DESC
       `
+  console.log("[v0] getAllLeaves result count:", leaves.length)
   return leaves
 }
 

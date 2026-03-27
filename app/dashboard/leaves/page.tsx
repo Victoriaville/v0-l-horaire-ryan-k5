@@ -12,6 +12,7 @@ export default async function LeavesPage() {
 
   const userLeaves = await getUserLeaves(user.id, true)
   const allLeaves = user.is_admin ? await getAllLeaves(true) : []
+  console.log("[v0] page.tsx - userLeaves count:", userLeaves.length, "allLeaves count:", allLeaves.length)
   const firefighters = user.is_admin ? await getAllFirefighters() : []
 
   return (
