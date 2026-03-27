@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Check, X, AlertTriangle } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowUpDown, ArrowUp, ArrowDown, Check, X, AlertTriangle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,8 @@ import { getShiftTypeColor, getShiftTypeLabel } from "@/lib/colors"
 import { approveExchange, rejectExchange, getUserExchangeCount } from "@/app/actions/exchanges"
 import { useRouter } from "next/navigation"
 
+type SortKey = "created_at" | "requester_date" | "target_date" | "requester_name" | "target_name" | "duration"
+
 interface PendingExchangesTabProps {
   exchanges: any[]
 }
@@ -32,6 +35,8 @@ export function PendingExchangesTab({ exchanges }: PendingExchangesTabProps) {
   const [selectedExchangeId, setSelectedExchangeId] = useState<number | null>(null)
   const [rejectReason, setRejectReason] = useState("")
   const [exchangeCounts, setExchangeCounts] = useState<Record<number, { count: number; year: number }>>({})
+  const [sortBy, setSortBy] = useState<SortKey>("created_at")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
   const [showConsecutiveHoursAlert, setShowConsecutiveHoursAlert] = useState(false)
   const [consecutiveHoursData, setConsecutiveHoursData] = useState<{
@@ -132,10 +137,66 @@ export function PendingExchangesTab({ exchanges }: PendingExchangesTabProps) {
     )
   }
 
+  const getDuration = (exchange: any) => {
+    const a = parseLocalDate(exchange.requester_shift_date)
+    const b = parseLocalDate(exchange.target_shift_date)
+    return Math.abs(a.getTime() - b.getTime())
+  }
+
+  const sortedExchanges = [...exchanges].sort((a, b) => {
+    let comparison = 0
+    switch (sortBy) {
+      case "created_at":
+        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        break
+      case "requester_date":
+        comparison = parseLocalDate(a.requester_shift_date).getTime() - parseLocalDate(b.requester_shift_date).getTime()
+        break
+      case "target_date":
+        comparison = parseLocalDate(a.target_shift_date).getTime() - parseLocalDate(b.target_shift_date).getTime()
+        break
+      case "requester_name":
+        comparison = `${a.requester_first_name} ${a.requester_last_name}`.localeCompare(`${b.requester_first_name} ${b.requester_last_name}`)
+        break
+      case "target_name":
+        comparison = `${a.target_first_name} ${a.target_last_name}`.localeCompare(`${b.target_first_name} ${b.target_last_name}`)
+        break
+      case "duration":
+        comparison = getDuration(a) - getDuration(b)
+        break
+    }
+    return sortDirection === "asc" ? comparison : -comparison
+  })
+
   return (
     <>
       <div className="space-y-4">
-        {exchanges.map((exchange: any) => {
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Trier par..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Date de création</SelectItem>
+              <SelectItem value="requester_date">Date du quart demandeur</SelectItem>
+              <SelectItem value="target_date">Date du quart cible</SelectItem>
+              <SelectItem value="requester_name">Nom du demandeur</SelectItem>
+              <SelectItem value="target_name">Nom de la cible</SelectItem>
+              <SelectItem value="duration">Durée entre les quarts</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {sortedExchanges.map((exchange: any) => {
           const countInfo = exchangeCounts[exchange.id]
           const showWarning = countInfo && countInfo.count >= 8
 
