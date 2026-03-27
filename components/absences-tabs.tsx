@@ -34,7 +34,13 @@ export function AbsencesTabs({
   const [showFinished, setShowFinished] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
 
+  console.log("[v0] AbsencesTabs rendered - isAdmin:", isAdmin, "userId:", userId)
+  console.log("[v0] userLeaves count:", userLeaves.length, "allLeaves count:", allLeaves.length)
+  console.log("[v0] userLeaves:", userLeaves)
+  console.log("[v0] allLeaves:", allLeaves)
+
   const leavesToDisplay = isAdmin ? allLeaves : userLeaves
+  console.log("[v0] leavesToDisplay count:", leavesToDisplay.length, "showFinished:", showFinished)
 
   // Filter by finished status (past end dates)
   const today = new Date()
@@ -45,9 +51,12 @@ export function AbsencesTabs({
     : leavesToDisplay.filter((l: any) => {
         const endDate = parseLocalDate(l.end_date)
         endDate.setHours(0, 0, 0, 0) // Reset time to start of day
-        console.log("[v0] Comparing endDate:", endDate, "vs today:", today, "isAfter:", endDate > today)
-        return endDate > today // Show only leaves that end after today (not including today)
+        const isAfter = endDate > today
+        console.log("[v0] Comparing endDate:", endDate, "vs today:", today, "isAfter:", isAfter, "leave:", l)
+        return isAfter // Show only leaves that end after today (not including today)
       })
+
+  console.log("[v0] filteredLeaves count:", filteredLeaves.length, "showFinished:", showFinished)
 
   const pendingLeaves = filteredLeaves.filter((l: any) => l.status === "pending")
   const approvedLeaves = filteredLeaves.filter((l: any) => l.status === "approved")
@@ -176,7 +185,15 @@ export function AbsencesTabs({
 
       <TabsContent value="all">
         <div className="flex justify-end mb-4">
-          <Button variant="outline" size="sm" onClick={() => setShowFinished(!showFinished)} className="gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              console.log("[v0] Button clicked! showFinished changing from:", showFinished, "to:", !showFinished)
+              setShowFinished(!showFinished)
+            }} 
+            className="gap-2"
+          >
             {showFinished ? (
               <>
                 <EyeOff className="h-4 w-4" />
