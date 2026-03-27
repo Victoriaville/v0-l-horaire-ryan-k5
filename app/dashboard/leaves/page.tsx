@@ -10,8 +10,8 @@ export default async function LeavesPage() {
   const user = await getSession()
   if (!user) redirect("/login")
 
-  const userLeaves = await getUserLeaves(user.id)
-  const allLeaves = user.is_admin ? await getAllLeaves() : []
+  const userLeaves = await getUserLeaves(user.id, true)
+  const allLeaves = user.is_admin ? await getAllLeaves(true) : []
   const firefighters = user.is_admin ? await getAllFirefighters() : []
 
   return (
