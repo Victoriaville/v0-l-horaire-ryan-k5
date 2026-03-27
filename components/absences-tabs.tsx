@@ -12,7 +12,7 @@ import { EditLeaveButton } from "@/components/edit-leave-button"
 import { DeleteLeaveButton } from "@/components/delete-leave-button"
 import { ApproveLeaveButton } from "@/components/approve-leave-button"
 import { RejectLeaveButton } from "@/components/reject-leave-button"
-import { parseLocalDate, formatLocalDateTime } from "@/lib/date-utils"
+import { formatLocalDate, formatLocalDateTime } from "@/lib/date-utils"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -79,8 +79,8 @@ export function AbsencesTabs({
   }
 
   const renderLeaveCard = (leave: any) => {
-    const startDate = parseLocalDate(leave.start_date).toLocaleDateString("fr-CA")
-    const endDate = parseLocalDate(leave.end_date).toLocaleDateString("fr-CA")
+    const startDate = formatLocalDate(leave.start_date)
+    const endDate = formatLocalDate(leave.end_date)
 
     return (
       <Card key={leave.id}>
@@ -104,13 +104,13 @@ export function AbsencesTabs({
               {leave.status === "approved" && leave.approver_first_name && (
                 <p>
                   Approuvée par {leave.approver_first_name} {leave.approver_last_name} le{" "}
-                  {parseLocalDate(leave.approved_at).toLocaleDateString("fr-CA")}
+                  {formatLocalDate(leave.approved_at)}
                 </p>
               )}
               {leave.status === "rejected" && leave.approver_first_name && (
                 <p>
                   Rejetée par {leave.approver_first_name} {leave.approver_last_name} le{" "}
-                  {parseLocalDate(leave.approved_at).toLocaleDateString("fr-CA")}
+                  {formatLocalDate(leave.approved_at)}
                 </p>
               )}
             </div>
