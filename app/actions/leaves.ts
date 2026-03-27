@@ -82,6 +82,11 @@ export async function createLeaveRequest(formData: FormData) {
     return { error: "Les dates sont requises" }
   }
 
+  if (new Date(endDate) <= new Date(startDate)) {
+    console.log("[v0] endDate is not after startDate")
+    return { error: "La date de fin doit être après la date de début" }
+  }
+
   console.log("[v0] Checking overlapping leaves for userId:", targetUserId, "dates:", startDate, "to", endDate)
   const hasOverlap = await checkOverlappingLeaves(targetUserId, startDate, endDate)
   console.log("[v0] Overlap check result:", hasOverlap)
@@ -465,6 +470,11 @@ export async function updateLeave(leaveId: number, startDate: string, endDate: s
 
   if (!user.is_admin && leave.status !== "pending") {
     return { error: "Seules les absences en attente peuvent être modifiées" }
+  }
+
+  if (new Date(endDate) <= new Date(startDate)) {
+    console.log("[v0] endDate is not after startDate in update")
+    return { error: "La date de fin doit être après la date de début" }
   }
 
   const hasOverlap = await checkOverlappingLeaves(leave.user_id, startDate, endDate, leaveId)
