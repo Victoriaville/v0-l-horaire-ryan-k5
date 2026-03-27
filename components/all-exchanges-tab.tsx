@@ -23,7 +23,7 @@ export function AllExchangesTab({ exchanges, isAdmin }: AllExchangesTabProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [showPastExchanges, setShowPastExchanges] = useState(false)
   const [sortBy, setSortBy] = useState<
-    "requester_date" | "target_date" | "created_at" | "requester_name" | "target_name" | "status" | "duration"
+    "requester_date" | "target_date" | "created_at" | "requester_name" | "target_name" | "status"
   >("created_at")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
@@ -111,11 +111,6 @@ export function AllExchangesTab({ exchanges, isAdmin }: AllExchangesTabProps) {
       case "status":
         comparison = a.status.localeCompare(b.status)
         break
-      case "duration":
-        const durA = Math.abs(parseLocalDate(a.requester_shift_date).getTime() - parseLocalDate(a.target_shift_date).getTime())
-        const durB = Math.abs(parseLocalDate(b.requester_shift_date).getTime() - parseLocalDate(b.target_shift_date).getTime())
-        comparison = durA - durB
-        break
       default:
         comparison = 0
     }
@@ -139,7 +134,6 @@ export function AllExchangesTab({ exchanges, isAdmin }: AllExchangesTabProps) {
               <SelectItem value="status">Statut</SelectItem>
               <SelectItem value="requester_name">Nom du demandeur</SelectItem>
               <SelectItem value="target_name">Nom de la cible</SelectItem>
-              <SelectItem value="duration">Durée entre les quarts</SelectItem>
             </SelectContent>
           </Select>
           <Button

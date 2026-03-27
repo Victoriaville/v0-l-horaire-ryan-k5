@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Plus } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Eye, EyeOff, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { AddAbsenceDialog } from "@/components/add-absence-dialog"
 import { EditLeaveButton } from "@/components/edit-leave-button"
 import { DeleteLeaveButton } from "@/components/delete-leave-button"
@@ -32,6 +33,8 @@ export function AbsencesTabs({
   const [activeTab, setActiveTab] = useState(initialTab)
   const [showFinished, setShowFinished] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [sortBy, setSortBy] = useState<"created_at" | "start_date" | "end_date" | "status" | "name" | "duration">("created_at")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
   const { data, mutate } = useSWR(
     `/api/leaves?includeFinished=${showFinished}`,
@@ -76,6 +79,41 @@ export function AbsencesTabs({
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  const getDuration = (leave: any) => {
+    const start = new Date(leave.start_date)
+    const end = new Date(leave.end_date)
+    return Math.abs(end.getTime() - start.getTime())
+  }
+
+  const sortLeaves = (leaves: any[]) => {
+    return [...leaves].sort((a, b) => {
+      let comparison = 0
+      switch (sortBy) {
+        case "created_at":
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          break
+        case "start_date":
+          comparison = new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+          break
+        case "end_date":
+          comparison = new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
+          break
+        case "status":
+          comparison = a.status.localeCompare(b.status)
+          break
+        case "name":
+          const nameA = `${a.first_name} ${a.last_name}`
+          const nameB = `${b.first_name} ${b.last_name}`
+          comparison = nameA.localeCompare(nameB)
+          break
+        case "duration":
+          comparison = getDuration(a) - getDuration(b)
+          break
+      }
+      return sortDirection === "asc" ? comparison : -comparison
+    })
   }
 
   const renderLeaveCard = (leave: any) => {
@@ -143,7 +181,8 @@ export function AbsencesTabs({
       )
     }
 
-    return <div className="grid gap-4">{leaves.map(renderLeaveCard)}</div>
+    const sortedLeaves = sortLeaves(leaves)
+    return <div className="grid gap-4">{sortedLeaves.map(renderLeaveCard)}</div>
   }
 
   return (
@@ -174,6 +213,30 @@ export function AbsencesTabs({
       </TabsList>
 
       <TabsContent value="all">
+        <div className="flex items-center gap-2 mb-4">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Trier par..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Date de création</SelectItem>
+              <SelectItem value="start_date">Date de début</SelectItem>
+              <SelectItem value="end_date">Date de fin</SelectItem>
+              <SelectItem value="status">Statut</SelectItem>
+              <SelectItem value="name">Nom du pompier</SelectItem>
+              <SelectItem value="duration">Durée</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
+        </div>
         <div className="flex justify-end mb-4">
           <Button
             variant="outline"
@@ -200,11 +263,91 @@ export function AbsencesTabs({
         {renderLeavesList(leavesToDisplay)}
       </TabsContent>
 
-      {isAdmin && <TabsContent value="pending">{renderLeavesList(pendingLeaves)}</TabsContent>}
+      {isAdmin && (
+        <TabsContent value="pending">
+          <div className="flex items-center gap-2 mb-4">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Trier par..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Date de création</SelectItem>
+                <SelectItem value="start_date">Date de début</SelectItem>
+                <SelectItem value="end_date">Date de fin</SelectItem>
+                <SelectItem value="status">Statut</SelectItem>
+                <SelectItem value="name">Nom du pompier</SelectItem>
+                <SelectItem value="duration">Durée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+            >
+              {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            </Button>
+          </div>
+          {renderLeavesList(pendingLeaves)}
+        </TabsContent>
+      )}
 
-      <TabsContent value="approved">{renderLeavesList(approvedLeaves)}</TabsContent>
+      <TabsContent value="approved">
+        <div className="flex items-center gap-2 mb-4">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Trier par..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Date de création</SelectItem>
+              <SelectItem value="start_date">Date de début</SelectItem>
+              <SelectItem value="end_date">Date de fin</SelectItem>
+              <SelectItem value="status">Statut</SelectItem>
+              <SelectItem value="name">Nom du pompier</SelectItem>
+              <SelectItem value="duration">Durée</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
+        </div>
+        {renderLeavesList(approvedLeaves)}
+      </TabsContent>
 
-      <TabsContent value="rejected">{renderLeavesList(rejectedLeaves)}</TabsContent>
+      <TabsContent value="rejected">
+        <div className="flex items-center gap-2 mb-4">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Trier par..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Date de création</SelectItem>
+              <SelectItem value="start_date">Date de début</SelectItem>
+              <SelectItem value="end_date">Date de fin</SelectItem>
+              <SelectItem value="status">Statut</SelectItem>
+              <SelectItem value="name">Nom du pompier</SelectItem>
+              <SelectItem value="duration">Durée</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
+        </div>
+        {renderLeavesList(rejectedLeaves)}
+      </TabsContent>
 
       <AddAbsenceDialog
         open={showAddDialog}
