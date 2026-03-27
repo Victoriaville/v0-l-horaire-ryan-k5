@@ -37,9 +37,17 @@ export function AbsencesTabs({
   const leavesToDisplay = isAdmin ? allLeaves : userLeaves
 
   // Filter by finished status (past end dates)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Reset time to start of day
+  
   const filteredLeaves = showFinished
     ? leavesToDisplay
-    : leavesToDisplay.filter((l: any) => new Date(parseLocalDate(l.end_date)) >= new Date())
+    : leavesToDisplay.filter((l: any) => {
+        const endDate = parseLocalDate(l.end_date)
+        endDate.setHours(0, 0, 0, 0) // Reset time to start of day
+        console.log("[v0] Comparing endDate:", endDate, "vs today:", today, "isAfter:", endDate > today)
+        return endDate > today // Show only leaves that end after today (not including today)
+      })
 
   const pendingLeaves = filteredLeaves.filter((l: any) => l.status === "pending")
   const approvedLeaves = filteredLeaves.filter((l: any) => l.status === "approved")
