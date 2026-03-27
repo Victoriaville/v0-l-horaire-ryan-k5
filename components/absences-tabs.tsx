@@ -161,7 +161,7 @@ export function AbsencesTabs({
                 </>
               )}
               {(leave.user_id === userId || isAdmin) && (
-                <DeleteLeaveButton leaveId={leave.id} status={leave.status} />
+                <DeleteLeaveButton leaveId={leave.id} status={leave.status} onDeleted={() => mutate()} />
               )}
             </div>
           </div>
