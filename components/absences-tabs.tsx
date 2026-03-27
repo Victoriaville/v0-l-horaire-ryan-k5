@@ -190,7 +190,7 @@ export function AbsencesTabs({
             )}
           </Button>
         </div>
-        {renderLeavesList(leavesToDisplay)}
+        {renderLeavesList(filteredLeaves)}
       </TabsContent>
 
       {isAdmin && <TabsContent value="pending">{renderLeavesList(pendingLeaves)}</TabsContent>}
