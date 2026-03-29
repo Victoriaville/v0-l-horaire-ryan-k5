@@ -208,11 +208,18 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Date du quart</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <Popover open={calendarOpen} onOpenChange={(isOpen) => {
+              console.log("[v0] Popover open changed to:", isOpen)
+              setCalendarOpen(isOpen)
+            }}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
+                  onClick={() => {
+                    console.log("[v0] Calendar button clicked, current calendarOpen:", calendarOpen)
+                    setCalendarOpen(true)
+                  }}
                 >
                   {selectedDateObj ? (
                     format(selectedDateObj, "PPP", { locale: fr })
@@ -221,11 +228,12 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-50" align="start" side="bottom">
                 <Calendar
                   mode="single"
                   selected={selectedDateObj}
                   onSelect={(date) => {
+                    console.log("[v0] Calendar date selected:", date)
                     if (date) {
                       setSelectedDateObj(date)
                       setSelectedDate(format(date, "yyyy-MM-dd"))
