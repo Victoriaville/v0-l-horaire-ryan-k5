@@ -8,14 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import { TimePickerInput } from "@/components/time-picker-input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { requestReplacement } from "@/app/actions/replacements"
 import { getUserAssignedShifts } from "@/app/actions/shift-assignments"
 import { useRouter } from "next/navigation"
 import { getDefaultReplacementTimes } from "@/lib/shift-utils"
 import { LeaveBankSelector } from "@/components/leave-bank-selector"
 import { useToast } from "@/hooks/use-toast"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
 
 interface RequestReplacementDialogProps {
   open: boolean
@@ -41,6 +44,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   const [loading, setLoading] = useState(false)
   const [loadingShifts, setLoadingShifts] = useState(false)
   const [selectedDate, setSelectedDate] = useState("")
+  const [selectedDateObj, setSelectedDateObj] = useState<Date | undefined>(undefined)
   const [assignedShifts, setAssignedShifts] = useState<AssignedShift[]>([])
   const [selectedShiftId, setSelectedShiftId] = useState("")
   const [isPartial, setIsPartial] = useState(false)
@@ -50,6 +54,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   const [leaveHours1, setLeaveHours1] = useState("")
   const [leaveBank2, setLeaveBank2] = useState("")
   const [leaveHours2, setLeaveHours2] = useState("")
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   useEffect(() => {
     console.log("[v0] RequestReplacementDialog - selectedDate changed:", selectedDate)
@@ -72,6 +77,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   useEffect(() => {
     if (open) {
       setSelectedDate("")
+      setSelectedDateObj(undefined)
       setAssignedShifts([])
       setSelectedShiftId("")
       setIsPartial(false)
@@ -81,6 +87,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
       setLeaveHours1("")
       setLeaveBank2("")
       setLeaveHours2("")
+      setCalendarOpen(false)
     }
   }, [open])
 
@@ -200,43 +207,36 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="date-select">Date du quart</Label>
-            <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
-              <span className="flex-1 text-sm">
-                {selectedDate
-                  ? new Date(selectedDate).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                    })
-                  : "aaaa-mm-jj"}
-              </span>
-              <div className="relative w-5 h-5">
-                <input
-                  id="date-select"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  required
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  aria-label="Date du quart"
-                />
-                <svg
-                  className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <Label>Date du quart</Label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-            </div>
+                  {selectedDateObj ? (
+                    format(selectedDateObj, "PPP", { locale: fr })
+                  ) : (
+                    <span className="text-muted-foreground">Sélectionner une date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDateObj}
+                  onSelect={(date) => {
+                    if (date) {
+                      setSelectedDateObj(date)
+                      setSelectedDate(format(date, "yyyy-MM-dd"))
+                      setCalendarOpen(false)
+                    }
+                  }}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  locale={fr}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

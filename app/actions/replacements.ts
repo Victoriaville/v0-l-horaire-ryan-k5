@@ -216,12 +216,6 @@ export async function createReplacementFromShift(
       deadlineDuration = null
     }
 
-    // Vérifier que la deadline n'est pas après la date du quart (sauf "sans délai")
-    // Les admins peuvent créer rétroactif (dates passées autorisées)
-    if (deadlineSeconds !== null && new Date(applicationDeadline) >= new Date(shiftDate)) {
-      return { error: "La deadline doit être avant la date du quart" }
-    }
-
     const result = await db`
       INSERT INTO replacements (
         shift_date, shift_type, team_id, status, is_partial, start_time, end_time, user_id,
