@@ -211,20 +211,19 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                     })
                   : "aaaa-mm-jj"}
               </span>
-              <input
-                id="date-select"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                required
-                className="absolute opacity-0 cursor-pointer"
-                aria-label="Date du quart"
-                style={{ width: "20px", height: "20px" }}
-              />
-              <label htmlFor="date-select" className="cursor-pointer">
+              <div className="relative w-5 h-5">
+                <input
+                  id="date-select"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  required
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label="Date du quart"
+                />
                 <svg
-                  className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors pointer-events-none"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -236,7 +235,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                     d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-              </label>
+              </div>
             </div>
           </div>
 
