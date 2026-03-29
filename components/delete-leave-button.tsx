@@ -3,18 +3,17 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { deleteLeave } from "@/app/actions/leaves"
-import { useRouter } from "next/navigation"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 
 interface DeleteLeaveButtonProps {
   leaveId: number
   status: string
+  onDeleted?: () => void | Promise<void>
 }
 
-export function DeleteLeaveButton({ leaveId, status }: DeleteLeaveButtonProps) {
+export function DeleteLeaveButton({ leaveId, status, onDeleted }: DeleteLeaveButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const router = useRouter()
 
   const handleDelete = async () => {
     setShowConfirm(true)
@@ -23,9 +22,14 @@ export function DeleteLeaveButton({ leaveId, status }: DeleteLeaveButtonProps) {
   const handleConfirm = async () => {
     setShowConfirm(false)
     setIsLoading(true)
-    await deleteLeave(leaveId)
-    setIsLoading(false)
-    router.refresh()
+    try {
+      await deleteLeave(leaveId)
+      if (onDeleted) {
+        await onDeleted()
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const message =

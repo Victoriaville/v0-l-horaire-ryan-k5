@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { availableRoles } from "@/lib/role-labels"
+import { formatPhoneDisplay, getPhoneErrorMessage } from "@/lib/phone-utils"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +35,7 @@ export function AddFirefighterDialog({ teams }: AddFirefighterDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -142,9 +144,14 @@ export function AddFirefighterDialog({ teams }: AddFirefighterDialogProps) {
               id="phone"
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => {
+                const formatted = formatPhoneDisplay(e.target.value)
+                setFormData({ ...formData, phone: formatted })
+                setPhoneError(getPhoneErrorMessage(formatted))
+              }}
               placeholder="514-555-0123"
             />
+            {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
           </div>
 
           <div className="space-y-2">
