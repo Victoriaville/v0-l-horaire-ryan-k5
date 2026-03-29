@@ -126,6 +126,16 @@
     scroll-behavior: auto !important;
   }
 
+  /* Fix for Popover appearing above Dialog */
+  .calendar-popover {
+    z-index: 50 !important;
+  }
+  
+  /* Ensure popover portal renders on top */
+  [data-radix-popover-content] {
+    z-index: 50 !important;
+  }
+
   @media (orientation: landscape) and (max-width: 1023px) {
     .calendar-cell-landscape {
       min-height: 100px !important;

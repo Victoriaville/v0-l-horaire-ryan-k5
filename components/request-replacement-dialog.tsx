@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TimePickerInput } from "@/components/time-picker-input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { requestReplacement } from "@/app/actions/replacements"
 import { getUserAssignedShifts } from "@/app/actions/shift-assignments"
@@ -207,20 +208,20 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Date du quart</Label>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-              onClick={() => setCalendarOpen(!calendarOpen)}
-            >
-              {selectedDateObj ? (
-                format(selectedDateObj, "PPP", { locale: fr })
-              ) : (
-                <span className="text-muted-foreground">Sélectionner une date</span>
-              )}
-            </Button>
-            {calendarOpen && (
-              <div className="rounded-md border p-3 bg-white">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  {selectedDateObj ? (
+                    format(selectedDateObj, "PPP", { locale: fr })
+                  ) : (
+                    <span className="text-muted-foreground">Sélectionner une date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 calendar-popover" align="start" side="bottom" forceMount>
                 <Calendar
                   mode="single"
                   selected={selectedDateObj}
@@ -234,8 +235,8 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                   disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   locale={fr}
                 />
-              </div>
-            )}
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
