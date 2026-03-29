@@ -186,13 +186,56 @@ export async function createExchangeRequest(data: {
       return { error: "Non autorisé" }
     }
 
+    // VALIDATION 1: Bloquer si requester_id = target_id
+    if (user.id === data.targetId) {
+      return { error: "Vous ne pouvez pas créer un échange avec vous-même" }
+    }
+
+    // VALIDATION 2: Vérifier que target_id existe et est un pompier valide
+    const targetUser = await sql`
+      SELECT id, first_name, last_name, is_admin
+      FROM users
+      WHERE id = ${data.targetId}
+    `
+
+    if (targetUser.length === 0) {
+      return { error: "Le pompier cible n'existe pas" }
+    }
+
+    // VALIDATION 3: Vérifier que les quarts existent (requester + target)
+    const requesterShifts = await sql`
+      SELECT id FROM shifts
+      WHERE team_id = ${data.requesterTeamId}
+      AND shift_type = ${data.requesterShiftType}
+    `
+
+    if (requesterShifts.length === 0) {
+      return { error: "Le quart demandé n'existe pas" }
+    }
+
+    const targetShifts = await sql`
+      SELECT id FROM shifts
+      WHERE team_id = ${data.targetTeamId}
+      AND shift_type = ${data.targetShiftType}
+    `
+
+    if (targetShifts.length === 0) {
+      return { error: "Le quart cible n'existe pas" }
+    }
+
     const requesterShiftYear = new Date(data.requesterShiftDate).getFullYear()
     const exchangeCountResult = await getUserExchangeCount(user.id, requesterShiftYear)
     const count = exchangeCountResult.count || 0
 
     let warning = undefined
+    
+    // VALIDATION 4: Limite d'échanges - BLOQUER non-admins, WARNING pour admins
     if (count >= 8) {
-      warning = `Attention: Vous avez déjà ${count} échanges approuvés pour l'année ${requesterShiftYear}. La limite recommandée est de 8 échanges par année.`
+      if (!user.is_admin) {
+        return { error: `Vous avez atteint la limite de 8 échanges approuvés pour l'année ${requesterShiftYear}. Vous ne pouvez pas créer d'autres échanges.` }
+      } else {
+        warning = `Attention: Vous avez déjà ${count} échanges approuvés pour l'année ${requesterShiftYear}. La limite recommandée est de 8 échanges par année.`
+      }
     }
 
     // Create the exchange request
@@ -232,12 +275,6 @@ export async function createExchangeRequest(data: {
     const exchangeId = result[0].id
 
     try {
-      const targetUser = await sql`
-        SELECT id, email, first_name, last_name
-        FROM users
-        WHERE id = ${data.targetId}
-      `
-
       if (targetUser.length > 0) {
         const requesterPartialHours =
           data.isPartial && data.requesterStartTime && data.requesterEndTime
@@ -1169,6 +1206,53 @@ export async function createExchangeAsAdmin(data: {
     const user = await getSession()
     if (!user || !user.is_admin) {
       return { error: "Non autorisé" }
+    }
+
+    // VALIDATION 1: Bloquer si requester_id = target_id
+    if (data.requesterId === data.targetId) {
+      return { error: "Vous ne pouvez pas créer un échange entre la même personne" }
+    }
+
+    // VALIDATION 2: Vérifier que requester et target existent et sont valides
+    const requesterUserResult = await sql`
+      SELECT id, first_name, last_name
+      FROM users
+      WHERE id = ${data.requesterId}
+    `
+
+    if (requesterUserResult.length === 0) {
+      return { error: "Le pompier demandeur n'existe pas" }
+    }
+
+    const targetUserResult = await sql`
+      SELECT id, first_name, last_name
+      FROM users
+      WHERE id = ${data.targetId}
+    `
+
+    if (targetUserResult.length === 0) {
+      return { error: "Le pompier cible n'existe pas" }
+    }
+
+    // VALIDATION 3: Vérifier que les quarts existent (requester + target)
+    const requesterShifts = await sql`
+      SELECT id FROM shifts
+      WHERE team_id = ${data.requesterTeamId}
+      AND shift_type = ${data.requesterShiftType}
+    `
+
+    if (requesterShifts.length === 0) {
+      return { error: "Le quart demandeur n'existe pas" }
+    }
+
+    const targetShifts = await sql`
+      SELECT id FROM shifts
+      WHERE team_id = ${data.targetTeamId}
+      AND shift_type = ${data.targetShiftType}
+    `
+
+    if (targetShifts.length === 0) {
+      return { error: "Le quart cible n'existe pas" }
     }
 
     const requesterShiftYear = new Date(data.requesterShiftDate).getFullYear()
