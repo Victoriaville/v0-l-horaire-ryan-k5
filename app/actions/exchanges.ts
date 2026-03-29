@@ -186,6 +186,10 @@ export async function createExchangeRequest(data: {
       return { error: "Non autorisé" }
     }
 
+    if (user.id === data.targetId) {
+      return { error: "Vous ne pouvez pas créer un échange avec vous-même" }
+    }
+
     const requesterShiftYear = new Date(data.requesterShiftDate).getFullYear()
     const exchangeCountResult = await getUserExchangeCount(user.id, requesterShiftYear)
     const count = exchangeCountResult.count || 0

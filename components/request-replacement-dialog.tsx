@@ -201,14 +201,42 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date-select">Date du quart</Label>
-            <Input
-              id="date-select"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
-              required
-            />
+            <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
+              <span className="flex-1 text-sm">
+                {selectedDate
+                  ? new Date(selectedDate).toLocaleDateString("fr-FR", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })
+                  : "aaaa-mm-jj"}
+              </span>
+              <div className="relative w-5 h-5">
+                <input
+                  id="date-select"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  required
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label="Date du quart"
+                />
+                <svg
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
