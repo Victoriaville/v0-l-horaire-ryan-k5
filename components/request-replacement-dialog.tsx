@@ -207,6 +207,7 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               min={new Date().toISOString().split("T")[0]}
+              readOnly
               required
             />
           </div>
