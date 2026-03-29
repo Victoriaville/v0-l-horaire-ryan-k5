@@ -217,6 +217,7 @@ export async function createReplacementFromShift(
     }
 
     // Vérifier que la deadline n'est pas après la date du quart (sauf "sans délai")
+    // Les admins peuvent créer rétroactif (dates passées autorisées)
     if (deadlineSeconds !== null && new Date(applicationDeadline) >= new Date(shiftDate)) {
       return { error: "La deadline doit être avant la date du quart" }
     }
