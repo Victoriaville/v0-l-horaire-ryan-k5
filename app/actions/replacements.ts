@@ -209,10 +209,6 @@ export async function createReplacementFromShift(
     if (teamExists.length === 0) {
       return { error: "Équipe inexistante" }
     }
-    const db = neon(process.env.DATABASE_URL!, {
-      fetchConnectionCache: true,
-      disableWarningInBrowsers: true,
-    })
 
     let applicationDeadline: string
 
