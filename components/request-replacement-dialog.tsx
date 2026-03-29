@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { TimePickerInput } from "@/components/time-picker-input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { requestReplacement } from "@/app/actions/replacements"
 import { getUserAssignedShifts } from "@/app/actions/shift-assignments"
 import { useRouter } from "next/navigation"
@@ -44,7 +43,6 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   const [loading, setLoading] = useState(false)
   const [loadingShifts, setLoadingShifts] = useState(false)
   const [selectedDate, setSelectedDate] = useState("")
-  const [selectedDateObj, setSelectedDateObj] = useState<Date | undefined>(undefined)
   const [assignedShifts, setAssignedShifts] = useState<AssignedShift[]>([])
   const [selectedShiftId, setSelectedShiftId] = useState("")
   const [isPartial, setIsPartial] = useState(false)
@@ -54,7 +52,6 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   const [leaveHours1, setLeaveHours1] = useState("")
   const [leaveBank2, setLeaveBank2] = useState("")
   const [leaveHours2, setLeaveHours2] = useState("")
-  const [calendarOpen, setCalendarOpen] = useState(false)
 
   useEffect(() => {
     console.log("[v0] RequestReplacementDialog - selectedDate changed:", selectedDate)
@@ -77,7 +74,6 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   useEffect(() => {
     if (open) {
       setSelectedDate("")
-      setSelectedDateObj(undefined)
       setAssignedShifts([])
       setSelectedShiftId("")
       setIsPartial(false)
@@ -87,7 +83,6 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
       setLeaveHours1("")
       setLeaveBank2("")
       setLeaveHours2("")
-      setCalendarOpen(false)
     }
   }, [open])
 
@@ -207,42 +202,16 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Date du quart</Label>
-            <Popover open={calendarOpen} onOpenChange={(isOpen) => {
-              console.log("[v0] Calendar Popover state changed to:", isOpen)
-              setCalendarOpen(isOpen)
-            }}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                  onClick={() => {
-                    console.log("[v0] Calendar button clicked, current calendarOpen:", calendarOpen)
-                  }}
-                >
-                  {selectedDateObj ? (
-                    format(selectedDateObj, "PPP", { locale: fr })
-                  ) : (
-                    <span className="text-muted-foreground">Sélectionner une date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 calendar-popover" align="start" side="bottom">
-                <Calendar
-                  mode="single"
-                  selected={selectedDateObj}
-                  onSelect={(date) => {
-                    if (date) {
-                      setSelectedDateObj(date)
-                      setSelectedDate(format(date, "yyyy-MM-dd"))
-                      setCalendarOpen(false)
-                    }
-                  }}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  locale={fr}
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="date-select">Date du quart</Label>
+            <Input
+              id="date-select"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              readOnly
+              required
+            />
           </div>
 
           <div className="space-y-2">

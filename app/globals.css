@@ -126,40 +126,6 @@
     scroll-behavior: auto !important;
   }
 
-  /* Fix for Popover appearing above Dialog - Multiple selectors for robustness */
-  .calendar-popover {
-    z-index: 9999 !important;
-    position: relative !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-  
-  /* Ensure popover portal renders on top - Radix UI portals */
-  [data-radix-popover-content] {
-    z-index: 9999 !important;
-    position: relative !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-
-  /* Dialog specific - ensure content is visible */
-  [role="dialog"] {
-    z-index: 50 !important;
-  }
-
-  /* Override any hidden state on popover */
-  .calendar-popover[data-state="open"] {
-    z-index: 9999 !important;
-  }
-
-  [data-radix-popover-content][data-state="open"] {
-    z-index: 9999 !important;
-  }
-
   @media (orientation: landscape) and (max-width: 1023px) {
     .calendar-cell-landscape {
       min-height: 100px !important;
