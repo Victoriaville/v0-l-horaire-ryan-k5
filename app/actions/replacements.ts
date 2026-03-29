@@ -384,12 +384,12 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
       return { error: "Ce pompier a déjà postulé pour ce remplacement" }
     }
 
-    // Validate that applicant exists and is active
+    // Validate that applicant exists
     const applicant = await db`
-      SELECT id FROM users WHERE id = ${applicantId} AND active = true LIMIT 1
+      SELECT id FROM users WHERE id = ${applicantId} LIMIT 1
     `
     if (applicant.length === 0) {
-      return { error: "Pompier inexistant ou inactif" }
+      return { error: "Pompier inexistant" }
     }
 
     const insertResult = await db`
