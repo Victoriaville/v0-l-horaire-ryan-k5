@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TimePickerInput } from "@/components/time-picker-input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { requestReplacement } from "@/app/actions/replacements"
 import { getUserAssignedShifts } from "@/app/actions/shift-assignments"
@@ -208,32 +207,24 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Date du quart</Label>
-            <Popover open={calendarOpen} onOpenChange={(isOpen) => {
-              console.log("[v0] Popover open changed to:", isOpen)
-              setCalendarOpen(isOpen)
-            }}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                  onClick={() => {
-                    console.log("[v0] Calendar button clicked, current calendarOpen:", calendarOpen)
-                    setCalendarOpen(true)
-                  }}
-                >
-                  {selectedDateObj ? (
-                    format(selectedDateObj, "PPP", { locale: fr })
-                  ) : (
-                    <span className="text-muted-foreground">Sélectionner une date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 z-50" align="start" side="bottom">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start text-left font-normal"
+              onClick={() => setCalendarOpen(!calendarOpen)}
+            >
+              {selectedDateObj ? (
+                format(selectedDateObj, "PPP", { locale: fr })
+              ) : (
+                <span className="text-muted-foreground">Sélectionner une date</span>
+              )}
+            </Button>
+            {calendarOpen && (
+              <div className="rounded-md border p-3 bg-white">
                 <Calendar
                   mode="single"
                   selected={selectedDateObj}
                   onSelect={(date) => {
-                    console.log("[v0] Calendar date selected:", date)
                     if (date) {
                       setSelectedDateObj(date)
                       setSelectedDate(format(date, "yyyy-MM-dd"))
@@ -243,8 +234,8 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                   disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   locale={fr}
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
