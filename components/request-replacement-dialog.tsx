@@ -218,8 +218,9 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                 onChange={(e) => setSelectedDate(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
                 required
-                className="sr-only"
+                className="absolute opacity-0 cursor-pointer"
                 aria-label="Date du quart"
+                style={{ width: "20px", height: "20px" }}
               />
               <label htmlFor="date-select" className="cursor-pointer">
                 <svg
