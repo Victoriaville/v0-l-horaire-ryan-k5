@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -16,8 +16,6 @@ import { useRouter } from "next/navigation"
 import { getDefaultReplacementTimes } from "@/lib/shift-utils"
 import { LeaveBankSelector } from "@/components/leave-bank-selector"
 import { useToast } from "@/hooks/use-toast"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 
 interface RequestReplacementDialogProps {
   open: boolean
@@ -40,7 +38,6 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
   console.log("[v0] RequestReplacementDialog - Component mounted, open:", open, "userId:", userId)
   const router = useRouter()
   const { toast } = useToast()
-  const dateInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [loadingShifts, setLoadingShifts] = useState(false)
   const [selectedDate, setSelectedDate] = useState("")
@@ -204,28 +201,14 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date-select">Date du quart</Label>
-            <div className="flex gap-2">
-              <Input
-                ref={dateInputRef}
-                id="date-select"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                readOnly
-                required
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => dateInputRef.current?.click()}
-                className="px-3"
-                title="Ouvrir le calendrier"
-              >
-                📅
-              </Button>
-            </div>
+            <Input
+              id="date-select"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              required
+            />
           </div>
 
           <div className="space-y-2">
