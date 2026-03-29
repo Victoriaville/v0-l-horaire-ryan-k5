@@ -126,12 +126,6 @@
     scroll-behavior: auto !important;
   }
 
-  /* Block manual date input - calendar picker still works */
-  input[type="date"] {
-    caret-color: transparent;
-    user-select: none;
-  }
-
   @media (orientation: landscape) and (max-width: 1023px) {
     .calendar-cell-landscape {
       min-height: 100px !important;

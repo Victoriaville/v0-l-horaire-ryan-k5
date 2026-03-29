@@ -183,7 +183,32 @@ export async function createReplacementFromShift(
     return { error: "Non autorisé" }
   }
 
+  // Validation 2: shiftType est valide (non-vide + string)
+  if (!shiftType || typeof shiftType !== 'string' || !['day', 'night', 'full_24h'].includes(shiftType)) {
+    return { error: "Type de quart invalide" }
+  }
+
   try {
+    const db = neon(process.env.DATABASE_URL!, {
+      fetchConnectionCache: true,
+      disableWarningInBrowsers: true,
+    })
+
+    // Validation 3: user_id (pompier à remplacer) existe
+    const userExists = await db`
+      SELECT id FROM users WHERE id = ${userId} LIMIT 1
+    `
+    if (userExists.length === 0) {
+      return { error: "Pompier inexistant" }
+    }
+
+    // Validation 4: teamId existe
+    const teamExists = await db`
+      SELECT id FROM teams WHERE id = ${teamId} LIMIT 1
+    `
+    if (teamExists.length === 0) {
+      return { error: "Équipe inexistante" }
+    }
     const db = neon(process.env.DATABASE_URL!, {
       fetchConnectionCache: true,
       disableWarningInBrowsers: true,
