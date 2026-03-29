@@ -384,6 +384,14 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
       return { error: "Ce pompier a déjà postulé pour ce remplacement" }
     }
 
+    // Validate that applicant exists and is active
+    const applicant = await db`
+      SELECT id FROM users WHERE id = ${applicantId} AND active = true LIMIT 1
+    `
+    if (applicant.length === 0) {
+      return { error: "Pompier inexistant ou inactif" }
+    }
+
     const insertResult = await db`
       INSERT INTO replacement_applications (replacement_id, applicant_id, status)
       VALUES (${replacementId}, ${applicantId}, 'pending')
