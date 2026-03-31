@@ -8,9 +8,11 @@ interface TimePickerInputProps {
   onChange: (value: string) => void
   id?: string
   required?: boolean
+  min?: string
+  max?: string
 }
 
-export function TimePickerInput({ value, onChange, id, required }: TimePickerInputProps) {
+export function TimePickerInput({ value, onChange, id, required, min, max }: TimePickerInputProps) {
   const [internalValue, setInternalValue] = useState(value)
 
   useEffect(() => {
@@ -25,6 +27,18 @@ export function TimePickerInput({ value, onChange, id, required }: TimePickerInp
     }
   }
 
+  // Filter options based on min/max
+  let filteredOptions = timeOptions
+  if (min && max) {
+    if (min <= max) {
+      // Normal case: 07:00-17:00
+      filteredOptions = timeOptions.filter(time => time >= min && time <= max)
+    } else {
+      // Midnight crossing case: 17:00-07:00
+      filteredOptions = timeOptions.filter(time => time >= min || time <= max)
+    }
+  }
+
   const handleChange = (newValue: string) => {
     setInternalValue(newValue)
     onChange(newValue)
@@ -36,7 +50,7 @@ export function TimePickerInput({ value, onChange, id, required }: TimePickerInp
         <SelectValue placeholder="Sélectionner l'heure" />
       </SelectTrigger>
       <SelectContent className="max-h-[300px]">
-        {timeOptions.map((time) => (
+        {filteredOptions.map((time) => (
           <SelectItem key={time} value={time}>
             {time}
           </SelectItem>
