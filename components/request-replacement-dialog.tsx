@@ -272,8 +272,8 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                   value={startTime} 
                   onChange={setStartTime} 
                   required={isPartial}
-                  min={getPartialShiftLimits(selectedShift?.shift_type || "day").min}
-                  max={getPartialShiftLimits(selectedShift?.shift_type || "day").max}
+                  min={getPartialShiftLimits(assignedShifts.find(s => s.id.toString() === selectedShiftId)?.shift_type || "day").min}
+                  max={getPartialShiftLimits(assignedShifts.find(s => s.id.toString() === selectedShiftId)?.shift_type || "day").max}
                 />
               </div>
               <div className="space-y-2">
@@ -283,8 +283,8 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
                   value={endTime} 
                   onChange={setEndTime} 
                   required={isPartial}
-                  min={getPartialShiftLimits(selectedShift?.shift_type || "day").min}
-                  max={getPartialShiftLimits(selectedShift?.shift_type || "day").max}
+                  min={getPartialShiftLimits(assignedShifts.find(s => s.id.toString() === selectedShiftId)?.shift_type || "day").min}
+                  max={getPartialShiftLimits(assignedShifts.find(s => s.id.toString() === selectedShiftId)?.shift_type || "day").max}
                 />
               </div>
             </div>

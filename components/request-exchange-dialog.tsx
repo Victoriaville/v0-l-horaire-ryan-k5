@@ -364,8 +364,8 @@ export function RequestExchangeDialog({ open, onOpenChange, userId }: RequestExc
                         value={targetStartTime}
                         onChange={setTargetStartTime}
                         required
-                        min={getPartialShiftLimits(selectedTargetShift?.shift_type || "day").min}
-                        max={getPartialShiftLimits(selectedTargetShift?.shift_type || "day").max}
+                        min={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").max}
                       />
                     </div>
                     <div className="space-y-2">
@@ -375,8 +375,8 @@ export function RequestExchangeDialog({ open, onOpenChange, userId }: RequestExc
                         value={targetEndTime} 
                         onChange={setTargetEndTime} 
                         required
-                        min={getPartialShiftLimits(selectedTargetShift?.shift_type || "day").min}
-                        max={getPartialShiftLimits(selectedTargetShift?.shift_type || "day").max}
+                        min={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").max}
                       />
                     </div>
                   </div>

@@ -411,6 +411,16 @@ export function ShiftAssignmentDrawer({
     }
   }, [open, loadData])
 
+  // Update default partial times when shift changes
+  useEffect(() => {
+    if (!shift) return
+    const newDefaultTimes = getDefaultReplacementTimes(shift.shift_type)
+    setPartialStartTime(newDefaultTimes.startTime)
+    setPartialEndTime(newDefaultTimes.endTime)
+    setExtraStartTime(newDefaultTimes.startTime)
+    setExtraEndTime(newDefaultTimes.endTime)
+  }, [shift?.id, shift?.shift_type])
+
   const refreshReplacements = async () => {
     setLoadingReplacements(true)
     const shiftDate = formatDateForDB(shift.date)
