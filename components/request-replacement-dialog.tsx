@@ -13,7 +13,7 @@ import { TimePickerInput } from "@/components/time-picker-input"
 import { requestReplacement } from "@/app/actions/replacements"
 import { getUserAssignedShifts } from "@/app/actions/shift-assignments"
 import { useRouter } from "next/navigation"
-import { getDefaultReplacementTimes } from "@/lib/shift-utils"
+import { getDefaultReplacementTimes, getPartialShiftLimits } from "@/lib/shift-utils"
 import { LeaveBankSelector } from "@/components/leave-bank-selector"
 import { useToast } from "@/hooks/use-toast"
 
@@ -267,11 +267,25 @@ export function RequestReplacementDialog({ open, onOpenChange, userId }: Request
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start-time">Heure de début</Label>
-                <TimePickerInput id="start-time" value={startTime} onChange={setStartTime} required={isPartial} />
+                <TimePickerInput 
+                  id="start-time" 
+                  value={startTime} 
+                  onChange={setStartTime} 
+                  required={isPartial}
+                  min={getPartialShiftLimits(selectedShift?.shift_type || "day").min}
+                  max={getPartialShiftLimits(selectedShift?.shift_type || "day").max}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-time">Heure de fin</Label>
-                <TimePickerInput id="end-time" value={endTime} onChange={setEndTime} required={isPartial} />
+                <TimePickerInput 
+                  id="end-time" 
+                  value={endTime} 
+                  onChange={setEndTime} 
+                  required={isPartial}
+                  min={getPartialShiftLimits(selectedShift?.shift_type || "day").min}
+                  max={getPartialShiftLimits(selectedShift?.shift_type || "day").max}
+                />
               </div>
             </div>
           )}

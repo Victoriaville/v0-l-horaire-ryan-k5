@@ -41,13 +41,14 @@ import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input" // Added Input import
-import { getDefaultReplacementTimes } from "@/lib/shift-utils"
+import { getDefaultReplacementTimes, getPartialShiftLimits } from "@/lib/shift-utils"
 import { ApplyForReplacementButton } from "@/components/apply-for-replacement-button"
 import { DeleteReplacementButton } from "@/components/delete-replacement-button"
 import { DeadlineSelect } from "@/components/deadline-select"
 import { formatDateForDB } from "@/lib/date-utils"
 import { calculateAutoDeadline } from "@/lib/date-utils"
 import { DirectAssignmentDialog } from "@/components/direct-assignment-dialog"
+import { TimePickerInput } from "@/components/time-picker-input"
 import { AddSecondReplacementDialog } from "@/components/add-second-replacement-dialog" // Added
 import { EmailSendResultsModal } from "./email-send-results-modal"
 import { LeaveBankSelector } from "./leave-bank-selector"
@@ -2571,24 +2572,24 @@ export function ShiftAssignmentDrawer({
                     <Label htmlFor="start-time" className="text-xs text-muted-foreground">
                       Début
                     </Label>
-                    <Input
+                    <TimePickerInput
                       id="start-time"
-                      type="time"
                       value={partialStartTime}
-                      onChange={(e) => setPartialStartTime(e.target.value)}
-                      className="text-sm"
+                      onChange={(e) => setPartialStartTime(e)}
+                      min={getPartialShiftLimits(shift?.shift_type || "day").min}
+                      max={getPartialShiftLimits(shift?.shift_type || "day").max}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="end-time" className="text-xs text-muted-foreground">
                       Fin
                     </Label>
-                    <Input
+                    <TimePickerInput
                       id="end-time"
-                      type="time"
                       value={partialEndTime}
-                      onChange={(e) => setPartialEndTime(e.target.value)}
-                      className="text-sm"
+                      onChange={(e) => setPartialEndTime(e)}
+                      min={getPartialShiftLimits(shift?.shift_type || "day").min}
+                      max={getPartialShiftLimits(shift?.shift_type || "day").max}
                     />
                   </div>
                 </div>
@@ -2676,24 +2677,24 @@ export function ShiftAssignmentDrawer({
                     <Label htmlFor="extra-start" className="text-xs text-muted-foreground">
                       Début
                     </Label>
-                    <Input
+                    <TimePickerInput
                       id="extra-start"
-                      type="time"
                       value={extraStartTime}
-                      onChange={(e) => setExtraStartTime(e.target.value)}
-                      className="text-sm"
+                      onChange={(e) => setExtraStartTime(e)}
+                      min={getPartialShiftLimits(shift?.shift_type || "day").min}
+                      max={getPartialShiftLimits(shift?.shift_type || "day").max}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="extra-end" className="text-xs text-muted-foreground">
                       Fin
                     </Label>
-                    <Input
+                    <TimePickerInput
                       id="extra-end"
-                      type="time"
                       value={extraEndTime}
-                      onChange={(e) => setExtraEndTime(e.target.value)}
-                      className="text-sm"
+                      onChange={(e) => setExtraEndTime(e)}
+                      min={getPartialShiftLimits(shift?.shift_type || "day").min}
+                      max={getPartialShiftLimits(shift?.shift_type || "day").max}
                     />
                   </div>
                 </div>
