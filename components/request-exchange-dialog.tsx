@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
-import { getDefaultReplacementTimes } from "@/lib/shift-utils"
+import { getDefaultReplacementTimes, getPartialShiftLimits } from "@/lib/shift-utils"
 import { TimePickerInput } from "@/components/time-picker-input"
 import {
   getUserShiftsForExchange,
@@ -250,11 +250,25 @@ export function RequestExchangeDialog({ open, onOpenChange, userId }: RequestExc
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="my-start">Heure de début</Label>
-                      <TimePickerInput id="my-start" value={myStartTime} onChange={setMyStartTime} required />
+                      <TimePickerInput 
+                        id="my-start" 
+                        value={myStartTime} 
+                        onChange={setMyStartTime} 
+                        required
+                        min={getPartialShiftLimits(selectedMyShift?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedMyShift?.shift_type || "day").max}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="my-end">Heure de fin</Label>
-                      <TimePickerInput id="my-end" value={myEndTime} onChange={setMyEndTime} required />
+                      <TimePickerInput 
+                        id="my-end" 
+                        value={myEndTime} 
+                        onChange={setMyEndTime} 
+                        required
+                        min={getPartialShiftLimits(selectedMyShift?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedMyShift?.shift_type || "day").max}
+                      />
                     </div>
                   </div>
                 )}
@@ -350,11 +364,20 @@ export function RequestExchangeDialog({ open, onOpenChange, userId }: RequestExc
                         value={targetStartTime}
                         onChange={setTargetStartTime}
                         required
+                        min={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").max}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="target-end">Heure de fin</Label>
-                      <TimePickerInput id="target-end" value={targetEndTime} onChange={setTargetEndTime} required />
+                      <TimePickerInput 
+                        id="target-end" 
+                        value={targetEndTime} 
+                        onChange={setTargetEndTime} 
+                        required
+                        min={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").min}
+                        max={getPartialShiftLimits(selectedFirefighter?.shift_type || "day").max}
+                      />
                     </div>
                   </div>
                 )}

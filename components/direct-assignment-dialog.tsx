@@ -17,6 +17,7 @@ import { createDirectAssignment, addSecondReplacement } from "@/app/actions/dire
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { getPartialShiftLimits } from "@/lib/shift-utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,6 +105,21 @@ export function DirectAssignmentDialog({
         times.push(timeString)
       }
     }
+    
+    // Filter options based on shift type limits
+    if (shift && (isPartial || replacementOrder === 2)) {
+      const limits = getPartialShiftLimits(shift.shift_type || "day")
+      if (limits.min && limits.max) {
+        if (limits.min <= limits.max) {
+          // Normal case: 07:00-17:00
+          return times.filter(time => time >= limits.min && time <= limits.max)
+        } else {
+          // Midnight crossing case: 17:00-07:00
+          return times.filter(time => time >= limits.min || time <= limits.max)
+        }
+      }
+    }
+    
     return times
   }
 
