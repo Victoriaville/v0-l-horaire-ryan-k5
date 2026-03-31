@@ -75,7 +75,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
-            <CalendarDays className="h-6 w-6 text-purple-600" />
+            <CalendarDays className="h-6 w-6 text-pink-600" />
             Horaire SSIV
           </CardTitle>
           <CardDescription className="text-center">Connectez-vous à votre compte</CardDescription>
