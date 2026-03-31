@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TimePickerInput } from "@/components/time-picker-input"
-import { getDefaultReplacementTimes } from "@/lib/shift-utils"
+import { getDefaultReplacementTimes, getPartialShiftLimits } from "@/lib/shift-utils"
 import { Plus, AlertTriangle } from "lucide-react"
 import {
   createExchangeAsAdmin,
@@ -273,11 +273,19 @@ export function CreateExchangeAdminDialog({ allFirefighters }: CreateExchangeAdm
                           id="requester-start"
                           value={requesterStartTime}
                           onChange={setRequesterStartTime}
+                          min={getPartialShiftLimits(selectedRequesterShift?.shift_type || "day").min}
+                          max={getPartialShiftLimits(selectedRequesterShift?.shift_type || "day").max}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Heure de fin</Label>
-                        <TimePickerInput id="requester-end" value={requesterEndTime} onChange={setRequesterEndTime} />
+                        <TimePickerInput 
+                          id="requester-end" 
+                          value={requesterEndTime} 
+                          onChange={setRequesterEndTime}
+                          min={getPartialShiftLimits(selectedRequesterShift?.shift_type || "day").min}
+                          max={getPartialShiftLimits(selectedRequesterShift?.shift_type || "day").max}
+                        />
                       </div>
                     </div>
                   )}
@@ -347,11 +355,23 @@ export function CreateExchangeAdminDialog({ allFirefighters }: CreateExchangeAdm
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Heure de début</Label>
-                        <TimePickerInput id="target-start" value={targetStartTime} onChange={setTargetStartTime} />
+                        <TimePickerInput 
+                          id="target-start" 
+                          value={targetStartTime} 
+                          onChange={setTargetStartTime}
+                          min={getPartialShiftLimits(selectedTarget?.shift_type || "day").min}
+                          max={getPartialShiftLimits(selectedTarget?.shift_type || "day").max}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Heure de fin</Label>
-                        <TimePickerInput id="target-end" value={targetEndTime} onChange={setTargetEndTime} />
+                        <TimePickerInput 
+                          id="target-end" 
+                          value={targetEndTime} 
+                          onChange={setTargetEndTime}
+                          min={getPartialShiftLimits(selectedTarget?.shift_type || "day").min}
+                          max={getPartialShiftLimits(selectedTarget?.shift_type || "day").max}
+                        />
                       </div>
                     </div>
                   )}
