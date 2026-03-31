@@ -29,24 +29,17 @@ export function TimePickerInput({ value, onChange, id, required, min, max }: Tim
       }
     }
 
-    console.log("[v0] TimePickerInput - min:", min, "max:", max, "id:", id)
-
     // Filter options based on min/max
     if (min && max) {
       if (min <= max) {
         // Normal case: 07:00-17:00
-        const filtered = timeOptions.filter(time => time >= min && time <= max)
-        console.log("[v0] Normal case - filtered count:", filtered.length)
-        return filtered
+        return timeOptions.filter(time => time >= min && time <= max)
       } else {
         // Midnight crossing case: 17:00-07:00
-        const filtered = timeOptions.filter(time => time >= min || time <= max)
-        console.log("[v0] Midnight case - filtered count:", filtered.length)
-        return filtered
+        return timeOptions.filter(time => time >= min || time <= max)
       }
     }
 
-    console.log("[v0] No filter - all options:", timeOptions.length)
     return timeOptions
   }, [min, max])
 
