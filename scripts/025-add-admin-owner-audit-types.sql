@@ -1,0 +1,3 @@
+-- Add ADMIN_STATUS_CHANGED and OWNER_STATUS_CHANGED to audit_action_type enum
+ALTER TYPE audit_action_type ADD VALUE 'ADMIN_STATUS_CHANGED';
+ALTER TYPE audit_action_type ADD VALUE 'OWNER_STATUS_CHANGED';
