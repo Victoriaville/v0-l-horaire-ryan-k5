@@ -398,6 +398,25 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
       RETURNING applied_at
     `
 
+    // Log if admin added this candidate (not self-application)
+    if (firefighterId && firefighterId !== user.id && user.is_admin) {
+      const applicantUser = await db`
+        SELECT email FROM users WHERE id = ${applicantId} LIMIT 1
+      `
+      
+      const applicantEmail = applicantUser.length > 0 ? applicantUser[0].email : `ID: ${applicantId}`
+      
+      await createAuditLog({
+        userId: user.id,
+        actionType: "REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN",
+        tableName: "replacement_applications",
+        recordId: replacementId,
+        oldValues: null,
+        newValues: { applicant_id: applicantId, status: "pending" },
+        description: `Admin ${user.email} added user ${applicantEmail} as candidate for replacement ID: ${replacementId}`,
+      })
+    }
+
     try {
       invalidateCache()
       revalidatePath("/dashboard/calendar")
