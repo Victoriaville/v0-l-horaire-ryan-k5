@@ -195,14 +195,40 @@ export async function updateFirefighterRole(userId: number, role: string) {
   }
 
   try {
+    // Get current role before update
+    const firefighter = await sql`
+      SELECT id, email, role FROM users WHERE id = ${userId}
+    `
+
+    if (firefighter.length === 0) {
+      return { error: "Pompier introuvable" }
+    }
+
+    const oldRole = firefighter[0].role
+    const firefighterEmail = firefighter[0].email
+
+    // Update role
     await sql`
       UPDATE users
       SET role = ${role}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${userId}
     `
+
+    // Log the role update
+    await createAuditLog({
+      userId: user.id,
+      actionType: "FIREFIGHTER_ROLE_UPDATED",
+      tableName: "users",
+      recordId: userId,
+      oldValues: { role: oldRole },
+      newValues: { role: role },
+      description: `Role updated for user ${firefighterEmail} (ID: ${userId}) from ${oldRole} to ${role}`,
+    })
+
     revalidatePath("/dashboard/firefighters")
     return { success: true }
   } catch (error) {
+    console.error("[v0] updateFirefighterRole error:", error)
     return { error: "Erreur lors de la mise à jour du rôle" }
   }
 }
@@ -215,12 +241,42 @@ export async function deleteFirefighter(userId: number) {
   }
 
   try {
+    // Get firefighter details before deletion
+    const firefighter = await sql`
+      SELECT id, email, first_name, last_name, role FROM users WHERE id = ${userId}
+    `
+
+    if (firefighter.length === 0) {
+      return { error: "Pompier introuvable" }
+    }
+
+    const firefighterData = firefighter[0]
+    const firefighterName = `${firefighterData.first_name} ${firefighterData.last_name}`
+
+    // Delete firefighter
     await sql`
       DELETE FROM users WHERE id = ${userId}
     `
+
+    // Log the firefighter deletion
+    await createAuditLog({
+      userId: user.id,
+      actionType: "FIREFIGHTER_DELETED",
+      tableName: "users",
+      recordId: userId,
+      oldValues: {
+        email: firefighterData.email,
+        name: firefighterName,
+        role: firefighterData.role,
+      },
+      newValues: null,
+      description: `Firefighter ${firefighterName} (ID: ${userId}, email: ${firefighterData.email}) deleted`,
+    })
+
     revalidatePath("/dashboard/firefighters")
     return { success: true }
   } catch (error) {
+    console.error("[v0] deleteFirefighter error:", error)
     return { error: "Erreur lors de la suppression" }
   }
 }
