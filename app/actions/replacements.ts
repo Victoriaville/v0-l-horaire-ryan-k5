@@ -400,21 +400,32 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
 
     // Log if admin added this candidate (not self-application)
     if (firefighterId && firefighterId !== user.id && user.is_admin) {
-      const applicantUser = await db`
-        SELECT email FROM users WHERE id = ${applicantId} LIMIT 1
-      `
-      
-      const applicantEmail = applicantUser.length > 0 ? applicantUser[0].email : `ID: ${applicantId}`
-      
-      await createAuditLog({
-        userId: user.id,
-        actionType: "REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN",
-        tableName: "replacement_applications",
-        recordId: replacementId,
-        oldValues: null,
-        newValues: { applicant_id: applicantId, status: "pending" },
-        description: `Admin ${user.email} added user ${applicantEmail} as candidate for replacement ID: ${replacementId}`,
-      })
+      console.log("[v0] Attempting to log REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN for firefighterId:", firefighterId)
+      try {
+        const applicantUser = await db`
+          SELECT email FROM users WHERE id = ${applicantId} LIMIT 1
+        `
+        
+        const applicantEmail = applicantUser.length > 0 ? applicantUser[0].email : `ID: ${applicantId}`
+        
+        console.log("[v0] Calling createAuditLog with actionType: REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN")
+        
+        await createAuditLog({
+          userId: user.id,
+          actionType: "REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN",
+          tableName: "replacement_applications",
+          recordId: replacementId,
+          oldValues: null,
+          newValues: { applicant_id: applicantId, status: "pending" },
+          description: `Admin ${user.email} added user ${applicantEmail} as candidate for replacement ID: ${replacementId}`,
+        })
+        
+        console.log("[v0] Successfully logged REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN")
+      } catch (auditError) {
+        console.error("[v0] Error logging REPLACEMENT_CANDIDATE_ADDED_BY_ADMIN:", auditError)
+      }
+    } else {
+      console.log("[v0] Skipping audit log - firefighterId:", firefighterId, "user.id:", user.id, "is_admin:", user.is_admin)
     }
 
     try {
