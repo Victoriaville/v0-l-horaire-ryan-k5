@@ -8,6 +8,7 @@ import { formatISO } from "date-fns"
 import { neon } from "@neondatabase/serverless"
 import type { Shift } from "@/types/shift"
 import { unstable_noStore } from "next/cache"
+import { createAuditLog } from "@/app/actions/audit"
 
 // Placeholder for getCycleInfo, as it's used in updates but not defined in existing code
 async function getCycleInfo() {
@@ -109,6 +110,20 @@ export async function createShift(
   }
 
   try {
+    // Check if shift already exists (for UPDATE detection)
+    const existingShift = await sql`
+      SELECT id, team_id, cycle_day, shift_type, start_time, end_time
+      FROM shifts
+      WHERE team_id = ${teamId} AND cycle_day = ${cycleDay}
+    `
+
+    const isUpdate = existingShift.length > 0
+    const oldValues = isUpdate ? {
+      shift_type: existingShift[0].shift_type,
+      start_time: existingShift[0].start_time,
+      end_time: existingShift[0].end_time,
+    } : null
+
     await sql`
       INSERT INTO shifts (team_id, cycle_day, shift_type, start_time, end_time)
       VALUES (${teamId}, ${cycleDay}, ${shiftType}, ${startTime}, ${endTime})
@@ -118,6 +133,24 @@ export async function createShift(
         start_time = ${startTime},
         end_time = ${endTime}
     `
+
+    // Log the shift creation or update
+    const actionType = isUpdate ? "SHIFT_UPDATED" : "SHIFT_CREATED"
+    const shiftId = isUpdate ? existingShift[0].id : cycleDay + teamId
+
+    await createAuditLog({
+      userId: user.id,
+      actionType: actionType,
+      tableName: "shifts",
+      recordId: shiftId,
+      oldValues: oldValues,
+      newValues: {
+        shift_type: shiftType,
+        start_time: startTime,
+        end_time: endTime,
+      },
+      description: `Shift ${shiftType} ${isUpdate ? "updated" : "created"} for team ID: ${teamId}, cycle day: ${cycleDay}`,
+    })
 
     try {
       invalidateCache()
@@ -139,9 +172,39 @@ export async function deleteShift(shiftId: number) {
   }
 
   try {
+    // Get shift details BEFORE deletion
+    const shift = await sql`
+      SELECT id, team_id, cycle_day, shift_type, start_time, end_time
+      FROM shifts
+      WHERE id = ${shiftId}
+    `
+
+    if (shift.length === 0) {
+      return { error: "Shift introuvable" }
+    }
+
+    const shiftData = shift[0]
+
     await sql`
       DELETE FROM shifts WHERE id = ${shiftId}
     `
+
+    // Log the shift deletion
+    await createAuditLog({
+      userId: user.id,
+      actionType: "SHIFT_DELETED",
+      tableName: "shifts",
+      recordId: shiftId,
+      oldValues: {
+        team_id: shiftData.team_id,
+        cycle_day: shiftData.cycle_day,
+        shift_type: shiftData.shift_type,
+        start_time: shiftData.start_time,
+        end_time: shiftData.end_time,
+      },
+      newValues: null,
+      description: `Shift ${shiftData.shift_type} deleted for team ID: ${shiftData.team_id}, cycle day: ${shiftData.cycle_day}`,
+    })
 
     try {
       invalidateCache()
