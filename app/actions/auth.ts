@@ -7,6 +7,7 @@ import { createJWT, decodeJWT } from "@/lib/jwt"
 import { encryptToken, decryptToken } from "@/lib/jwe"
 import { isRateLimited, recordFailedAttempt, resetRateLimit, getClientIP } from "@/lib/rate-limit"
 import { hashPassword as hashPasswordArgon2, verifyPassword as verifyPasswordArgon2, verifyPBKDF2 } from "@/lib/password-crypto"
+import { createAuditLog } from "@/app/actions/audit"
 
 export interface User {
   id: number
@@ -230,6 +231,15 @@ export async function login(formData: FormData) {
         resetRateLimit(ip)
         await createSession(user.id)
         
+        // Log the login event
+        await createAuditLog({
+          userId: user.id,
+          actionType: "LOGIN",
+          tableName: "users",
+          recordId: user.id,
+          description: `User ${user.email} logged in (password reset required)`,
+        })
+        
         // Set flag to redirect AFTER exiting the try/catch
         // Don't return here - let function continue to redirect logic
         shouldRedirectToPassword = true
@@ -239,6 +249,15 @@ export async function login(formData: FormData) {
         // Successful login - reset rate limit
         resetRateLimit(ip)
         await createSession(user.id)
+        
+        // Log the login event
+        await createAuditLog({
+          userId: user.id,
+          actionType: "LOGIN",
+          tableName: "users",
+          recordId: user.id,
+          description: `User ${user.email} logged in successfully`,
+        })
       }
     }
   } catch (error) {
@@ -262,6 +281,25 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
+  try {
+    // Get the current session before destroying it
+    const session = await getSession()
+    
+    if (session) {
+      // Log the logout event BEFORE destroying the session
+      await createAuditLog({
+        userId: session.id,
+        actionType: "LOGOUT",
+        tableName: "users",
+        recordId: session.id,
+        description: `User ${session.email} logged out`,
+      })
+    }
+  } catch (error) {
+    console.error("[v0] Error logging logout event:", error)
+  }
+  
+  // Destroy session after logging
   await destroySession()
   redirect("/login")
 }

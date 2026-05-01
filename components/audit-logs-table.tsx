@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,8 +41,10 @@ const actionTypeLabels: Record<string, string> = {
   ASSIGNMENT_DELETED: "Assignation supprimée",
   SECOND_REPLACEMENT_ADDED: "Remplaçant 2 ajouté",
   REPLACEMENT_CREATED: "Demande créée",
-  REPLACEMENT_APPROVED: "Demande approuvée",
-  REPLACEMENT_REJECTED: "Demande rejetée",
+  REPLACEMENT_APPROVED: "Candidature approuvée",
+  REPLACEMENT_REJECTED: "Candidature rejetée",
+  REPLACEMENT_REQUEST_APPROVED: "Demande approuvée",
+  REPLACEMENT_REQUEST_REJECTED: "Demande rejetée",
   REPLACEMENT_ASSIGNED: "Remplacement assigné",
   REPLACEMENT_DELETED: "Demande supprimée",
   CANDIDATE_REMOVED: "Candidat retiré",
@@ -63,6 +66,20 @@ const actionTypeLabels: Record<string, string> = {
   LEAVE_REJECTED: "Congé rejeté",
   LEAVE_UPDATED: "Congé modifié",
   LEAVE_DELETED: "Congé supprimé",
+  SHIFT_CREATED: "Quart créé",
+  SHIFT_DELETED: "Quart supprimé",
+  SHIFT_UPDATED: "Quart modifié",
+  FIREFIGHTER_ROLE_UPDATED: "Rôle pompier modifié",
+  FIREFIGHTER_DELETED: "Pompier supprimé",
+  SHIFT_ASSIGNMENT_CREATED: "Assignation créée",
+  SHIFT_ASSIGNMENT_DELETED: "Assignation supprimée",
+  SHIFT_NOTE_CREATED: "Note créée",
+  SHIFT_NOTE_UPDATED: "Note modifiée",
+  SHIFT_NOTE_DELETED: "Note supprimée",
+  LOGIN: "Connexion",
+  LOGOUT: "Déconnexion",
+  PASSWORD_CHANGED_OWN: "Mot de passe changé",
+  PASSWORD_RESET_ADMIN: "Réinitialisation de mot de passe",
 }
 
 const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -70,8 +87,10 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   ASSIGNMENT_DELETED: "destructive",
   SECOND_REPLACEMENT_ADDED: "secondary",
   REPLACEMENT_CREATED: "default",
-  REPLACEMENT_APPROVED: "default",
+  REPLACEMENT_APPROVED: "secondary",
   REPLACEMENT_REJECTED: "destructive",
+  REPLACEMENT_REQUEST_APPROVED: "default",
+  REPLACEMENT_REQUEST_REJECTED: "destructive",
   REPLACEMENT_ASSIGNED: "secondary",
   REPLACEMENT_DELETED: "destructive",
   CANDIDATE_REMOVED: "destructive",
@@ -93,6 +112,20 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   LEAVE_REJECTED: "destructive",
   LEAVE_UPDATED: "secondary",
   LEAVE_DELETED: "destructive",
+  SHIFT_CREATED: "default",
+  SHIFT_DELETED: "destructive",
+  SHIFT_UPDATED: "secondary",
+  FIREFIGHTER_ROLE_UPDATED: "secondary",
+  FIREFIGHTER_DELETED: "destructive",
+  SHIFT_ASSIGNMENT_CREATED: "default",
+  SHIFT_ASSIGNMENT_DELETED: "destructive",
+  SHIFT_NOTE_CREATED: "default",
+  SHIFT_NOTE_UPDATED: "secondary",
+  SHIFT_NOTE_DELETED: "destructive",
+  LOGIN: "default",
+  LOGOUT: "secondary",
+  PASSWORD_CHANGED_OWN: "secondary",
+  PASSWORD_RESET_ADMIN: "secondary",
 }
 
 export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
@@ -176,159 +209,169 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des actions ({pagination.total})</CardTitle>
-          <CardDescription>
-            Page {pagination.page} sur {pagination.totalPages}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label htmlFor="action-type-filter" className="text-sm font-medium">
-                Type d'action:
-              </label>
-              <Select value={filterActionType} onValueChange={setFilterActionType}>
-                <SelectTrigger id="action-type-filter" className="w-[280px]">
-                  <SelectValue placeholder="Toutes les actions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les actions</SelectItem>
-                  {uniqueActionTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {actionTypeLabels[type] || type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <button
-                      onClick={() => handleSortChange("created_at")}
-                      className="flex items-center font-semibold hover:text-foreground"
-                    >
-                      Date et heure
-                      <SortIcon field="created_at" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => handleSortChange("user_name")}
-                      className="flex items-center font-semibold hover:text-foreground"
-                    >
-                      Utilisateur
-                      <SortIcon field="user_name" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      onClick={() => handleSortChange("action_type")}
-                      className="flex items-center font-semibold hover:text-foreground"
-                    >
-                      Action
-                      <SortIcon field="action_type" />
-                    </button>
-                  </TableHead>
-                  <TableHead>Description</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {processedLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                      Aucun log d'audit trouvé
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  processedLogs.map((log) => (
-                    <TableRow
-                      key={log.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedLog(log)}
-                    >
-                      <TableCell className="font-mono text-sm whitespace-nowrap">
-                        {formatDate(log.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {log.first_name} {log.last_name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">{log.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={actionTypeColors[log.action_type] || "default"}>
-                          {actionTypeLabels[log.action_type] || log.action_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md truncate">{log.description}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Précédent
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Page</span>
-                <select
-                  value={pagination.page}
-                  onChange={(e) => handlePageChange(Number(e.target.value))}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-                    <option key={pageNum} value={pageNum}>
-                      {pageNum}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-sm text-muted-foreground">sur {pagination.totalPages}</span>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {selectedLog && (
+    <TooltipProvider>
+      <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Détails du log</CardTitle>
-            <CardDescription>Informations complètes sur cette action</CardDescription>
+            <CardTitle>Historique des actions ({pagination.total})</CardTitle>
+            <CardDescription>
+              Page {pagination.page} sur {pagination.totalPages}
+            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="action-type-filter" className="text-sm font-medium">
+                  Type d'action:
+                </label>
+                <Select value={filterActionType} onValueChange={setFilterActionType}>
+                  <SelectTrigger id="action-type-filter" className="w-[280px]">
+                    <SelectValue placeholder="Toutes les actions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les actions</SelectItem>
+                    {uniqueActionTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {actionTypeLabels[type] || type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <button
+                        onClick={() => handleSortChange("created_at")}
+                        className="flex items-center font-semibold hover:text-foreground"
+                      >
+                        Date et heure
+                        <SortIcon field="created_at" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        onClick={() => handleSortChange("user_name")}
+                        className="flex items-center font-semibold hover:text-foreground"
+                      >
+                        Utilisateur
+                        <SortIcon field="user_name" />
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        onClick={() => handleSortChange("action_type")}
+                        className="flex items-center font-semibold hover:text-foreground"
+                      >
+                        Action
+                        <SortIcon field="action_type" />
+                      </button>
+                    </TableHead>
+                    <TableHead>Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {processedLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                        Aucun log d'audit trouvé
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    processedLogs.map((log) => (
+                      <TableRow
+                        key={log.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedLog(log)}
+                      >
+                        <TableCell className="font-mono text-sm whitespace-nowrap">
+                          {formatDate(log.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {log.first_name} {log.last_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{log.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={actionTypeColors[log.action_type] || "default"}>
+                            {actionTypeLabels[log.action_type] || log.action_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate cursor-help hover:underline">{log.description}</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-2xl bg-foreground text-background p-4">
+                              <p className="break-words text-sm">{log.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Précédent
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Page</span>
+                  <select
+                    value={pagination.page}
+                    onChange={(e) => handlePageChange(Number(e.target.value))}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <option key={pageNum} value={pageNum}>
+                        {pageNum}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-muted-foreground">sur {pagination.totalPages}</span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {selectedLog && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Détails du log</CardTitle>
+              <CardDescription>Informations complètes sur cette action</CardDescription>
+            </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -387,5 +430,6 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
         </Card>
       )}
     </div>
+    </TooltipProvider>
   )
 }

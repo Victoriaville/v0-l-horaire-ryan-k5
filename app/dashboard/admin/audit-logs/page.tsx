@@ -1,7 +1,9 @@
 import { getAuditLogs } from "@/app/actions/audit"
 import { AuditLogsTable } from "@/components/audit-logs-table"
+import { RefreshOnFocus } from "@/components/refresh-on-focus"
 
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export default async function AuditLogsPage({
   searchParams,
@@ -20,6 +22,7 @@ export default async function AuditLogsPage({
 
   return (
     <div className="container mx-auto p-6">
+      <RefreshOnFocus />
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Journal d'activités</h1>
         <p className="text-muted-foreground mt-2">

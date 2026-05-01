@@ -3,6 +3,7 @@
 import { sql, invalidateCache } from "@/lib/db"
 import { getSession } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
+import { createAuditLog } from "@/app/actions/audit"
 
 export async function getShiftAssignments(shiftId: number) {
   const assignments = await sql`
@@ -97,6 +98,12 @@ export async function addExtraFirefighterToShift(
       return { error: "Ce pompier est déjà assigné à ce quart" }
     }
 
+    // Get firefighter email for logging
+    const firefighter = await sql`
+      SELECT email FROM users WHERE id = ${userId}
+    `
+    const firefighterEmail = firefighter.length > 0 ? firefighter[0].email : `ID: ${userId}`
+
     await sql`
       INSERT INTO shift_assignments (shift_id, user_id, is_extra, is_partial, start_time, end_time)
       VALUES (
@@ -108,6 +115,27 @@ export async function addExtraFirefighterToShift(
         ${isPartial && endTime ? endTime : null}
       )
     `
+
+    // Log the extra firefighter assignment
+    try {
+      await createAuditLog({
+        userId: user.id,
+        actionType: "SHIFT_ASSIGNMENT_CREATED",
+        tableName: "shift_assignments",
+        recordId: shiftId,
+        oldValues: null,
+        newValues: {
+          user_id: userId,
+          is_extra: true,
+          is_partial: isPartial,
+          start_time: isPartial ? startTime : null,
+          end_time: isPartial ? endTime : null,
+        },
+        description: `Extra firefighter ${firefighterEmail} added to shift ID: ${shiftId}${isPartial ? ` (partial: ${startTime}-${endTime})` : ""}`,
+      })
+    } catch (auditError) {
+      console.error("[v0] Error logging SHIFT_ASSIGNMENT_CREATED:", auditError)
+    }
 
     try {
       invalidateCache()
@@ -130,10 +158,45 @@ export async function removeFirefighterFromShift(shiftId: number, userId: number
   }
 
   try {
+    // Get assignment details BEFORE deletion for logging
+    const assignment = await sql`
+      SELECT user_id, is_extra, is_partial, start_time, end_time FROM shift_assignments
+      WHERE shift_id = ${shiftId} AND user_id = ${userId}
+    `
+
+    if (assignment.length === 0) {
+      return { error: "Assignation introuvable" }
+    }
+
+    // Get firefighter email for logging
+    const firefighter = await sql`
+      SELECT email FROM users WHERE id = ${userId}
+    `
+    const firefighterEmail = firefighter.length > 0 ? firefighter[0].email : `ID: ${userId}`
+
+    const assignmentData = assignment[0]
+
     await sql`
       DELETE FROM shift_assignments
       WHERE shift_id = ${shiftId} AND user_id = ${userId}
     `
+
+    // Log the firefighter removal
+    await createAuditLog({
+      userId: user.id,
+      actionType: "SHIFT_ASSIGNMENT_DELETED",
+      tableName: "shift_assignments",
+      recordId: shiftId,
+      oldValues: {
+        user_id: assignmentData.user_id,
+        is_extra: assignmentData.is_extra,
+        is_partial: assignmentData.is_partial,
+        start_time: assignmentData.start_time,
+        end_time: assignmentData.end_time,
+      },
+      newValues: null,
+      description: `Firefighter ${firefighterEmail} removed from shift ID: ${shiftId}`,
+    })
 
     try {
       invalidateCache()
@@ -144,6 +207,7 @@ export async function removeFirefighterFromShift(shiftId: number, userId: number
 
     return { success: true }
   } catch (error) {
+    console.error("[v0] Error removing firefighter:", error)
     return { error: "Erreur lors de la suppression" }
   }
 }

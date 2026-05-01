@@ -2,6 +2,7 @@
 
 import { sql } from "@/lib/db"
 import { getSession } from "@/app/actions/auth"
+import { createAuditLog } from "@/app/actions/audit"
 
 // Helper function to check if user is admin
 export async function isUserAdmin(userId?: number): Promise<boolean> {
@@ -131,14 +132,17 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
   }
 
   try {
-    // Check if target user exists
+    // Check if target user exists and get current admin status
     const targetUser = await sql`
-      SELECT id FROM users WHERE id = ${userId}
+      SELECT id, is_admin, first_name, last_name FROM users WHERE id = ${userId}
     `
 
     if (targetUser.length === 0) {
       return { success: false, error: "Utilisateur introuvable" }
     }
+
+    const currentAdminStatus = targetUser[0].is_admin
+    const targetUserName = `${targetUser[0].first_name} ${targetUser[0].last_name}`
 
     // Update admin status
     await sql`
@@ -146,6 +150,17 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
       SET is_admin = ${makeAdmin}
       WHERE id = ${userId}
     `
+
+    // Log the action to audit trail
+    await createAuditLog({
+      userId: session.id,
+      actionType: "ADMIN_STATUS_CHANGED",
+      tableName: "users",
+      recordId: userId,
+      oldValues: { is_admin: currentAdminStatus },
+      newValues: { is_admin: makeAdmin },
+      description: `Admin status changed from ${currentAdminStatus} to ${makeAdmin} for user ${targetUserName} (ID: ${userId})`,
+    })
 
     return {
       success: true,
@@ -173,14 +188,17 @@ export async function toggleUserOwnerStatus(userId: number, makeOwner: boolean) 
   }
 
   try {
-    // Check if target user exists
+    // Check if target user exists and get current owner status
     const targetUser = await sql`
-      SELECT id FROM users WHERE id = ${userId}
+      SELECT id, is_owner, first_name, last_name FROM users WHERE id = ${userId}
     `
 
     if (targetUser.length === 0) {
       return { success: false, error: "Utilisateur introuvable" }
     }
+
+    const currentOwnerStatus = targetUser[0].is_owner
+    const targetUserName = `${targetUser[0].first_name} ${targetUser[0].last_name}`
 
     // Update owner status
     await sql`
@@ -188,6 +206,17 @@ export async function toggleUserOwnerStatus(userId: number, makeOwner: boolean) 
       SET is_owner = ${makeOwner}
       WHERE id = ${userId}
     `
+
+    // Log the action to audit trail
+    await createAuditLog({
+      userId: session.id,
+      actionType: "OWNER_STATUS_CHANGED",
+      tableName: "users",
+      recordId: userId,
+      oldValues: { is_owner: currentOwnerStatus },
+      newValues: { is_owner: makeOwner },
+      description: `Owner status changed from ${currentOwnerStatus} to ${makeOwner} for user ${targetUserName} (ID: ${userId})`,
+    })
 
     return {
       success: true,

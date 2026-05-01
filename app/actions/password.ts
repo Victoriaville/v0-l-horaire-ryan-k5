@@ -3,6 +3,7 @@
 import { sql } from "@/lib/db"
 import { getSession, hashPassword, verifyPassword } from "@/app/actions/auth"
 import { revalidatePath } from "next/cache"
+import { createAuditLog } from "@/app/actions/audit"
 
 export async function changeOwnPassword(
   currentPassword: string,
@@ -39,6 +40,17 @@ export async function changeOwnPassword(
       WHERE id = ${user.id}
     `
 
+    // Log the password change
+    await createAuditLog({
+      userId: user.id,
+      actionType: "PASSWORD_CHANGED_OWN",
+      tableName: "users",
+      recordId: user.id,
+      oldValues: { password_updated: false },
+      newValues: { password_updated: true },
+      description: `User ${user.email} changed their own password`,
+    })
+
     return { success: true, message: "Mot de passe changé avec succès" }
   } catch (error) {
     console.error("[v0] Error changing password:", error)
@@ -65,6 +77,17 @@ export async function resetFirefighterPassword(
       SET password_hash = ${newPasswordHash}, password_force_reset = TRUE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${userId}
     `
+
+    // Log the admin password reset
+    await createAuditLog({
+      userId: user.id,
+      actionType: "PASSWORD_RESET_ADMIN",
+      tableName: "users",
+      recordId: userId,
+      oldValues: { password_force_reset: false },
+      newValues: { password_force_reset: true },
+      description: `Admin ${user.email} reset password for user ID: ${userId}`,
+    })
 
     revalidatePath("/dashboard/firefighters")
     return { success: true, message: "Mot de passe réinitialisé avec succès" }
