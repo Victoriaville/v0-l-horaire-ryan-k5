@@ -967,6 +967,24 @@ export async function createExtraFirefighterReplacement(
 
     console.log("[v0] createExtraFirefighterReplacement - Created replacement with ID:", replacementId, "with name:", firefighterToReplaceName)
 
+    // Log the replacement creation
+    await createAuditLog({
+      userId: user.id,
+      actionType: "REPLACEMENT_CREATED",
+      tableName: "replacements",
+      recordId: replacementId,
+      oldValues: null,
+      newValues: {
+        shift_date: shiftDate,
+        shift_type: shiftType,
+        team_id: teamId,
+        is_partial: isPartial,
+        start_time: finalStartTime,
+        end_time: finalEndTime,
+      },
+      description: `Extra replacement created by admin ${user.email} for ${firefighterToReplaceName} on ${shiftDate} (${shiftType}) in team ${teamId}`,
+    })
+
     const deadlineLabel = getDeadlineLabel(deadlineSeconds)
     const shouldSendNotifications = deadlineLabel !== null
 
