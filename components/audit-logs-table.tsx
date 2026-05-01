@@ -312,8 +312,8 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
                             <TooltipTrigger asChild>
                               <span className="block truncate cursor-help hover:underline">{log.description}</span>
                             </TooltipTrigger>
-                            <TooltipContent side="left" className="max-w-xs bg-foreground text-background">
-                              <p className="break-words">{log.description}</p>
+                            <TooltipContent side="left" className="max-w-2xl bg-foreground text-background p-4">
+                              <p className="break-words text-sm">{log.description}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
