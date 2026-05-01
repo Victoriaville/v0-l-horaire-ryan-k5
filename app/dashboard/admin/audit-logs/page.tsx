@@ -1,3 +1,4 @@
+import { headers } from "next/headers"
 import { getAuditLogs } from "@/app/actions/audit"
 import { AuditLogsTable } from "@/components/audit-logs-table"
 import { RefreshOnFocus } from "@/components/refresh-on-focus"
@@ -9,6 +10,11 @@ export default async function AuditLogsPage({
 }: {
   searchParams: { page?: string; userId?: string; actionType?: string }
 }) {
+  // Prevent caching of audit logs - always fetch fresh data from database
+  const headersList = await headers()
+  headersList.set("Cache-Control", "no-cache, no-store, must-revalidate")
+  headersList.set("Pragma", "no-cache")
+  headersList.set("Expires", "0")
   const page = Number.parseInt(searchParams.page || "1")
   const userId = searchParams.userId ? Number.parseInt(searchParams.userId) : undefined
   const actionType = searchParams.actionType as any
