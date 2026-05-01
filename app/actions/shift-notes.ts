@@ -80,7 +80,11 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
 
     const { shift_type } = shiftDetails[0]
     const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
-    const formattedDate = formatLocalDate(shiftDate)
+    
+    // Format date to French format (5 mai 2026)
+    const dateObj = new Date(shiftDate)
+    const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
 
     // Check if note already exists (for UPDATE detection)
     const existing = await sql`
@@ -108,8 +112,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
 
     // Log the shift note creation or update
     const actionType = isUpdate ? "SHIFT_NOTE_UPDATED" : "SHIFT_NOTE_CREATED"
-    const notePreview = note.trim().substring(0, 100)
-    const noteFullPreview = note.trim().length > 100 ? notePreview + "..." : notePreview
+    const actionLabel = isUpdate ? "modifiée" : "créée"
     
     await createAuditLog({
       userId: session.id,
@@ -122,7 +125,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
         shift_date: shiftDate,
         note: note.trim()
       },
-      description: `Note de quart ${isUpdate ? "modifiée" : "créée"} le ${formattedDate} (${shiftTypeLabel}): "${noteFullPreview}"`,
+      description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été ${actionLabel}`,
     })
 
     try {
@@ -173,7 +176,11 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
 
     const { note: noteContent, shift_type } = noteData[0]
     const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
-    const formattedDate = formatLocalDate(shiftDate)
+    
+    // Format date to French format (5 mai 2026)
+    const dateObj = new Date(shiftDate)
+    const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
 
     await sql`
       DELETE FROM shift_notes 
@@ -182,9 +189,6 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
 
     // Log the shift note deletion
     try {
-      const notePreview = noteContent.substring(0, 100)
-      const noteFullPreview = noteContent.length > 100 ? notePreview + "..." : notePreview
-      
       await createAuditLog({
         userId: session.id,
         actionType: "SHIFT_NOTE_DELETED",
@@ -192,7 +196,7 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
         recordId: shiftId,
         oldValues: { note: noteContent },
         newValues: null,
-        description: `Note de quart supprimée le ${formattedDate} (${shiftTypeLabel}). Contenu: "${noteFullPreview}"`,
+        description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été supprimée`,
       })
     } catch (auditError) {
       console.error("[v0] Error creating audit log:", auditError)
