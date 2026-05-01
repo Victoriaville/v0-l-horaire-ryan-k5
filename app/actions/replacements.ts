@@ -1206,7 +1206,19 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       WHERE id = ${replacementId}
     `
 
-    // Log the replacement request approval
+    // Get replacement details for logging
+    const replacementDetails = await db`
+      SELECT r.shift_date, r.shift_type, r.is_partial, r.start_time, r.end_time, r.user_id, u.first_name, u.last_name
+      FROM replacements r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.id = ${replacementId}
+    `
+
+    const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacementDetails[0]
+    const firefighterToReplaceName = `${first_name} ${last_name}`
+    const shiftTypeLabel = is_partial ? `partial (${start_time}-${end_time})` : shift_type
+
+    // Log the replacement request approval with detailed information
     await createAuditLog({
       userId: user.id,
       actionType: "REPLACEMENT_REQUEST_APPROVED",
@@ -1214,19 +1226,19 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "open" },
-      description: `Replacement request ${replacementId} approved and opened for applications on ${shiftDate}`,
+      description: `Replacement request for ${firefighterToReplaceName} on ${shift_date} (${shiftTypeLabel}) approved and opened for applications`,
     })
 
     // Get replacement details for notifications
-    const replacementDetails = await db`
+    const replacementDetailsForNotif = await db`
       SELECT r.shift_date, r.shift_type, r.user_id, u.first_name, u.last_name
       FROM replacements r
       JOIN users u ON r.user_id = u.id
       WHERE r.id = ${replacementId}
     `
 
-    if (replacementDetails.length > 0) {
-      const { shift_date, shift_type, user_id, first_name, last_name } = replacementDetails[0]
+    if (replacementDetailsForNotif.length > 0) {
+      const { shift_date, shift_type, user_id, first_name, last_name } = replacementDetailsForNotif[0]
       const firefighterToReplaceName = `${first_name} ${last_name}`
       
       const deadlineLabel = getDeadlineLabel(deadlineSeconds)
@@ -1302,13 +1314,29 @@ export async function rejectReplacementRequest(replacementId: number) {
       disableWarningInBrowsers: true,
     })
 
+    // Get replacement details for logging
+    const replacement = await db`
+      SELECT r.shift_date, r.shift_type, r.is_partial, r.start_time, r.end_time, r.user_id, u.first_name, u.last_name
+      FROM replacements r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.id = ${replacementId}
+    `
+
+    if (replacement.length === 0) {
+      return { error: "Remplacement non trouvé" }
+    }
+
+    const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacement[0]
+    const firefighterToReplaceName = `${first_name} ${last_name}`
+    const shiftTypeLabel = is_partial ? `partial (${start_time}-${end_time})` : shift_type
+
     await db`
       UPDATE replacements
       SET status = 'cancelled'
       WHERE id = ${replacementId}
     `
 
-    // Log the replacement request rejection
+    // Log the replacement request rejection with detailed information
     await createAuditLog({
       userId: user.id,
       actionType: "REPLACEMENT_REQUEST_REJECTED",
@@ -1316,7 +1344,7 @@ export async function rejectReplacementRequest(replacementId: number) {
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "cancelled" },
-      description: `Replacement request ${replacementId} rejected and cancelled`,
+      description: `Replacement request for ${firefighterToReplaceName} on ${shift_date} (${shiftTypeLabel}) rejected and cancelled`,
     })
 
     try {
