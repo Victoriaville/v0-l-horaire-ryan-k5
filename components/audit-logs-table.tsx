@@ -209,41 +209,41 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des actions ({pagination.total})</CardTitle>
-          <CardDescription>
-            Page {pagination.page} sur {pagination.totalPages}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label htmlFor="action-type-filter" className="text-sm font-medium">
-                Type d'action:
-              </label>
-              <Select value={filterActionType} onValueChange={setFilterActionType}>
-                <SelectTrigger id="action-type-filter" className="w-[280px]">
-                  <SelectValue placeholder="Toutes les actions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les actions</SelectItem>
-                  {uniqueActionTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {actionTypeLabels[type] || type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Historique des actions ({pagination.total})</CardTitle>
+            <CardDescription>
+              Page {pagination.page} sur {pagination.totalPages}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="action-type-filter" className="text-sm font-medium">
+                  Type d'action:
+                </label>
+                <Select value={filterActionType} onValueChange={setFilterActionType}>
+                  <SelectTrigger id="action-type-filter" className="w-[280px]">
+                    <SelectValue placeholder="Toutes les actions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les actions</SelectItem>
+                    {uniqueActionTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {actionTypeLabels[type] || type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
-            </div>
-          </div>
 
-          <div className="overflow-x-auto">
-            <TooltipProvider>
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -310,10 +310,10 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
                         <TableCell className="max-w-md">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="truncate cursor-help">{log.description}</span>
+                              <span className="block truncate cursor-help hover:underline">{log.description}</span>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p>{log.description}</p>
+                            <TooltipContent side="left" className="max-w-xs bg-foreground text-background">
+                              <p className="break-words">{log.description}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
@@ -322,57 +322,56 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
                   )}
                 </TableBody>
               </Table>
-            </TooltipProvider>
-          </div>
-
-          {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Précédent
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Page</span>
-                <select
-                  value={pagination.page}
-                  onChange={(e) => handlePageChange(Number(e.target.value))}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-                    <option key={pageNum} value={pageNum}>
-                      {pageNum}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-sm text-muted-foreground">sur {pagination.totalPages}</span>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {selectedLog && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails du log</CardTitle>
-            <CardDescription>Informations complètes sur cette action</CardDescription>
-          </CardHeader>
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Précédent
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Page</span>
+                  <select
+                    value={pagination.page}
+                    onChange={(e) => handlePageChange(Number(e.target.value))}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <option key={pageNum} value={pageNum}>
+                        {pageNum}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-muted-foreground">sur {pagination.totalPages}</span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {selectedLog && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Détails du log</CardTitle>
+              <CardDescription>Informations complètes sur cette action</CardDescription>
+            </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -431,5 +430,6 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
         </Card>
       )}
     </div>
+    </TooltipProvider>
   )
 }
