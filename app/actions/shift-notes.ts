@@ -78,8 +78,9 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
       return { success: false, error: "Shift non trouvé" }
     }
 
-    const { shift_type, start_time, end_time } = shiftDetails[0]
-    const shiftTypeLabel = shift_type === "day" ? "Day" : (shift_type === "night" ? "Night" : "24h")
+    const { shift_type } = shiftDetails[0]
+    const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+    const formattedDate = formatLocalDate(shiftDate)
 
     // Check if note already exists (for UPDATE detection)
     const existing = await sql`
@@ -121,7 +122,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
         shift_date: shiftDate,
         note: note.trim()
       },
-      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate} (${shiftTypeLabel}): "${noteFullPreview}"`,
+      description: `Note de quart ${isUpdate ? "modifiée" : "créée"} le ${formattedDate} (${shiftTypeLabel}): "${noteFullPreview}"`,
     })
 
     try {
@@ -171,7 +172,8 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
     }
 
     const { note: noteContent, shift_type } = noteData[0]
-    const shiftTypeLabel = shift_type === "day" ? "Day" : (shift_type === "night" ? "Night" : "24h")
+    const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+    const formattedDate = formatLocalDate(shiftDate)
 
     await sql`
       DELETE FROM shift_notes 
@@ -190,7 +192,7 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
         recordId: shiftId,
         oldValues: { note: noteContent },
         newValues: null,
-        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate} (${shiftTypeLabel}). Content: "${noteFullPreview}"`,
+        description: `Note de quart supprimée le ${formattedDate} (${shiftTypeLabel}). Contenu: "${noteFullPreview}"`,
       })
     } catch (auditError) {
       console.error("[v0] Error creating audit log:", auditError)
