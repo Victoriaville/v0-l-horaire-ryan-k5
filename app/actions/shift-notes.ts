@@ -69,7 +69,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
 
     // Get shift details for logging
     const shiftDetails = await sql`
-      SELECT s.shift_type, s.is_partial, s.start_time, s.end_time
+      SELECT s.shift_type, s.start_time, s.end_time
       FROM shifts s
       WHERE s.id = ${shiftId}
     `
@@ -78,8 +78,8 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
       return { success: false, error: "Shift non trouvé" }
     }
 
-    const { shift_type, is_partial, start_time, end_time } = shiftDetails[0]
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const { shift_type, start_time, end_time } = shiftDetails[0]
+    const shiftTypeLabel = shift_type === "day" ? "Day" : (shift_type === "night" ? "Night" : "24h")
 
     // Check if note already exists (for UPDATE detection)
     const existing = await sql`
@@ -160,7 +160,7 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
 
     // Get note and shift details BEFORE deletion for logging
     const noteData = await sql`
-      SELECT sn.id, sn.note, s.shift_type, s.is_partial, s.start_time, s.end_time
+      SELECT sn.id, sn.note, s.shift_type
       FROM shift_notes sn
       JOIN shifts s ON sn.shift_id = s.id
       WHERE sn.shift_id = ${shiftId} AND sn.shift_date = ${shiftDate}
@@ -170,8 +170,8 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
       return { success: false, error: "Note introuvable" }
     }
 
-    const { note: noteContent, shift_type, is_partial, start_time, end_time } = noteData[0]
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const { note: noteContent, shift_type } = noteData[0]
+    const shiftTypeLabel = shift_type === "day" ? "Day" : (shift_type === "night" ? "Night" : "24h")
 
     await sql`
       DELETE FROM shift_notes 
