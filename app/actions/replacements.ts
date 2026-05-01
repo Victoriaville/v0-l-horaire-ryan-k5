@@ -1216,7 +1216,8 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacementDetails[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `partial (${start_time}-${end_time})` : shift_type
+    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const formattedDate = formatLocalDate(shift_date)
 
     // Log the replacement request approval with detailed information
     await createAuditLog({
@@ -1226,7 +1227,7 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "open" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${shift_date} (${shiftTypeLabel}) approved and opened for applications`,
+      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel})`,
     })
 
     // Get replacement details for notifications
@@ -1328,7 +1329,8 @@ export async function rejectReplacementRequest(replacementId: number) {
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacement[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `partial (${start_time}-${end_time})` : shift_type
+    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const formattedDate = formatLocalDate(shift_date)
 
     await db`
       UPDATE replacements
@@ -1344,7 +1346,7 @@ export async function rejectReplacementRequest(replacementId: number) {
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "cancelled" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${shift_date} (${shiftTypeLabel}) rejected and cancelled`,
+      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel}) rejected`,
     })
 
     try {
