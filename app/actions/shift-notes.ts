@@ -1,6 +1,7 @@
 "use server"
 import { getSession } from "@/app/actions/auth"
 import { sql, invalidateCache } from "@/lib/db"
+import { createAuditLog } from "@/app/actions/audit"
 
 export async function getShiftNote(shiftId: number, shiftDate: string) {
   try {
@@ -51,56 +52,57 @@ export async function getShiftNotesForDateRange(startDate: string, endDate: stri
 }
 
 export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string, note: string) {
-  console.log("[v0] createOrUpdateShiftNote called with:", { shiftId, shiftDate, noteLength: note.length })
-
   try {
-    console.log("[v0] Getting session...")
     const session = await getSession()
-    console.log("[v0] Session:", session?.email, "is_admin:", session?.is_admin)
 
     if (!session?.id) {
-      console.log("[v0] No session or user ID")
       return { success: false, error: "Non authentifié" }
     }
 
     if (!session.is_admin) {
-      console.log("[v0] User is not admin")
       return { success: false, error: "Seuls les administrateurs peuvent créer ou modifier des notes" }
     }
 
     if (!note.trim()) {
-      console.log("[v0] Note is empty")
       return { success: false, error: "La note ne peut pas être vide" }
     }
 
-    console.log("[v0] Checking if note exists...")
-    // Check if note already exists
+    // Check if note already exists (for UPDATE detection)
     const existing = await sql`
-      SELECT id FROM shift_notes 
+      SELECT id, note FROM shift_notes 
       WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
     `
-    console.log("[v0] Existing note check result:", existing.length > 0 ? "exists" : "new")
+
+    const isUpdate = existing.length > 0
+    const oldNote = isUpdate ? existing[0].note : null
 
     if (existing.length > 0) {
-      console.log("[v0] Updating existing note...")
       // Update existing note
       await sql`
         UPDATE shift_notes 
         SET note = ${note.trim()}, updated_at = CURRENT_TIMESTAMP
         WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
       `
-      console.log("[v0] Note updated successfully")
     } else {
-      console.log("[v0] Creating new note...")
       // Create new note
       await sql`
         INSERT INTO shift_notes (shift_id, shift_date, note, created_by)
         VALUES (${shiftId}, ${shiftDate}, ${note.trim()}, ${session.id})
       `
-      console.log("[v0] Note created successfully")
     }
 
-    console.log("[v0] Returning success")
+    // Log the shift note creation or update
+    const actionType = isUpdate ? "SHIFT_NOTE_UPDATED" : "SHIFT_NOTE_CREATED"
+    
+    await createAuditLog({
+      userId: session.id,
+      actionType: actionType,
+      tableName: "shift_notes",
+      recordId: shiftId,
+      oldValues: isUpdate ? { note: oldNote } : null,
+      newValues: { note: note.trim() },
+      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate}`,
+    })
 
     try {
       invalidateCache()
@@ -111,17 +113,13 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
     return { success: true }
   } catch (error: any) {
     console.error("[v0] Error in createOrUpdateShiftNote:", error)
-    console.error("[v0] Error code:", error?.code)
-    console.error("[v0] Error message:", error?.message)
 
     if (error?.code === "42P01") {
-      console.log("[v0] Table doesn't exist error")
       return {
         success: false,
         error: "La table shift_notes n'existe pas encore. Veuillez exécuter le script SQL 023-create-shift-notes.sql",
       }
     }
-    console.log("[v0] Generic error, returning error message")
     return {
       success: false,
       error: "Erreur lors de la sauvegarde de la note: " + (error?.message || "Erreur inconnue"),
@@ -140,10 +138,33 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
       return { success: false, error: "Seuls les administrateurs peuvent supprimer des notes" }
     }
 
+    // Get note details BEFORE deletion for logging
+    const note = await sql`
+      SELECT id, note FROM shift_notes 
+      WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
+    `
+
+    if (note.length === 0) {
+      return { success: false, error: "Note introuvable" }
+    }
+
+    const noteData = note[0]
+
     await sql`
       DELETE FROM shift_notes 
       WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
     `
+
+    // Log the shift note deletion
+    await createAuditLog({
+      userId: session.id,
+      actionType: "SHIFT_NOTE_DELETED",
+      tableName: "shift_notes",
+      recordId: shiftId,
+      oldValues: { note: noteData.note },
+      newValues: null,
+      description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}`,
+    })
 
     try {
       invalidateCache()
