@@ -117,21 +117,27 @@ export async function addExtraFirefighterToShift(
     `
 
     // Log the extra firefighter assignment
-    await createAuditLog({
-      userId: user.id,
-      actionType: "SHIFT_ASSIGNMENT_CREATED",
-      tableName: "shift_assignments",
-      recordId: shiftId,
-      oldValues: null,
-      newValues: {
-        user_id: userId,
-        is_extra: true,
-        is_partial: isPartial,
-        start_time: isPartial ? startTime : null,
-        end_time: isPartial ? endTime : null,
-      },
-      description: `Extra firefighter ${firefighterEmail} added to shift ID: ${shiftId}${isPartial ? ` (partial: ${startTime}-${endTime})` : ""}`,
-    })
+    try {
+      console.log("[v0] About to log SHIFT_ASSIGNMENT_CREATED for userId:", userId, "shiftId:", shiftId)
+      await createAuditLog({
+        userId: user.id,
+        actionType: "SHIFT_ASSIGNMENT_CREATED",
+        tableName: "shift_assignments",
+        recordId: shiftId,
+        oldValues: null,
+        newValues: {
+          user_id: userId,
+          is_extra: true,
+          is_partial: isPartial,
+          start_time: isPartial ? startTime : null,
+          end_time: isPartial ? endTime : null,
+        },
+        description: `Extra firefighter ${firefighterEmail} added to shift ID: ${shiftId}${isPartial ? ` (partial: ${startTime}-${endTime})` : ""}`,
+      })
+      console.log("[v0] Successfully logged SHIFT_ASSIGNMENT_CREATED")
+    } catch (auditError) {
+      console.error("[v0] Error logging SHIFT_ASSIGNMENT_CREATED:", auditError)
+    }
 
     try {
       invalidateCache()
