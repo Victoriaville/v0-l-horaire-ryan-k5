@@ -67,6 +67,20 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
       return { success: false, error: "La note ne peut pas être vide" }
     }
 
+    // Get shift details for logging
+    const shiftDetails = await sql`
+      SELECT s.shift_type, s.is_partial, s.start_time, s.end_time
+      FROM shifts s
+      WHERE s.id = ${shiftId}
+    `
+
+    if (shiftDetails.length === 0) {
+      return { success: false, error: "Shift non trouvé" }
+    }
+
+    const { shift_type, is_partial, start_time, end_time } = shiftDetails[0]
+    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+
     // Check if note already exists (for UPDATE detection)
     const existing = await sql`
       SELECT id, note FROM shift_notes 
@@ -93,6 +107,8 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
 
     // Log the shift note creation or update
     const actionType = isUpdate ? "SHIFT_NOTE_UPDATED" : "SHIFT_NOTE_CREATED"
+    const notePreview = note.trim().substring(0, 100)
+    const noteFullPreview = note.trim().length > 100 ? notePreview + "..." : notePreview
     
     await createAuditLog({
       userId: session.id,
@@ -105,7 +121,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
         shift_date: shiftDate,
         note: note.trim()
       },
-      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate}. Note: "${note.trim().substring(0, 100)}${note.trim().length > 100 ? "..." : ""}"`,
+      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate} (${shiftTypeLabel}): "${noteFullPreview}"`,
     })
 
     try {
@@ -142,17 +158,20 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
       return { success: false, error: "Seuls les administrateurs peuvent supprimer des notes" }
     }
 
-    // Get note details BEFORE deletion for logging
-    const note = await sql`
-      SELECT id, note FROM shift_notes 
-      WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
+    // Get note and shift details BEFORE deletion for logging
+    const noteData = await sql`
+      SELECT sn.id, sn.note, s.shift_type, s.is_partial, s.start_time, s.end_time
+      FROM shift_notes sn
+      JOIN shifts s ON sn.shift_id = s.id
+      WHERE sn.shift_id = ${shiftId} AND sn.shift_date = ${shiftDate}
     `
 
-    if (note.length === 0) {
+    if (noteData.length === 0) {
       return { success: false, error: "Note introuvable" }
     }
 
-    const noteData = note[0]
+    const { note: noteContent, shift_type, is_partial, start_time, end_time } = noteData[0]
+    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
 
     await sql`
       DELETE FROM shift_notes 
@@ -161,14 +180,17 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
 
     // Log the shift note deletion
     try {
+      const notePreview = noteContent.substring(0, 100)
+      const noteFullPreview = noteContent.length > 100 ? notePreview + "..." : notePreview
+      
       await createAuditLog({
         userId: session.id,
         actionType: "SHIFT_NOTE_DELETED",
         tableName: "shift_notes",
         recordId: shiftId,
-        oldValues: { note: noteData.note },
+        oldValues: { note: noteContent },
         newValues: null,
-        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}. Content: "${noteData.note.substring(0, 100)}${noteData.note.length > 100 ? "..." : ""}"`,
+        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate} (${shiftTypeLabel}). Content: "${noteFullPreview}"`,
       })
     } catch (auditError) {
       console.error("[v0] Error creating audit log:", auditError)
