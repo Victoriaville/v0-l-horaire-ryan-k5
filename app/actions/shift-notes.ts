@@ -113,6 +113,8 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
     // Log the shift note creation or update
     const actionType = isUpdate ? "SHIFT_NOTE_UPDATED" : "SHIFT_NOTE_CREATED"
     const actionLabel = isUpdate ? "modifiée" : "créée"
+    const notePreview = note.trim().substring(0, 100)
+    const noteFullPreview = note.trim().length > 100 ? notePreview + "..." : notePreview
     
     await createAuditLog({
       userId: session.id,
@@ -125,7 +127,7 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
         shift_date: shiftDate,
         note: note.trim()
       },
-      description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été ${actionLabel}`,
+      description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été ${actionLabel}: "${noteFullPreview}"`,
     })
 
     try {
@@ -189,6 +191,9 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
 
     // Log the shift note deletion
     try {
+      const notePreview = noteContent.substring(0, 100)
+      const noteFullPreview = noteContent.length > 100 ? notePreview + "..." : notePreview
+      
       await createAuditLog({
         userId: session.id,
         actionType: "SHIFT_NOTE_DELETED",
@@ -196,7 +201,7 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
         recordId: shiftId,
         oldValues: { note: noteContent },
         newValues: null,
-        description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été supprimée`,
+        description: `La note du quart du ${formattedDate} (${shiftTypeLabel}) a été supprimée. Contenu: "${noteFullPreview}"`,
       })
     } catch (auditError) {
       console.error("[v0] Error creating audit log:", auditError)
