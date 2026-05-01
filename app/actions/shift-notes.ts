@@ -171,7 +171,7 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
         recordId: shiftId,
         oldValues: { note: noteData.note },
         newValues: null,
-        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}`,
+        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}. Content: "${noteData.note.substring(0, 100)}${noteData.note.length > 100 ? "..." : ""}"`,
       })
       console.log("[v0] Audit log created successfully")
     } catch (auditError) {
