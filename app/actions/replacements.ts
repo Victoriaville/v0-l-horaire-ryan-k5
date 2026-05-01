@@ -1206,6 +1206,17 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       WHERE id = ${replacementId}
     `
 
+    // Log the replacement request approval
+    await createAuditLog({
+      userId: user.id,
+      actionType: "REPLACEMENT_REQUEST_APPROVED",
+      tableName: "replacements",
+      recordId: replacementId,
+      oldValues: { status: "pending" },
+      newValues: { status: "open" },
+      description: `Replacement request ${replacementId} approved and opened for applications on ${shiftDate}`,
+    })
+
     // Get replacement details for notifications
     const replacementDetails = await db`
       SELECT r.shift_date, r.shift_type, r.user_id, u.first_name, u.last_name
@@ -1296,6 +1307,17 @@ export async function rejectReplacementRequest(replacementId: number) {
       SET status = 'cancelled'
       WHERE id = ${replacementId}
     `
+
+    // Log the replacement request rejection
+    await createAuditLog({
+      userId: user.id,
+      actionType: "REPLACEMENT_REQUEST_REJECTED",
+      tableName: "replacements",
+      recordId: replacementId,
+      oldValues: { status: "pending" },
+      newValues: { status: "cancelled" },
+      description: `Replacement request ${replacementId} rejected and cancelled`,
+    })
 
     try {
       invalidateCache()
