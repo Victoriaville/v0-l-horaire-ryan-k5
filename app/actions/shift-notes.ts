@@ -153,14 +153,11 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
     }
 
     const noteData = note[0]
-    console.log("[v0] About to delete note, noteData:", noteData)
 
     await sql`
       DELETE FROM shift_notes 
       WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
     `
-
-    console.log("[v0] Note deleted, about to log audit event")
 
     // Log the shift note deletion
     try {
@@ -173,7 +170,6 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
         newValues: null,
         description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}. Content: "${noteData.note.substring(0, 100)}${noteData.note.length > 100 ? "..." : ""}"`,
       })
-      console.log("[v0] Audit log created successfully")
     } catch (auditError) {
       console.error("[v0] Error creating audit log:", auditError)
     }

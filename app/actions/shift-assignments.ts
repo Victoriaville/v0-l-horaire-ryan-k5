@@ -118,7 +118,6 @@ export async function addExtraFirefighterToShift(
 
     // Log the extra firefighter assignment
     try {
-      console.log("[v0] About to log SHIFT_ASSIGNMENT_CREATED for userId:", userId, "shiftId:", shiftId)
       await createAuditLog({
         userId: user.id,
         actionType: "SHIFT_ASSIGNMENT_CREATED",
@@ -134,7 +133,6 @@ export async function addExtraFirefighterToShift(
         },
         description: `Extra firefighter ${firefighterEmail} added to shift ID: ${shiftId}${isPartial ? ` (partial: ${startTime}-${endTime})` : ""}`,
       })
-      console.log("[v0] Successfully logged SHIFT_ASSIGNMENT_CREATED")
     } catch (auditError) {
       console.error("[v0] Error logging SHIFT_ASSIGNMENT_CREATED:", auditError)
     }
