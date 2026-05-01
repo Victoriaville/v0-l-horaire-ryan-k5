@@ -100,8 +100,12 @@ export async function createOrUpdateShiftNote(shiftId: number, shiftDate: string
       tableName: "shift_notes",
       recordId: shiftId,
       oldValues: isUpdate ? { note: oldNote } : null,
-      newValues: { note: note.trim() },
-      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate}`,
+      newValues: { 
+        shift_id: shiftId,
+        shift_date: shiftDate,
+        note: note.trim()
+      },
+      description: `Shift note ${isUpdate ? "updated" : "created"} for shift ID: ${shiftId} on ${shiftDate}. Note: "${note.trim().substring(0, 100)}${note.trim().length > 100 ? "..." : ""}"`,
     })
 
     try {
@@ -149,22 +153,30 @@ export async function deleteShiftNote(shiftId: number, shiftDate: string) {
     }
 
     const noteData = note[0]
+    console.log("[v0] About to delete note, noteData:", noteData)
 
     await sql`
       DELETE FROM shift_notes 
       WHERE shift_id = ${shiftId} AND shift_date = ${shiftDate}
     `
 
+    console.log("[v0] Note deleted, about to log audit event")
+
     // Log the shift note deletion
-    await createAuditLog({
-      userId: session.id,
-      actionType: "SHIFT_NOTE_DELETED",
-      tableName: "shift_notes",
-      recordId: shiftId,
-      oldValues: { note: noteData.note },
-      newValues: null,
-      description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}`,
-    })
+    try {
+      await createAuditLog({
+        userId: session.id,
+        actionType: "SHIFT_NOTE_DELETED",
+        tableName: "shift_notes",
+        recordId: shiftId,
+        oldValues: { note: noteData.note },
+        newValues: null,
+        description: `Shift note deleted for shift ID: ${shiftId} on ${shiftDate}`,
+      })
+      console.log("[v0] Audit log created successfully")
+    } catch (auditError) {
+      console.error("[v0] Error creating audit log:", auditError)
+    }
 
     try {
       invalidateCache()
