@@ -34,6 +34,12 @@ interface AuditLogsTableProps {
     total: number
     totalPages: number
   }
+  allUsers?: Array<{
+    id: number
+    first_name: string
+    last_name: string
+    email: string
+  }>
 }
 
 const actionTypeLabels: Record<string, string> = {
@@ -132,7 +138,7 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   PASSWORD_RESET_ADMIN: "secondary",
 }
 
-export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
+export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
@@ -141,25 +147,20 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
   const [filterActionType, setFilterActionType] = useState<string>("all")
   const [filterUserId, setFilterUserId] = useState<string>("all")
 
-  const uniqueActionTypes = useMemo(() => {
-    const types = new Set(logs.map((log) => log.action_type))
-    return Array.from(types).sort()
-  }, [logs])
+  // Use all action types from actionTypeLabels (not filtered by current logs)
+  const allActionTypes = useMemo(() => {
+    return Object.keys(actionTypeLabels).sort()
+  }, [])
 
-  const uniqueUsers = useMemo(() => {
-    const users = new Map<number, { first_name: string; last_name: string; email: string }>()
-    logs.forEach((log) => {
-      if (!users.has(log.user_id)) {
-        users.set(log.user_id, {
-          first_name: log.first_name,
-          last_name: log.last_name,
-          email: log.email,
-        })
-      }
-    })
-    return Array.from(users.entries())
-      .sort((a, b) => `${a[1].first_name} ${a[1].last_name}`.localeCompare(`${b[1].first_name} ${b[1].last_name}`))
-  }, [logs])
+  // Use all users passed from server (not filtered by current logs)
+  const allUsersForDropdown = useMemo(() => {
+    return allUsers.map((user) => ({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+    }))
+  }, [allUsers])
 
   const processedLogs = useMemo(() => {
     let filtered = logs
@@ -254,8 +255,8 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {uniqueUsers.map(([userId, user]) => (
-                      <SelectItem key={userId} value={userId.toString()}>
+                    {allUsersForDropdown.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
                         {user.first_name} {user.last_name}
                       </SelectItem>
                     ))}
@@ -272,7 +273,7 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les actions</SelectItem>
-                    {uniqueActionTypes.map((type) => (
+                    {allActionTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {actionTypeLabels[type] || type}
                       </SelectItem>

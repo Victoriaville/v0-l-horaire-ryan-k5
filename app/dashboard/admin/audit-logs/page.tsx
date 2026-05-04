@@ -1,6 +1,7 @@
 import { getAuditLogs } from "@/app/actions/audit"
 import { AuditLogsTable } from "@/components/audit-logs-table"
 import { RefreshOnFocus } from "@/components/refresh-on-focus"
+import { db } from "@vercel/postgres"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -20,6 +21,20 @@ export default async function AuditLogsPage({
     actionType,
   })
 
+  // Fetch all users for the dropdown
+  const allUsersData = await db`
+    SELECT id, first_name, last_name, email
+    FROM users
+    ORDER BY first_name, last_name
+  `
+
+  const allUsers = allUsersData.map(user => ({
+    id: user.id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    email: user.email,
+  }))
+
   return (
     <div className="container mx-auto p-6">
       <RefreshOnFocus />
@@ -31,7 +46,7 @@ export default async function AuditLogsPage({
         </p>
       </div>
 
-      <AuditLogsTable logs={logs} pagination={pagination} />
+      <AuditLogsTable logs={logs} pagination={pagination} allUsers={allUsers} />
     </div>
   )
 }
