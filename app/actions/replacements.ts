@@ -443,7 +443,7 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
 
             const logResult = await createAuditLog({
               userId: user.id,
-              actionType: "REPLACEMENT_APPLICATION_ADDED",
+              actionType: "REPLACEMENT_APPROVED",
               tableName: "replacement_applications",
               recordId: insertResult[0].id,
               oldValues: null,
