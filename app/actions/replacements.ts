@@ -399,19 +399,14 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
     `
 
     // Log only if admin is adding application for another firefighter
-    console.log("[v0] Checking if should log:", { is_admin: user.is_admin, firefighterId, user_id: user.id, should_log: user.is_admin && firefighterId && firefighterId !== user.id })
     if (user.is_admin && firefighterId && firefighterId !== user.id) {
-      console.log("[v0] Logging replacement application for firefighter:", firefighterId)
       try {
         // Get replacement details for logging
         const replacementDetails = await db`
-          SELECT r.shift_date, r.user_id, s.shift_type
+          SELECT r.shift_date, r.user_id, r.shift_type
           FROM replacements r
-          JOIN shifts s ON r.shift_id = s.id
           WHERE r.id = ${replacementId}
         `
-
-        console.log("[v0] Replacement details:", replacementDetails)
 
         if (replacementDetails.length > 0) {
           const { shift_date, user_id: replacedUserId, shift_type } = replacementDetails[0]
@@ -433,14 +428,10 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
             WHERE u1.id = ${applicantId} AND u2.id = ${replacedUserId}
           `
 
-          console.log("[v0] Firefighter details:", firefighterDetails)
-
           if (firefighterDetails.length > 0) {
             const { added_first_name, added_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
             const added_name = `${added_first_name} ${added_last_name}`
             const replaced_name = `${replaced_first_name} ${replaced_last_name}`
-
-            console.log("[v0] Creating audit log with description:", `Candidat ${added_name} ajouté manuellement...`)
 
             await createAuditLog({
               userId: user.id,
@@ -451,13 +442,7 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
               newValues: { replacement_id: replacementId, applicant_id: applicantId, status: "pending" },
               description: `Candidat ${added_name} ajouté manuellement comme candidat pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
             })
-
-            console.log("[v0] Audit log created successfully")
-          } else {
-            console.log("[v0] No firefighter details found")
           }
-        } else {
-          console.log("[v0] No replacement details found")
         }
       } catch (auditError) {
         console.error("[v0] Error creating audit log for application:", auditError)
