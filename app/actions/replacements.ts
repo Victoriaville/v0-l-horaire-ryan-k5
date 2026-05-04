@@ -1436,7 +1436,7 @@ export async function rejectReplacementRequest(replacementId: number) {
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacement[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const shiftTypeLabel = is_partial ? `Partiel (${start_time}-${end_time})` : (shift_type === "day" ? "Jour" : "Nuit")
     const formattedDate = formatLocalDate(shift_date)
 
     await db`
