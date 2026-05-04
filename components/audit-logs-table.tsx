@@ -137,10 +137,26 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [filterActionType, setFilterActionType] = useState<string>("all")
+  const [filterUserId, setFilterUserId] = useState<string>("all")
 
   const uniqueActionTypes = useMemo(() => {
     const types = new Set(logs.map((log) => log.action_type))
     return Array.from(types).sort()
+  }, [logs])
+
+  const uniqueUsers = useMemo(() => {
+    const users = new Map<number, { first_name: string; last_name: string; email: string }>()
+    logs.forEach((log) => {
+      if (!users.has(log.user_id)) {
+        users.set(log.user_id, {
+          first_name: log.first_name,
+          last_name: log.last_name,
+          email: log.email,
+        })
+      }
+    })
+    return Array.from(users.entries())
+      .sort((a, b) => `${a[1].first_name} ${a[1].last_name}`.localeCompare(`${b[1].first_name} ${b[1].last_name}`))
   }, [logs])
 
   const processedLogs = useMemo(() => {
@@ -148,6 +164,10 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
 
     if (filterActionType !== "all") {
       filtered = filtered.filter((log) => log.action_type === filterActionType)
+    }
+
+    if (filterUserId !== "all") {
+      filtered = filtered.filter((log) => log.user_id === Number.parseInt(filterUserId))
     }
 
     return filtered.sort((a, b) => {
@@ -169,7 +189,7 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
 
       return sortOrder === "asc" ? compareResult : -compareResult
     })
-  }, [logs, sortField, sortOrder, filterActionType])
+  }, [logs, sortField, sortOrder, filterActionType, filterUserId])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -222,6 +242,24 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="user-filter" className="text-sm font-medium">
+                  Utilisateur:
+                </label>
+                <Select value={filterUserId} onValueChange={setFilterUserId}>
+                  <SelectTrigger id="user-filter" className="w-[280px]">
+                    <SelectValue placeholder="Tous les utilisateurs" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les utilisateurs</SelectItem>
+                    {uniqueUsers.map(([userId, user]) => (
+                      <SelectItem key={userId} value={userId.toString()}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="action-type-filter" className="text-sm font-medium">
                   Type d'action:
