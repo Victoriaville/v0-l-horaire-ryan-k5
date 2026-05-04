@@ -1453,7 +1453,7 @@ export async function rejectReplacementRequest(replacementId: number) {
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "cancelled" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel}) rejected`,
+      description: `La demande de remplacement de ${firefighterToReplaceName} le ${formattedDate} (${shiftTypeLabel}) a été rejetée`,
     })
 
     try {
