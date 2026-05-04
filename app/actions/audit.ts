@@ -104,7 +104,7 @@ export async function getAuditLogs(options: {
   endDate?: string
 }) {
   const page = options.page || 1
-  const limit = options.limit || 50
+  const limit = options.limit || 100
   const offset = (page - 1) * limit
 
   try {

@@ -11,9 +11,11 @@ export default async function AuditLogsPage({
 }: {
   searchParams: { page?: string; userId?: string; actionType?: string }
 }) {
-  const page = Number.parseInt(searchParams.page || "1")
   const userId = searchParams.userId ? Number.parseInt(searchParams.userId) : undefined
   const actionType = searchParams.actionType as any
+
+  // Reset to page 1 when filters are applied, otherwise use current page
+  const page = (userId || actionType) ? 1 : Number.parseInt(searchParams.page || "1")
 
   const { logs, pagination } = await getAuditLogs({
     page,
