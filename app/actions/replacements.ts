@@ -399,7 +399,9 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
     `
 
     // Log only if admin is adding application for another firefighter
+    console.log("[v0] DEBUG 1 - Checking if should log:", { is_admin: user.is_admin, firefighterId, user_id: user.id })
     if (user.is_admin && firefighterId && firefighterId !== user.id) {
+      console.log("[v0] DEBUG 2 - YES! Admin adding for another. Entering logging block...")
       try {
         // Get replacement details for logging
         const replacementDetails = await db`
@@ -407,6 +409,8 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
           FROM replacements r
           WHERE r.id = ${replacementId}
         `
+
+        console.log("[v0] DEBUG 3 - Got replacement details:", replacementDetails)
 
         if (replacementDetails.length > 0) {
           const { shift_date, user_id: replacedUserId, shift_type } = replacementDetails[0]
@@ -416,6 +420,8 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
           const dateObj = new Date(shift_date)
           const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
           const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+          console.log("[v0] DEBUG 4 - Formatted date:", formattedDate, "Type:", shiftTypeLabel)
 
           // Get names of the added firefighter and replaced firefighter
           const firefighterDetails = await db`
@@ -428,10 +434,15 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
             WHERE u1.id = ${applicantId} AND u2.id = ${replacedUserId}
           `
 
+          console.log("[v0] DEBUG 5 - Got firefighter details:", firefighterDetails)
+
           if (firefighterDetails.length > 0) {
             const { added_first_name, added_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
             const added_name = `${added_first_name} ${added_last_name}`
             const replaced_name = `${replaced_first_name} ${replaced_last_name}`
+
+            console.log("[v0] DEBUG 6 - Names:", { added_name, replaced_name })
+            console.log("[v0] DEBUG 7 - About to call createAuditLog with recordId:", insertResult[0].id)
 
             await createAuditLog({
               userId: user.id,
@@ -442,11 +453,19 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
               newValues: { replacement_id: replacementId, applicant_id: applicantId, status: "pending" },
               description: `Candidat ${added_name} ajouté manuellement comme candidat pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
             })
+
+            console.log("[v0] DEBUG 8 - Audit log created successfully!")
+          } else {
+            console.log("[v0] DEBUG 5b - NO firefighter details found!")
           }
+        } else {
+          console.log("[v0] DEBUG 3b - NO replacement details found!")
         }
       } catch (auditError) {
-        console.error("[v0] Error creating audit log for application:", auditError)
+        console.error("[v0] DEBUG ERROR - Error creating audit log:", auditError)
       }
+    } else {
+      console.log("[v0] DEBUG 2b - NO! Not logging (not admin or same user)")
     }
 
     try {
