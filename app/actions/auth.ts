@@ -256,7 +256,7 @@ export async function login(formData: FormData) {
           actionType: "LOGIN",
           tableName: "users",
           recordId: user.id,
-          description: `User ${user.email} logged in successfully`,
+          description: `L'utilisateur ${user.email} s'est connecté avec succès`,
         })
       }
     }
@@ -292,7 +292,7 @@ export async function logout() {
         actionType: "LOGOUT",
         tableName: "users",
         recordId: session.id,
-        description: `User ${session.email} logged out`,
+        description: `L'utilisateur ${session.email} s'est déconnecté`,
       })
     }
   } catch (error) {
