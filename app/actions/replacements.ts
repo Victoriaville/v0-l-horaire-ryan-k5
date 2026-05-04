@@ -1055,12 +1055,41 @@ export async function updateReplacementAssignment(replacementId: number, assigne
       disableWarningInBrowsers: true,
     })
 
+    // Get replacement details for logging
+    const replacementDetails = await db`
+      SELECT r.shift_date, s.shift_type, r.user_id
+      FROM replacements r
+      JOIN shifts s ON r.shift_id = s.id
+      WHERE r.id = ${replacementId}
+    `
+
+    if (replacementDetails.length === 0) {
+      return { error: "Remplacement introuvable" }
+    }
+
+    const { shift_date, shift_type, user_id: replacedUserId } = replacementDetails[0]
+    const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+
+    // Format date to French format (5 mai 2026)
+    const dateObj = new Date(shift_date)
+    const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
     if (assignedTo) {
+      // Get names of assigned firefighter and replaced firefighter
+      const firefighterDetails = await db`
+        SELECT 
+          (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = ${assignedTo}) as assigned_name,
+          (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = ${replacedUserId}) as replaced_name
+      `
+
+      const { assigned_name, replaced_name } = firefighterDetails[0]
+
       await db`
         INSERT INTO replacement_applications (replacement_id, applicant_id, status, reviewed_by, reviewed_at)
         VALUES (${replacementId}, ${assignedTo}, 'approved', ${user.id}, CURRENT_TIMESTAMP)
         ON CONFLICT (replacement_id, applicant_id) 
-        DO UPDATE SET status = 'approved', reviewed_by = ${user.id}, reviewed_at = ${user.id}, reviewed_at = CURRENT_TIMESTAMP
+        DO UPDATE SET status = 'approved', reviewed_by = ${user.id}, reviewed_at = CURRENT_TIMESTAMP
       `
 
       await db`
@@ -1074,6 +1103,21 @@ export async function updateReplacementAssignment(replacementId: number, assigne
         SET status = 'assigned'
         WHERE id = ${replacementId}
       `
+
+      // Log the manual assignment
+      try {
+        await createAuditLog({
+          userId: user.id,
+          actionType: "REPLACEMENT_ASSIGNED",
+          tableName: "replacement_applications",
+          recordId: replacementId,
+          oldValues: null,
+          newValues: { applicant_id: assignedTo, status: "approved" },
+          description: `Candidat ${assigned_name} assigné pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
+        })
+      } catch (auditError) {
+        console.error("[v0] Error creating audit log for assignment:", auditError)
+      }
     } else {
       await db`
         UPDATE replacement_applications
