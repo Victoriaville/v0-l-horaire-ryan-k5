@@ -148,8 +148,13 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [filterUserId, setFilterUserId] = useState<string>("all")
 
   // Use all action types from actionTypeLabels (not filtered by current logs)
+  // Sort by French label in alphabetical order
   const allActionTypes = useMemo(() => {
-    return Object.keys(actionTypeLabels).sort()
+    return Object.keys(actionTypeLabels).sort((a, b) => {
+      const labelA = actionTypeLabels[a] || a
+      const labelB = actionTypeLabels[b] || b
+      return labelA.localeCompare(labelB, 'fr')
+    })
   }, [])
 
   // Use all users passed from server (not filtered by current logs)
