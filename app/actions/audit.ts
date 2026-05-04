@@ -108,36 +108,47 @@ export async function getAuditLogs(options: {
   const offset = (page - 1) * limit
 
   try {
-    const conditions = []
+    let whereClause = ""
+    const params: (string | number)[] = []
+    let paramIndex = 1
 
     if (options.userId) {
-      conditions.push(`user_id = ${options.userId}`)
+      whereClause += `user_id = $${paramIndex}`
+      params.push(options.userId)
+      paramIndex++
     }
 
     if (options.actionType) {
-      conditions.push(`action_type = '${options.actionType}'`)
+      if (whereClause) whereClause += " AND "
+      whereClause += `action_type = $${paramIndex}`
+      params.push(options.actionType)
+      paramIndex++
     }
 
     if (options.startDate) {
-      conditions.push(`created_at >= '${options.startDate}'`)
+      if (whereClause) whereClause += " AND "
+      whereClause += `created_at >= $${paramIndex}`
+      params.push(options.startDate)
+      paramIndex++
     }
 
     if (options.endDate) {
-      conditions.push(`created_at <= '${options.endDate}'`)
+      if (whereClause) whereClause += " AND "
+      whereClause += `created_at <= $${paramIndex}`
+      params.push(options.endDate)
+      paramIndex++
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+    const fullWhereClause = whereClause ? `WHERE ${whereClause}` : ""
 
     // Compter le total
-    const countResult = await db.query(
-      `SELECT COUNT(*) as total FROM audit_logs ${whereClause}`
-    )
-
+    const countQuery = `SELECT COUNT(*) as total FROM audit_logs ${fullWhereClause}`
+    const countResult = await db.query(countQuery, params)
     const total = Number.parseInt(countResult.rows[0]?.total || "0")
 
     // Récupérer les logs avec les informations de l'utilisateur
-    const logsResult = await db.query(
-      `SELECT 
+    const logsQuery = `
+      SELECT 
         al.id,
         al.user_id,
         al.action_type,
@@ -153,12 +164,13 @@ export async function getAuditLogs(options: {
         u.email
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
-      ${whereClause}
+      ${fullWhereClause}
       ORDER BY al.created_at DESC
-      LIMIT ${limit}
-      OFFSET ${offset}`
-    )
-
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `
+    
+    const logsParams = [...params, limit, offset]
+    const logsResult = await db.query(logsQuery, logsParams)
     const logs = logsResult.rows as AuditLog[]
 
     return {
