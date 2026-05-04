@@ -22,18 +22,18 @@ export default async function AuditLogsPage({
   })
 
   // Fetch all users for the dropdown
-  const allUsersData = await db`
+  const allUsersResult = await db`
     SELECT id, first_name, last_name, email
     FROM users
     ORDER BY first_name, last_name
   `
 
-  const allUsers = allUsersData.map(user => ({
+  const allUsers = (allUsersResult as any).rows?.map((user: any) => ({
     id: user.id,
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
-  }))
+  })) || []
 
   return (
     <div className="container mx-auto p-6">
