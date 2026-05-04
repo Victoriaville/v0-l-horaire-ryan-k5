@@ -215,7 +215,7 @@ export async function toggleUserOwnerStatus(userId: number, makeOwner: boolean) 
       recordId: userId,
       oldValues: { is_owner: currentOwnerStatus },
       newValues: { is_owner: makeOwner },
-      description: `Owner status changed from ${currentOwnerStatus} to ${makeOwner} for user ${targetUserName} (ID: ${userId})`,
+      description: `Le statut de propriétaire a été changé de ${currentOwnerStatus ? "oui" : "non"} à ${makeOwner ? "oui" : "non"} pour l'utilisateur ${targetUserName}`,
     })
 
     return {

@@ -82,6 +82,7 @@ const actionTypeLabels: Record<string, string> = {
   PASSWORD_CHANGED_OWN: "Mot de passe changé",
   PASSWORD_RESET_ADMIN: "Réinitialisation de mot de passe",
   ADMIN_STATUS_CHANGED: "Changement du statut d'admin",
+  OWNER_STATUS_CHANGED: "Changement du statut de propriétaire",
 }
 
 const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
