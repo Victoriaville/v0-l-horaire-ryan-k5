@@ -83,12 +83,12 @@ const actionTypeLabels: Record<string, string> = {
   PASSWORD_RESET_ADMIN: "Réinitialisation de mot de passe",
 }
 
-const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
   ASSIGNMENT_CREATED: "default",
   ASSIGNMENT_DELETED: "destructive",
   SECOND_REPLACEMENT_ADDED: "secondary",
   REPLACEMENT_CREATED: "default",
-  REPLACEMENT_APPROVED: "default",
+  REPLACEMENT_APPROVED: "success",
   REPLACEMENT_APPLICATION_ADDED: "default",
   REPLACEMENT_REJECTED: "destructive",
   REPLACEMENT_REQUEST_APPROVED: "default",
