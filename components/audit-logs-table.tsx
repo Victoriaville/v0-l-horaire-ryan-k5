@@ -81,6 +81,7 @@ const actionTypeLabels: Record<string, string> = {
   LOGOUT: "Déconnexion",
   PASSWORD_CHANGED_OWN: "Mot de passe changé",
   PASSWORD_RESET_ADMIN: "Réinitialisation de mot de passe",
+  ADMIN_STATUS_CHANGED: "Changement du statut d'admin",
 }
 
 const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
