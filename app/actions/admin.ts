@@ -159,7 +159,7 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
       recordId: userId,
       oldValues: { is_admin: currentAdminStatus },
       newValues: { is_admin: makeAdmin },
-      description: `Admin status changed from ${currentAdminStatus} to ${makeAdmin} for user ${targetUserName} (ID: ${userId})`,
+      description: `Le statut administrateur a été changé de ${currentAdminStatus ? "oui" : "non"} à ${makeAdmin ? "oui" : "non"} pour l'utilisateur ${targetUserName}`,
     })
 
     return {

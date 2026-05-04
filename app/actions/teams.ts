@@ -270,7 +270,7 @@ export async function deleteFirefighter(userId: number) {
         role: firefighterData.role,
       },
       newValues: null,
-      description: `Firefighter ${firefighterName} (ID: ${userId}, email: ${firefighterData.email}) deleted`,
+      description: `Le pompier ${firefighterName} (email: ${firefighterData.email}) a été supprimé`,
     })
 
     revalidatePath("/dashboard/firefighters")
