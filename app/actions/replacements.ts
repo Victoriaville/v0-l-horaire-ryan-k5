@@ -395,8 +395,60 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
     const insertResult = await db`
       INSERT INTO replacement_applications (replacement_id, applicant_id, status)
       VALUES (${replacementId}, ${applicantId}, 'pending')
-      RETURNING applied_at
+      RETURNING id, applied_at
     `
+
+    // Log only if admin is adding application for another firefighter
+    if (user.is_admin && firefighterId && firefighterId !== user.id) {
+      try {
+        // Get replacement details for logging
+        const replacementDetails = await db`
+          SELECT r.shift_date, r.user_id, s.shift_type
+          FROM replacements r
+          JOIN shifts s ON r.shift_id = s.id
+          WHERE r.id = ${replacementId}
+        `
+
+        if (replacementDetails.length > 0) {
+          const { shift_date, user_id: replacedUserId, shift_type } = replacementDetails[0]
+          const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+
+          // Format date to French format (15 mai 2026)
+          const dateObj = new Date(shift_date)
+          const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+          const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+          // Get names of the added firefighter and replaced firefighter
+          const firefighterDetails = await db`
+            SELECT 
+              u1.first_name as added_first_name,
+              u1.last_name as added_last_name,
+              u2.first_name as replaced_first_name,
+              u2.last_name as replaced_last_name
+            FROM users u1, users u2
+            WHERE u1.id = ${applicantId} AND u2.id = ${replacedUserId}
+          `
+
+          if (firefighterDetails.length > 0) {
+            const { added_first_name, added_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
+            const added_name = `${added_first_name} ${added_last_name}`
+            const replaced_name = `${replaced_first_name} ${replaced_last_name}`
+
+            await createAuditLog({
+              userId: user.id,
+              actionType: "REPLACEMENT_APPLICATION_ADDED",
+              tableName: "replacement_applications",
+              recordId: insertResult[0].id,
+              oldValues: null,
+              newValues: { replacement_id: replacementId, applicant_id: applicantId, status: "pending" },
+              description: `Candidat ${added_name} ajouté manuellement comme candidat pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
+            })
+          }
+        }
+      } catch (auditError) {
+        console.error("[v0] Error creating audit log for application:", auditError)
+      }
+    }
 
     try {
       invalidateCache()
