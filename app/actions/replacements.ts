@@ -1116,7 +1116,8 @@ export async function updateReplacementAssignment(replacementId: number, assigne
 
       // Log the manual assignment
       try {
-        await createAuditLog({
+        console.log("[v0] Logging replacement assignment:", { assigned_name, replaced_name, formattedDate, shiftTypeLabel })
+        const logResult = await createAuditLog({
           userId: user.id,
           actionType: "REPLACEMENT_ASSIGNED",
           tableName: "replacement_applications",
@@ -1125,6 +1126,7 @@ export async function updateReplacementAssignment(replacementId: number, assigne
           newValues: { applicant_id: assignedTo, status: "approved" },
           description: `Candidat ${assigned_name} assigné pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
         })
+        console.log("[v0] Audit log result:", logResult)
       } catch (auditError) {
         console.error("[v0] Error creating audit log for assignment:", auditError)
       }
