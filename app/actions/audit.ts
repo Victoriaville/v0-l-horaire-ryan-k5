@@ -108,46 +108,40 @@ export async function getAuditLogs(options: {
   const offset = (page - 1) * limit
 
   try {
-    let whereClause = ""
-    const params: (string | number)[] = []
-    let paramIndex = 1
+    let whereClause = sql``
+    const conditions = []
 
     if (options.userId) {
-      whereClause += `user_id = $${paramIndex}`
-      params.push(options.userId)
-      paramIndex++
+      conditions.push(sql`user_id = ${options.userId}`)
     }
 
     if (options.actionType) {
-      if (whereClause) whereClause += " AND "
-      whereClause += `action_type = $${paramIndex}`
-      params.push(options.actionType)
-      paramIndex++
+      conditions.push(sql`action_type = ${options.actionType}`)
     }
 
     if (options.startDate) {
-      if (whereClause) whereClause += " AND "
-      whereClause += `created_at >= $${paramIndex}`
-      params.push(options.startDate)
-      paramIndex++
+      conditions.push(sql`created_at >= ${options.startDate}`)
     }
 
     if (options.endDate) {
-      if (whereClause) whereClause += " AND "
-      whereClause += `created_at <= $${paramIndex}`
-      params.push(options.endDate)
-      paramIndex++
+      conditions.push(sql`created_at <= ${options.endDate}`)
     }
 
-    const fullWhereClause = whereClause ? `WHERE ${whereClause}` : ""
+    if (conditions.length > 0) {
+      whereClause = sql`WHERE ${sql.join(conditions, sql` AND `)}`
+    }
 
     // Compter le total
-    const countQuery = `SELECT COUNT(*) as total FROM audit_logs ${fullWhereClause}`
-    const countResult = await db.query(countQuery, params)
-    const total = Number.parseInt(countResult.rows[0]?.total || "0")
+    const countResult = await sql`
+      SELECT COUNT(*) as total
+      FROM audit_logs
+      ${whereClause}
+    `
+
+    const total = Number.parseInt(countResult[0]?.total || "0")
 
     // Récupérer les logs avec les informations de l'utilisateur
-    const logsQuery = `
+    const logs = await sql`
       SELECT 
         al.id,
         al.user_id,
@@ -164,14 +158,11 @@ export async function getAuditLogs(options: {
         u.email
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
-      ${fullWhereClause}
+      ${whereClause}
       ORDER BY al.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      LIMIT ${limit}
+      OFFSET ${offset}
     `
-    
-    const logsParams = [...params, limit, offset]
-    const logsResult = await db.query(logsQuery, logsParams)
-    const logs = logsResult.rows as AuditLog[]
 
     return {
       logs,

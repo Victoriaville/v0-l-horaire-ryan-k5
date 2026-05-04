@@ -254,21 +254,7 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 <label htmlFor="user-filter" className="text-sm font-medium">
                   Utilisateur:
                 </label>
-                <Select 
-                  value={filterUserId} 
-                  onValueChange={(value) => {
-                    // Update URL with filter and reset to page 1
-                    const params = new URLSearchParams()
-                    if (value !== "all") {
-                      params.set("userId", value)
-                    }
-                    if (filterActionType !== "all") {
-                      params.set("actionType", filterActionType)
-                    }
-                    params.set("page", "1")
-                    router.push(`?${params.toString()}`)
-                  }}
-                >
+                <Select value={filterUserId} onValueChange={setFilterUserId}>
                   <SelectTrigger id="user-filter" className="w-[280px]">
                     <SelectValue placeholder="Tous les utilisateurs" />
                   </SelectTrigger>
@@ -286,21 +272,7 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 <label htmlFor="action-type-filter" className="text-sm font-medium">
                   Type d'action:
                 </label>
-                <Select 
-                  value={filterActionType} 
-                  onValueChange={(value) => {
-                    // Update URL with filter and reset to page 1
-                    const params = new URLSearchParams()
-                    if (filterUserId !== "all") {
-                      params.set("userId", filterUserId)
-                    }
-                    if (value !== "all") {
-                      params.set("actionType", value)
-                    }
-                    params.set("page", "1")
-                    router.push(`?${params.toString()}`)
-                  }}
-                >
+                <Select value={filterActionType} onValueChange={setFilterActionType}>
                   <SelectTrigger id="action-type-filter" className="w-[280px]">
                     <SelectValue placeholder="Toutes les actions" />
                   </SelectTrigger>
