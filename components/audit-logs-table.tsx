@@ -88,7 +88,7 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   ASSIGNMENT_DELETED: "destructive",
   SECOND_REPLACEMENT_ADDED: "secondary",
   REPLACEMENT_CREATED: "default",
-  REPLACEMENT_APPROVED: "secondary",
+  REPLACEMENT_APPROVED: "default",
   REPLACEMENT_APPLICATION_ADDED: "default",
   REPLACEMENT_REJECTED: "destructive",
   REPLACEMENT_REQUEST_APPROVED: "default",
