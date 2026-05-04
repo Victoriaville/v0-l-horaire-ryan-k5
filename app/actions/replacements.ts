@@ -399,7 +399,9 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
     `
 
     // Log only if admin is adding application for another firefighter
+    console.log("[v0] applyForReplacement - Checking logging conditions:", { is_admin: user.is_admin, firefighterId, user_id: user.id })
     if (user.is_admin && firefighterId && firefighterId !== user.id) {
+      console.log("[v0] applyForReplacement - Should log! Entering logging block...")
       try {
         // Get replacement details for logging
         const replacementDetails = await db`
@@ -407,6 +409,8 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
           FROM replacements r
           WHERE r.id = ${replacementId}
         `
+
+        console.log("[v0] applyForReplacement - Got replacement details:", replacementDetails)
 
         if (replacementDetails.length > 0) {
           const { shift_date, user_id: replacedUserId, shift_type } = replacementDetails[0]
@@ -428,12 +432,16 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
             WHERE u1.id = ${applicantId} AND u2.id = ${replacedUserId}
           `
 
+          console.log("[v0] applyForReplacement - Got firefighter details:", firefighterDetails)
+
           if (firefighterDetails.length > 0) {
             const { added_first_name, added_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
             const added_name = `${added_first_name} ${added_last_name}`
             const replaced_name = `${replaced_first_name} ${replaced_last_name}`
 
-            await createAuditLog({
+            console.log("[v0] applyForReplacement - Calling createAuditLog with:", { added_name, replaced_name, formattedDate, shiftTypeLabel })
+
+            const logResult = await createAuditLog({
               userId: user.id,
               actionType: "REPLACEMENT_APPLICATION_ADDED",
               tableName: "replacement_applications",
@@ -442,10 +450,12 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
               newValues: { replacement_id: replacementId, applicant_id: applicantId, status: "pending" },
               description: `Candidat ${added_name} ajouté manuellement comme candidat pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
             })
+
+            console.log("[v0] applyForReplacement - Audit log result:", logResult)
           }
         }
       } catch (auditError) {
-        console.error("[v0] Error creating audit log for application:", auditError)
+        console.error("[v0] applyForReplacement - Error creating audit log:", auditError)
       }
     }
 
