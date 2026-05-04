@@ -144,8 +144,14 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [filterActionType, setFilterActionType] = useState<string>("all")
-  const [filterUserId, setFilterUserId] = useState<string>("all")
+  
+  // Initialize filters from searchParams
+  const [filterActionType, setFilterActionType] = useState<string>(() => {
+    return searchParams.get("actionType") || "all"
+  })
+  const [filterUserId, setFilterUserId] = useState<string>(() => {
+    return searchParams.get("userId") || "all"
+  })
 
   // Use all action types from actionTypeLabels (not filtered by current logs)
   // Sort by French label in alphabetical order
