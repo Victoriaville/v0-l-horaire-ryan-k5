@@ -1323,7 +1323,7 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacementDetails[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const shiftTypeLabel = is_partial ? `Partiel (${start_time}-${end_time})` : (shift_type === "day" ? "Jour" : "Nuit")
     const formattedDate = formatLocalDate(shift_date)
 
     // Log the replacement request approval with detailed information
@@ -1334,7 +1334,7 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "open" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel})`,
+      description: `La demande de remplacement de ${firefighterToReplaceName} le ${formattedDate} (${shiftTypeLabel}) a été approuvée`,
     })
 
     // Get replacement details for notifications
