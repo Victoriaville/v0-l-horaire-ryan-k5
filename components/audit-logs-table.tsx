@@ -254,7 +254,19 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 <label htmlFor="user-filter" className="text-sm font-medium">
                   Utilisateur:
                 </label>
-                <Select value={filterUserId} onValueChange={setFilterUserId}>
+                <Select 
+                  value={filterUserId} 
+                  onValueChange={(value) => {
+                    const params = new URLSearchParams()
+                    if (value !== "all") {
+                      params.set("userId", value)
+                    }
+                    if (filterActionType !== "all") {
+                      params.set("actionType", filterActionType)
+                    }
+                    router.push(`?${params.toString()}`)
+                  }}
+                >
                   <SelectTrigger id="user-filter" className="w-[280px]">
                     <SelectValue placeholder="Tous les utilisateurs" />
                   </SelectTrigger>
@@ -272,7 +284,19 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 <label htmlFor="action-type-filter" className="text-sm font-medium">
                   Type d'action:
                 </label>
-                <Select value={filterActionType} onValueChange={setFilterActionType}>
+                <Select 
+                  value={filterActionType} 
+                  onValueChange={(value) => {
+                    const params = new URLSearchParams()
+                    if (filterUserId !== "all") {
+                      params.set("userId", filterUserId)
+                    }
+                    if (value !== "all") {
+                      params.set("actionType", value)
+                    }
+                    router.push(`?${params.toString()}`)
+                  }}
+                >
                   <SelectTrigger id="action-type-filter" className="w-[280px]">
                     <SelectValue placeholder="Toutes les actions" />
                   </SelectTrigger>
