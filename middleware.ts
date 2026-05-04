@@ -37,10 +37,19 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register")
-  const isPublicPage = pathname === "/"
+  const isHomePage = pathname === "/"
+
+  // Handle home page redirect
+  if (isHomePage) {
+    if (userId) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    } else {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+  }
 
   // Redirect to login if not authenticated and trying to access protected pages
-  if (!userId && !isAuthPage && !isPublicPage) {
+  if (!userId && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
