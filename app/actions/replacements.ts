@@ -1079,11 +1079,21 @@ export async function updateReplacementAssignment(replacementId: number, assigne
       // Get names of assigned firefighter and replaced firefighter
       const firefighterDetails = await db`
         SELECT 
-          (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = ${assignedTo}) as assigned_name,
-          (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = ${replacedUserId}) as replaced_name
+          u1.first_name as assigned_first_name,
+          u1.last_name as assigned_last_name,
+          u2.first_name as replaced_first_name,
+          u2.last_name as replaced_last_name
+        FROM users u1, users u2
+        WHERE u1.id = ${assignedTo} AND u2.id = ${replacedUserId}
       `
 
-      const { assigned_name, replaced_name } = firefighterDetails[0]
+      if (firefighterDetails.length === 0) {
+        return { error: "Pompiers introuvables" }
+      }
+
+      const { assigned_first_name, assigned_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
+      const assigned_name = `${assigned_first_name} ${assigned_last_name}`
+      const replaced_name = `${replaced_first_name} ${replaced_last_name}`
 
       await db`
         INSERT INTO replacement_applications (replacement_id, applicant_id, status, reviewed_by, reviewed_at)
