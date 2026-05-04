@@ -109,7 +109,7 @@ export async function getAuditLogs(options: {
 
   try {
     let whereClause = sql``
-    const conditions = []
+    const conditions: any[] = []
 
     if (options.userId) {
       conditions.push(sql`user_id = ${options.userId}`)
@@ -127,8 +127,12 @@ export async function getAuditLogs(options: {
       conditions.push(sql`created_at <= ${options.endDate}`)
     }
 
+    // Construire la clause WHERE correctement
     if (conditions.length > 0) {
-      whereClause = sql`WHERE ${sql.join(conditions, sql` AND `)}`
+      whereClause = sql`WHERE ${conditions[0]}`
+      for (let i = 1; i < conditions.length; i++) {
+        whereClause = sql`${whereClause} AND ${conditions[i]}`
+      }
     }
 
     // Compter le total
