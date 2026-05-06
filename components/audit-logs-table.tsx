@@ -158,12 +158,17 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   // Use all action types from actionTypeLabels (not filtered by current logs)
   // Sort by French label in alphabetical order
   const allActionTypes = useMemo(() => {
+    // Debug: log actual action types in logs
+    const actualTypes = new Set(logs.map(log => log.action_type))
+    console.log("[v0] Actual action types in logs:", Array.from(actualTypes))
+    console.log("[v0] All action types in actionTypeLabels:", Object.keys(actionTypeLabels))
+    
     return Object.keys(actionTypeLabels).sort((a, b) => {
       const labelA = actionTypeLabels[a] || a
       const labelB = actionTypeLabels[b] || b
       return labelA.localeCompare(labelB, 'fr')
     })
-  }, [])
+  }, [logs])
 
   // Use all users passed from server (not filtered by current logs)
   const allUsersForDropdown = useMemo(() => {
