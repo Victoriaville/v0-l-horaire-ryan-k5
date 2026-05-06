@@ -145,6 +145,8 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [openUserFilter, setOpenUserFilter] = useState(false)
+  const [openActionFilter, setOpenActionFilter] = useState(false)
   
   // Initialize filters from searchParams
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
