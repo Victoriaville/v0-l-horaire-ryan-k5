@@ -9,16 +9,30 @@ export const revalidate = 0
 export default async function AuditLogsPage({
   searchParams,
 }: {
-  searchParams: { page?: string; userId?: string; actionType?: string }
+  searchParams: { page?: string; userIds?: string | string[]; actionTypes?: string | string[] }
 }) {
   const page = Number.parseInt(searchParams.page || "1")
-  const userId = searchParams.userId ? Number.parseInt(searchParams.userId) : undefined
-  const actionType = searchParams.actionType as any
+  
+  // Parse userIds (can be single string or array)
+  const userIdsParam = searchParams.userIds
+  const userIds = userIdsParam 
+    ? Array.isArray(userIdsParam) 
+      ? userIdsParam.map(id => Number.parseInt(id))
+      : [Number.parseInt(userIdsParam)]
+    : undefined
+
+  // Parse actionTypes (can be single string or array)
+  const actionTypesParam = searchParams.actionTypes
+  const actionTypes = actionTypesParam
+    ? Array.isArray(actionTypesParam)
+      ? actionTypesParam
+      : [actionTypesParam]
+    : undefined
 
   const { logs, pagination } = await getAuditLogs({
     page,
-    userId,
-    actionType,
+    userIds,
+    actionTypes,
   })
 
   // Fetch all users for the dropdown

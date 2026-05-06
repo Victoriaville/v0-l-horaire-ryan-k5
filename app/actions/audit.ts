@@ -98,8 +98,8 @@ export async function createAuditLog(params: AuditLogParams): Promise<void> {
 export async function getAuditLogs(options: {
   page?: number
   limit?: number
-  userId?: number
-  actionType?: AuditActionType
+  userIds?: number[]
+  actionTypes?: AuditActionType[]
   startDate?: string
   endDate?: string
 }) {
@@ -111,12 +111,16 @@ export async function getAuditLogs(options: {
     let whereClause = sql``
     const conditions: any[] = []
 
-    if (options.userId) {
-      conditions.push(sql`user_id = ${options.userId}`)
+    if (options.userIds && options.userIds.length > 0) {
+      // Create IN clause for multiple userIds
+      const userIdList = options.userIds.map((id, idx) => sql`${id}`)
+      conditions.push(sql`user_id = ANY(ARRAY[${userIdList}])`)
     }
 
-    if (options.actionType) {
-      conditions.push(sql`action_type = ${options.actionType}`)
+    if (options.actionTypes && options.actionTypes.length > 0) {
+      // Create IN clause for multiple actionTypes
+      const typeList = options.actionTypes.map((type) => sql`${type}`)
+      conditions.push(sql`action_type = ANY(ARRAY[${typeList}])`)
     }
 
     if (options.startDate) {

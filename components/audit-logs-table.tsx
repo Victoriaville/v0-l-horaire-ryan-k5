@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface AuditLog {
   id: number
@@ -146,11 +147,13 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   
   // Initialize filters from searchParams
-  const [filterActionType, setFilterActionType] = useState<string>(() => {
-    return searchParams.get("actionType") || "all"
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
+    const userIds = searchParams.getAll("userIds")
+    return userIds.length > 0 ? userIds : []
   })
-  const [filterUserId, setFilterUserId] = useState<string>(() => {
-    return searchParams.get("userId") || "all"
+  const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>(() => {
+    const actionTypes = searchParams.getAll("actionTypes")
+    return actionTypes.length > 0 ? actionTypes : []
   })
 
   // Use all action types from actionTypeLabels (not filtered by current logs)
@@ -176,12 +179,12 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const processedLogs = useMemo(() => {
     let filtered = logs
 
-    if (filterActionType !== "all") {
-      filtered = filtered.filter((log) => log.action_type === filterActionType)
+    if (selectedActionTypes.length > 0) {
+      filtered = filtered.filter((log) => selectedActionTypes.includes(log.action_type))
     }
 
-    if (filterUserId !== "all") {
-      filtered = filtered.filter((log) => log.user_id === Number.parseInt(filterUserId))
+    if (selectedUserIds.length > 0) {
+      filtered = filtered.filter((log) => selectedUserIds.includes(log.user_id.toString()))
     }
 
     return filtered.sort((a, b) => {
@@ -203,7 +206,7 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
 
       return sortOrder === "asc" ? compareResult : -compareResult
     })
-  }, [logs, sortField, sortOrder, filterActionType, filterUserId])
+  }, [logs, sortField, sortOrder, selectedActionTypes, selectedUserIds])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -260,61 +263,109 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 <label htmlFor="user-filter" className="text-sm font-medium">
                   Utilisateur:
                 </label>
-                <Select 
-                  value={filterUserId} 
-                  onValueChange={(value) => {
-                    const params = new URLSearchParams()
-                    if (value !== "all") {
-                      params.set("userId", value)
-                    }
-                    if (filterActionType !== "all") {
-                      params.set("actionType", filterActionType)
-                    }
-                    router.push(`?${params.toString()}`)
-                  }}
-                >
-                  <SelectTrigger id="user-filter" className="w-[280px]">
-                    <SelectValue placeholder="Tous les utilisateurs" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {allUsersForDropdown.map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.first_name} {user.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="user-filter"
+                      variant="outline"
+                      className="w-[280px] justify-between"
+                    >
+                      <span className="truncate">
+                        {selectedUserIds.length === 0
+                          ? "Tous les utilisateurs"
+                          : `${selectedUserIds.length} utilisateur${selectedUserIds.length > 1 ? "s" : ""}`}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <div className="max-h-[300px] overflow-y-auto p-2">
+                      <div className="space-y-2">
+                        {allUsersForDropdown.map((user) => (
+                          <div key={user.id} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
+                            <Checkbox
+                              id={`user-${user.id}`}
+                              checked={selectedUserIds.includes(user.id.toString())}
+                              onCheckedChange={(checked) => {
+                                const params = new URLSearchParams()
+                                let newUserIds = [...selectedUserIds]
+                                if (checked) {
+                                  newUserIds.push(user.id.toString())
+                                } else {
+                                  newUserIds = newUserIds.filter(id => id !== user.id.toString())
+                                }
+                                newUserIds.forEach(id => params.append("userIds", id))
+                                selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                                params.set("page", "1")
+                                router.push(`?${params.toString()}`)
+                              }}
+                            />
+                            <label
+                              htmlFor={`user-${user.id}`}
+                              className="text-sm cursor-pointer flex-1"
+                            >
+                              {user.first_name} {user.last_name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="action-type-filter" className="text-sm font-medium">
                   Type d'action:
                 </label>
-                <Select 
-                  value={filterActionType} 
-                  onValueChange={(value) => {
-                    const params = new URLSearchParams()
-                    if (filterUserId !== "all") {
-                      params.set("userId", filterUserId)
-                    }
-                    if (value !== "all") {
-                      params.set("actionType", value)
-                    }
-                    router.push(`?${params.toString()}`)
-                  }}
-                >
-                  <SelectTrigger id="action-type-filter" className="w-[280px]">
-                    <SelectValue placeholder="Toutes les actions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les actions</SelectItem>
-                    {allActionTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {actionTypeLabels[type] || type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="action-type-filter"
+                      variant="outline"
+                      className="w-[280px] justify-between"
+                    >
+                      <span className="truncate">
+                        {selectedActionTypes.length === 0
+                          ? "Toutes les actions"
+                          : `${selectedActionTypes.length} action${selectedActionTypes.length > 1 ? "s" : ""}`}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <div className="max-h-[300px] overflow-y-auto p-2">
+                      <div className="space-y-2">
+                        {allActionTypes.map((type) => (
+                          <div key={type} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
+                            <Checkbox
+                              id={`action-${type}`}
+                              checked={selectedActionTypes.includes(type)}
+                              onCheckedChange={(checked) => {
+                                const params = new URLSearchParams()
+                                let newActionTypes = [...selectedActionTypes]
+                                if (checked) {
+                                  newActionTypes.push(type)
+                                } else {
+                                  newActionTypes = newActionTypes.filter(t => t !== type)
+                                }
+                                selectedUserIds.forEach(id => params.append("userIds", id))
+                                newActionTypes.forEach(t => params.append("actionTypes", t))
+                                params.set("page", "1")
+                                router.push(`?${params.toString()}`)
+                              }}
+                            />
+                            <label
+                              htmlFor={`action-${type}`}
+                              className="text-sm cursor-pointer flex-1"
+                            >
+                              {actionTypeLabels[type] || type}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="text-sm text-muted-foreground">
                 {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
