@@ -113,14 +113,17 @@ export async function getAuditLogs(options: {
 
     if (options.userIds && options.userIds.length > 0) {
       // Create IN clause for multiple userIds
-      const userIdList = options.userIds.map((id, idx) => sql`${id}`)
-      conditions.push(sql`user_id = ANY(ARRAY[${userIdList}])`)
+      if (options.userIds.length === 1) {
+        conditions.push(sql`user_id = ${options.userIds[0]}`)
+      } else {
+        conditions.push(sql`user_id IN (${options.userIds.join(", ")})`)
+      }
     }
 
     if (options.actionTypes && options.actionTypes.length > 0) {
       // Create IN clause for multiple actionTypes
-      const typeList = options.actionTypes.map((type) => sql`${type}`)
-      conditions.push(sql`action_type = ANY(ARRAY[${typeList}])`)
+      const typeConditions = options.actionTypes.map(type => `'${type}'`).join(", ")
+      conditions.push(sql`action_type IN (${typeConditions})`)
     }
 
     if (options.startDate) {
