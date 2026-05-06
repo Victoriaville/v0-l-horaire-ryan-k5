@@ -270,6 +270,34 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 </button>
                 {openUserDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {/* Tous/Aucun buttons */}
+                    <div className="flex gap-2 px-3 py-2 border-b border-input">
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          allUsersForDropdown.forEach(user => params.append("userIds", user.id.toString()))
+                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenUserDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Tous
+                      </button>
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenUserDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Aucun
+                      </button>
+                    </div>
                     {allUsersForDropdown.map((user) => (
                       <label
                         key={user.id}
@@ -310,6 +338,34 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                 </button>
                 {openActionDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {/* Tous/Aucun buttons */}
+                    <div className="flex gap-2 px-3 py-2 border-b border-input">
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedUserIds.forEach(id => params.append("userIds", id))
+                          allActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenActionDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Tous
+                      </button>
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedUserIds.forEach(id => params.append("userIds", id))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenActionDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Aucun
+                      </button>
+                    </div>
                     {allActionTypes.map((type) => (
                       <label
                         key={type}
