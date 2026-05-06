@@ -144,6 +144,8 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [openUserDropdown, setOpenUserDropdown] = useState(false)
+  const [openActionDropdown, setOpenActionDropdown] = useState(false)
   
   // Initialize filters from searchParams
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
@@ -258,59 +260,87 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Utilisateur:</label>
-                <div className="flex flex-wrap gap-2">
-                  {allUsersForDropdown.slice(0, 5).map((user) => (
-                    <label key={user.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedUserIds.includes(user.id.toString())}
-                        onCheckedChange={(checked) => {
-                          const params = new URLSearchParams()
-                          let newUserIds = [...selectedUserIds]
-                          if (checked) {
-                            newUserIds.push(user.id.toString())
-                          } else {
-                            newUserIds = newUserIds.filter(id => id !== user.id.toString())
-                          }
-                          newUserIds.forEach(id => params.append("userIds", id))
-                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
-                          params.set("page", "1")
-                          router.push(`?${params.toString()}`)
-                        }}
-                      />
-                      {user.first_name} {user.last_name}
-                    </label>
-                  ))}
-                </div>
+              {/* Utilisateur Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenUserDropdown(!openUserDropdown)}
+                  className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
+                >
+                  Utilisateurs {selectedUserIds.length > 0 && `(${selectedUserIds.length})`}
+                </button>
+                {openUserDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {allUsersForDropdown.map((user) => (
+                      <label
+                        key={user.id}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer whitespace-nowrap"
+                      >
+                        <Checkbox
+                          checked={selectedUserIds.includes(user.id.toString())}
+                          onCheckedChange={(checked) => {
+                            const params = new URLSearchParams()
+                            let newUserIds = [...selectedUserIds]
+                            if (checked) {
+                              newUserIds.push(user.id.toString())
+                            } else {
+                              newUserIds = newUserIds.filter(id => id !== user.id.toString())
+                            }
+                            newUserIds.forEach(id => params.append("userIds", id))
+                            selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                            params.set("page", "1")
+                            router.push(`?${params.toString()}`)
+                          }}
+                        />
+                        <span className="text-sm">
+                          {user.first_name} {user.last_name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Type d'action:</label>
-                <div className="flex flex-wrap gap-2">
-                  {allActionTypes.slice(0, 6).map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedActionTypes.includes(type)}
-                        onCheckedChange={(checked) => {
-                          const params = new URLSearchParams()
-                          let newActionTypes = [...selectedActionTypes]
-                          if (checked) {
-                            newActionTypes.push(type)
-                          } else {
-                            newActionTypes = newActionTypes.filter(t => t !== type)
-                          }
-                          selectedUserIds.forEach(id => params.append("userIds", id))
-                          newActionTypes.forEach(t => params.append("actionTypes", t))
-                          params.set("page", "1")
-                          router.push(`?${params.toString()}`)
-                        }}
-                      />
-                      {actionTypeLabels[type] || type}
-                    </label>
-                  ))}
-                </div>
+
+              {/* Type d'action Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenActionDropdown(!openActionDropdown)}
+                  className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
+                >
+                  Actions {selectedActionTypes.length > 0 && `(${selectedActionTypes.length})`}
+                </button>
+                {openActionDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {allActionTypes.map((type) => (
+                      <label
+                        key={type}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer whitespace-nowrap"
+                      >
+                        <Checkbox
+                          checked={selectedActionTypes.includes(type)}
+                          onCheckedChange={(checked) => {
+                            const params = new URLSearchParams()
+                            let newActionTypes = [...selectedActionTypes]
+                            if (checked) {
+                              newActionTypes.push(type)
+                            } else {
+                              newActionTypes = newActionTypes.filter(t => t !== type)
+                            }
+                            selectedUserIds.forEach(id => params.append("userIds", id))
+                            newActionTypes.forEach(t => params.append("actionTypes", t))
+                            params.set("page", "1")
+                            router.push(`?${params.toString()}`)
+                          }}
+                        />
+                        <span className="text-sm">
+                          {actionTypeLabels[type] || type}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-muted-foreground">
+
+              <div className="text-sm text-muted-foreground ml-auto">
                 {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
               </div>
             </div>
