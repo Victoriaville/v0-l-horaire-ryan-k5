@@ -78,6 +78,8 @@ const actionTypeLabels: Record<string, string> = {
   SHIFT_UPDATED: "Quart modifié",
   FIREFIGHTER_ROLE_UPDATED: "Rôle pompier modifié",
   FIREFIGHTER_DELETED: "Pompier supprimé",
+  ASSIGNMENT_CREATED: "Assignation créée",
+  ASSIGNMENT_DELETED: "Assignation supprimée",
   SHIFT_ASSIGNMENT_CREATED: "Assignation créée",
   SHIFT_ASSIGNMENT_DELETED: "Assignation supprimée",
   SHIFT_NOTE_CREATED: "Note créée",
