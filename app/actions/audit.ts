@@ -112,18 +112,33 @@ export async function getAuditLogs(options: {
     const conditions: any[] = []
 
     if (options.userIds && options.userIds.length > 0) {
-      // Create IN clause for multiple userIds
+      // Create OR condition for multiple userIds
       if (options.userIds.length === 1) {
         conditions.push(sql`user_id = ${options.userIds[0]}`)
       } else {
-        conditions.push(sql`user_id IN (${options.userIds.join(", ")})`)
+        // For multiple userIds, build: (user_id = 1 OR user_id = 2 OR user_id = 3)
+        const userConditions = options.userIds.map((id) => sql`user_id = ${id}`)
+        let combined = userConditions[0]
+        for (let i = 1; i < userConditions.length; i++) {
+          combined = sql`${combined} OR ${userConditions[i]}`
+        }
+        conditions.push(sql`(${combined})`)
       }
     }
 
     if (options.actionTypes && options.actionTypes.length > 0) {
-      // Create IN clause for multiple actionTypes
-      const typeConditions = options.actionTypes.map(type => `'${type}'`).join(", ")
-      conditions.push(sql`action_type IN (${typeConditions})`)
+      // Create OR condition for multiple actionTypes
+      if (options.actionTypes.length === 1) {
+        conditions.push(sql`action_type = ${options.actionTypes[0]}`)
+      } else {
+        // For multiple actionTypes, build: (action_type = 'LOGIN' OR action_type = 'LOGOUT' OR ...)
+        const typeConditions = options.actionTypes.map((type) => sql`action_type = ${type}`)
+        let combined = typeConditions[0]
+        for (let i = 1; i < typeConditions.length; i++) {
+          combined = sql`${combined} OR ${typeConditions[i]}`
+        }
+        conditions.push(sql`(${combined})`)
+      }
     }
 
     if (options.startDate) {
