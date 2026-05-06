@@ -111,49 +111,54 @@ export async function getAuditLogs(options: {
     let whereClause = sql``
     const conditions: any[] = []
 
-    // Si aucun filtre n'est appliqué, pas de clause WHERE
-    if (!options.userIds && !options.actionTypes && !options.startDate && !options.endDate) {
-      // Pas de filtre
-    } else {
-      // Construire les conditions
-      if (options.userIds && options.userIds.length > 0) {
-        if (options.userIds.length === 1) {
-          conditions.push(sql`user_id = ${options.userIds[0]}`)
-        } else {
-          // Construire: user_id IN (1, 2, 3)
-          const idsList = options.userIds.join(", ")
-          conditions.push(sql`user_id IN (${idsList})`)
+    // Construire les conditions de filtre
+    if (options.userIds && options.userIds.length > 0) {
+      if (options.userIds.length === 1) {
+        conditions.push(sql`user_id = ${options.userIds[0]}`)
+      } else {
+        // Pour plusieurs userIds, utiliser OR
+        const orParts = options.userIds.map(id => sql`user_id = ${id}`)
+        conditions.push(orParts.length > 0 ? orParts[0] : sql`1=0`)
+        for (let i = 1; i < orParts.length; i++) {
+          conditions[conditions.length - 1] = sql`${conditions[conditions.length - 1]} OR ${orParts[i]}`
+        }
+        // Encapsuler dans des parenthèses
+        if (orParts.length > 1) {
+          conditions[conditions.length - 1] = sql`(${conditions[conditions.length - 1]})`
         }
       }
+    }
 
-      if (options.actionTypes && options.actionTypes.length > 0) {
-        if (options.actionTypes.length === 1) {
-          conditions.push(sql`action_type = ${options.actionTypes[0]}`)
-        } else {
-          // Construire une condition OR simple
-          const first = options.actionTypes[0]
-          let orCondition = sql`action_type = ${first}`
-          for (let i = 1; i < options.actionTypes.length; i++) {
-            orCondition = sql`${orCondition} OR action_type = ${options.actionTypes[i]}`
-          }
-          conditions.push(sql`(${orCondition})`)
+    if (options.actionTypes && options.actionTypes.length > 0) {
+      if (options.actionTypes.length === 1) {
+        conditions.push(sql`action_type = ${options.actionTypes[0]}`)
+      } else {
+        // Pour plusieurs actionTypes, utiliser OR
+        const orParts = options.actionTypes.map(type => sql`action_type = ${type}`)
+        conditions.push(orParts.length > 0 ? orParts[0] : sql`1=0`)
+        for (let i = 1; i < orParts.length; i++) {
+          conditions[conditions.length - 1] = sql`${conditions[conditions.length - 1]} OR ${orParts[i]}`
+        }
+        // Encapsuler dans des parenthèses
+        if (orParts.length > 1) {
+          conditions[conditions.length - 1] = sql`(${conditions[conditions.length - 1]})`
         }
       }
+    }
 
-      if (options.startDate) {
-        conditions.push(sql`created_at >= ${options.startDate}`)
-      }
+    if (options.startDate) {
+      conditions.push(sql`created_at >= ${options.startDate}`)
+    }
 
-      if (options.endDate) {
-        conditions.push(sql`created_at <= ${options.endDate}`)
-      }
+    if (options.endDate) {
+      conditions.push(sql`created_at <= ${options.endDate}`)
+    }
 
-      // Construire la clause WHERE
-      if (conditions.length > 0) {
-        whereClause = sql`WHERE ${conditions[0]}`
-        for (let i = 1; i < conditions.length; i++) {
-          whereClause = sql`${whereClause} AND ${conditions[i]}`
-        }
+    // Construire la clause WHERE
+    if (conditions.length > 0) {
+      whereClause = sql`WHERE ${conditions[0]}`
+      for (let i = 1; i < conditions.length; i++) {
+        whereClause = sql`${whereClause} AND ${conditions[i]}`
       }
     }
 
