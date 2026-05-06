@@ -80,8 +80,6 @@ const actionTypeLabels: Record<string, string> = {
   FIREFIGHTER_DELETED: "Pompier supprimé",
   ASSIGNMENT_CREATED: "Assignation créée",
   ASSIGNMENT_DELETED: "Assignation supprimée",
-  SHIFT_ASSIGNMENT_CREATED: "Assignation créée",
-  SHIFT_ASSIGNMENT_DELETED: "Assignation supprimée",
   SHIFT_NOTE_CREATED: "Note créée",
   SHIFT_NOTE_UPDATED: "Note modifiée",
   SHIFT_NOTE_DELETED: "Note supprimée",
@@ -129,8 +127,6 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   SHIFT_UPDATED: "secondary",
   FIREFIGHTER_ROLE_UPDATED: "secondary",
   FIREFIGHTER_DELETED: "destructive",
-  SHIFT_ASSIGNMENT_CREATED: "default",
-  SHIFT_ASSIGNMENT_DELETED: "destructive",
   SHIFT_NOTE_CREATED: "default",
   SHIFT_NOTE_UPDATED: "secondary",
   SHIFT_NOTE_DELETED: "destructive",
@@ -138,6 +134,8 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   LOGOUT: "secondary",
   PASSWORD_CHANGED_OWN: "secondary",
   PASSWORD_RESET_ADMIN: "secondary",
+  ADMIN_STATUS_CHANGED: "secondary",
+  OWNER_STATUS_CHANGED: "secondary",
 }
 
 export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTableProps) {
@@ -158,17 +156,12 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   // Use all action types from actionTypeLabels (not filtered by current logs)
   // Sort by French label in alphabetical order
   const allActionTypes = useMemo(() => {
-    // Debug: log actual action types in logs
-    const actualTypes = new Set(logs.map(log => log.action_type))
-    console.log("[v0] Actual action types in logs:", Array.from(actualTypes))
-    console.log("[v0] All action types in actionTypeLabels:", Object.keys(actionTypeLabels))
-    
     return Object.keys(actionTypeLabels).sort((a, b) => {
       const labelA = actionTypeLabels[a] || a
       const labelB = actionTypeLabels[b] || b
       return labelA.localeCompare(labelB, 'fr')
     })
-  }, [logs])
+  }, [])
 
   // Use all users passed from server (not filtered by current logs)
   const allUsersForDropdown = useMemo(() => {
