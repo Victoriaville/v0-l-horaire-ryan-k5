@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface AuditLog {
@@ -145,8 +144,6 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [openUserFilter, setOpenUserFilter] = useState(false)
-  const [openActionFilter, setOpenActionFilter] = useState(false)
   
   // Initialize filters from searchParams
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
@@ -262,112 +259,56 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
           <CardContent>
             <div className="mb-4 flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="user-filter" className="text-sm font-medium">
-                  Utilisateur:
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="user-filter"
-                      variant="outline"
-                      className="w-[280px] justify-between"
-                    >
-                      <span className="truncate">
-                        {selectedUserIds.length === 0
-                          ? "Tous les utilisateurs"
-                          : `${selectedUserIds.length} utilisateur${selectedUserIds.length > 1 ? "s" : ""}`}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0" align="start">
-                    <div className="max-h-[300px] overflow-y-auto p-2">
-                      <div className="space-y-2">
-                        {allUsersForDropdown.map((user) => (
-                          <div key={user.id} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
-                            <Checkbox
-                              id={`user-${user.id}`}
-                              checked={selectedUserIds.includes(user.id.toString())}
-                              onCheckedChange={(checked) => {
-                                const params = new URLSearchParams()
-                                let newUserIds = [...selectedUserIds]
-                                if (checked) {
-                                  newUserIds.push(user.id.toString())
-                                } else {
-                                  newUserIds = newUserIds.filter(id => id !== user.id.toString())
-                                }
-                                newUserIds.forEach(id => params.append("userIds", id))
-                                selectedActionTypes.forEach(type => params.append("actionTypes", type))
-                                params.set("page", "1")
-                                router.push(`?${params.toString()}`)
-                              }}
-                            />
-                            <label
-                              htmlFor={`user-${user.id}`}
-                              className="text-sm cursor-pointer flex-1"
-                            >
-                              {user.first_name} {user.last_name}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <label className="text-sm font-medium">Utilisateur:</label>
+                <div className="flex flex-wrap gap-2">
+                  {allUsersForDropdown.slice(0, 5).map((user) => (
+                    <label key={user.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={selectedUserIds.includes(user.id.toString())}
+                        onCheckedChange={(checked) => {
+                          const params = new URLSearchParams()
+                          let newUserIds = [...selectedUserIds]
+                          if (checked) {
+                            newUserIds.push(user.id.toString())
+                          } else {
+                            newUserIds = newUserIds.filter(id => id !== user.id.toString())
+                          }
+                          newUserIds.forEach(id => params.append("userIds", id))
+                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                        }}
+                      />
+                      {user.first_name} {user.last_name}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <label htmlFor="action-type-filter" className="text-sm font-medium">
-                  Type d'action:
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="action-type-filter"
-                      variant="outline"
-                      className="w-[280px] justify-between"
-                    >
-                      <span className="truncate">
-                        {selectedActionTypes.length === 0
-                          ? "Toutes les actions"
-                          : `${selectedActionTypes.length} action${selectedActionTypes.length > 1 ? "s" : ""}`}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0" align="start">
-                    <div className="max-h-[300px] overflow-y-auto p-2">
-                      <div className="space-y-2">
-                        {allActionTypes.map((type) => (
-                          <div key={type} className="flex items-center space-x-2 p-2 hover:bg-accent rounded">
-                            <Checkbox
-                              id={`action-${type}`}
-                              checked={selectedActionTypes.includes(type)}
-                              onCheckedChange={(checked) => {
-                                const params = new URLSearchParams()
-                                let newActionTypes = [...selectedActionTypes]
-                                if (checked) {
-                                  newActionTypes.push(type)
-                                } else {
-                                  newActionTypes = newActionTypes.filter(t => t !== type)
-                                }
-                                selectedUserIds.forEach(id => params.append("userIds", id))
-                                newActionTypes.forEach(t => params.append("actionTypes", t))
-                                params.set("page", "1")
-                                router.push(`?${params.toString()}`)
-                              }}
-                            />
-                            <label
-                              htmlFor={`action-${type}`}
-                              className="text-sm cursor-pointer flex-1"
-                            >
-                              {actionTypeLabels[type] || type}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <label className="text-sm font-medium">Type d'action:</label>
+                <div className="flex flex-wrap gap-2">
+                  {allActionTypes.slice(0, 6).map((type) => (
+                    <label key={type} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={selectedActionTypes.includes(type)}
+                        onCheckedChange={(checked) => {
+                          const params = new URLSearchParams()
+                          let newActionTypes = [...selectedActionTypes]
+                          if (checked) {
+                            newActionTypes.push(type)
+                          } else {
+                            newActionTypes = newActionTypes.filter(t => t !== type)
+                          }
+                          selectedUserIds.forEach(id => params.append("userIds", id))
+                          newActionTypes.forEach(t => params.append("actionTypes", t))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                        }}
+                      />
+                      {actionTypeLabels[type] || type}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="text-sm text-muted-foreground">
                 {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
