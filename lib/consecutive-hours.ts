@@ -108,6 +108,8 @@ function getShiftStart(date: Date, shiftType: string, isPartial: boolean, startT
 /**
  * Check if adding a new shift would cause a firefighter to work more than 38 consecutive hours
  * Returns { exceeds: boolean, totalHours: number, message?: string }
+ * 
+ * @param isReplacementRequest - If true, skip validation (firefighter is taking time OFF, not adding work)
  */
 export async function checkConsecutiveHours(
   userId: number,
@@ -116,7 +118,15 @@ export async function checkConsecutiveHours(
   isPartial = false,
   startTime?: string,
   endTime?: string,
+  isReplacementRequest = false,
 ): Promise<{ exceeds: boolean; totalHours: number; message?: string }> {
+  // Si c'est une demande de remplacement (congé), pas besoin de vérifier
+  // Le pompier ENLÈVE du travail, il n'en ajoute pas
+  if (isReplacementRequest) {
+    console.log("[v0] checkConsecutiveHours - Skipping validation for replacement request (time off)")
+    return { exceeds: false, totalHours: 0 }
+  }
+
   console.log("[v0] checkConsecutiveHours called for user:", userId, "date:", newShiftDate, "type:", newShiftType)
 
   try {

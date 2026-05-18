@@ -1542,14 +1542,16 @@ export async function requestReplacement(
   const finalEndTime = isPartial ? (endTime || null) : (shiftEndTime || null)
 
   // Validate consecutive hours before creating the replacement
-  console.log("[v0] requestReplacement - Checking consecutive hours")
+  // isReplacementRequest = true car le pompier prend CONGÉ, pas du travail supplémentaire
+  console.log("[v0] requestReplacement - Skipping consecutive hours check (replacement request = time off)")
   const { exceeds, totalHours, message } = await checkConsecutiveHours(
     user.id,
     shiftDate,
     shiftType,
     isPartial,
     finalStartTime,
-    finalEndTime
+    finalEndTime,
+    true // isReplacementRequest: pompier prend congé, pas besoin de vérifier
   )
 
   if (exceeds) {
