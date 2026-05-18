@@ -266,7 +266,7 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                   onClick={() => setOpenUserDropdown(!openUserDropdown)}
                   className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
                 >
-                  Utilisateurs {selectedUserIds.length > 0 && `(${selectedUserIds.length})`}
+                  Utilisateurs ({selectedUserIds.length > 0 ? selectedUserIds.length : allUsersForDropdown.length})
                 </button>
                 {openUserDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
@@ -334,7 +334,7 @@ export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTab
                   onClick={() => setOpenActionDropdown(!openActionDropdown)}
                   className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
                 >
-                  Actions {selectedActionTypes.length > 0 && `(${selectedActionTypes.length})`}
+                  Actions ({selectedActionTypes.length > 0 ? selectedActionTypes.length : allActionTypes.length})
                 </button>
                 {openActionDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
