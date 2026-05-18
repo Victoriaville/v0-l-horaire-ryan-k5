@@ -1543,7 +1543,6 @@ export async function requestReplacement(
 
   // Validate consecutive hours before creating the replacement
   // isReplacementRequest = true car le pompier prend CONGÉ, pas du travail supplémentaire
-  console.log("[v0] requestReplacement - Skipping consecutive hours check (replacement request = time off)")
   const { exceeds, totalHours, message } = await checkConsecutiveHours(
     user.id,
     shiftDate,

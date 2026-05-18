@@ -123,7 +123,6 @@ export async function checkConsecutiveHours(
   // Si c'est une demande de remplacement (congé), pas besoin de vérifier
   // Le pompier ENLÈVE du travail, il n'en ajoute pas
   if (isReplacementRequest) {
-    console.log("[v0] checkConsecutiveHours - Skipping validation for replacement request (time off)")
     return { exceeds: false, totalHours: 0 }
   }
 
