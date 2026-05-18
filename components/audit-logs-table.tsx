@@ -6,9 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface AuditLog {
   id: number
@@ -34,6 +34,12 @@ interface AuditLogsTableProps {
     total: number
     totalPages: number
   }
+  allUsers?: Array<{
+    id: number
+    first_name: string
+    last_name: string
+    email: string
+  }>
 }
 
 const actionTypeLabels: Record<string, string> = {
@@ -42,6 +48,7 @@ const actionTypeLabels: Record<string, string> = {
   SECOND_REPLACEMENT_ADDED: "Remplaçant 2 ajouté",
   REPLACEMENT_CREATED: "Demande créée",
   REPLACEMENT_APPROVED: "Candidature approuvée",
+  REPLACEMENT_APPLICATION_ADDED: "Candidature ajoutée",
   REPLACEMENT_REJECTED: "Candidature rejetée",
   REPLACEMENT_REQUEST_APPROVED: "Demande approuvée",
   REPLACEMENT_REQUEST_REJECTED: "Demande rejetée",
@@ -71,8 +78,8 @@ const actionTypeLabels: Record<string, string> = {
   SHIFT_UPDATED: "Quart modifié",
   FIREFIGHTER_ROLE_UPDATED: "Rôle pompier modifié",
   FIREFIGHTER_DELETED: "Pompier supprimé",
-  SHIFT_ASSIGNMENT_CREATED: "Assignation créée",
-  SHIFT_ASSIGNMENT_DELETED: "Assignation supprimée",
+  ASSIGNMENT_CREATED: "Assignation créée",
+  ASSIGNMENT_DELETED: "Assignation supprimée",
   SHIFT_NOTE_CREATED: "Note créée",
   SHIFT_NOTE_UPDATED: "Note modifiée",
   SHIFT_NOTE_DELETED: "Note supprimée",
@@ -80,14 +87,17 @@ const actionTypeLabels: Record<string, string> = {
   LOGOUT: "Déconnexion",
   PASSWORD_CHANGED_OWN: "Mot de passe changé",
   PASSWORD_RESET_ADMIN: "Réinitialisation de mot de passe",
+  ADMIN_STATUS_CHANGED: "Changement du statut d'admin",
+  OWNER_STATUS_CHANGED: "Changement du statut de propriétaire",
 }
 
-const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const actionTypeColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success"> = {
   ASSIGNMENT_CREATED: "default",
   ASSIGNMENT_DELETED: "destructive",
   SECOND_REPLACEMENT_ADDED: "secondary",
   REPLACEMENT_CREATED: "default",
-  REPLACEMENT_APPROVED: "secondary",
+  REPLACEMENT_APPROVED: "success",
+  REPLACEMENT_APPLICATION_ADDED: "default",
   REPLACEMENT_REJECTED: "destructive",
   REPLACEMENT_REQUEST_APPROVED: "default",
   REPLACEMENT_REQUEST_REJECTED: "destructive",
@@ -117,8 +127,6 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   SHIFT_UPDATED: "secondary",
   FIREFIGHTER_ROLE_UPDATED: "secondary",
   FIREFIGHTER_DELETED: "destructive",
-  SHIFT_ASSIGNMENT_CREATED: "default",
-  SHIFT_ASSIGNMENT_DELETED: "destructive",
   SHIFT_NOTE_CREATED: "default",
   SHIFT_NOTE_UPDATED: "secondary",
   SHIFT_NOTE_DELETED: "destructive",
@@ -126,26 +134,58 @@ const actionTypeColors: Record<string, "default" | "secondary" | "destructive" |
   LOGOUT: "secondary",
   PASSWORD_CHANGED_OWN: "secondary",
   PASSWORD_RESET_ADMIN: "secondary",
+  ADMIN_STATUS_CHANGED: "secondary",
+  OWNER_STATUS_CHANGED: "secondary",
 }
 
-export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
+export function AuditLogsTable({ logs, pagination, allUsers = [] }: AuditLogsTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sortField, setSortField] = useState<"created_at" | "user_name" | "action_type">("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [filterActionType, setFilterActionType] = useState<string>("all")
+  const [openUserDropdown, setOpenUserDropdown] = useState(false)
+  const [openActionDropdown, setOpenActionDropdown] = useState(false)
+  
+  // Initialize filters from searchParams
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
+    const userIds = searchParams.getAll("userIds")
+    return userIds.length > 0 ? userIds : []
+  })
+  const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>(() => {
+    const actionTypes = searchParams.getAll("actionTypes")
+    return actionTypes.length > 0 ? actionTypes : []
+  })
 
-  const uniqueActionTypes = useMemo(() => {
-    const types = new Set(logs.map((log) => log.action_type))
-    return Array.from(types).sort()
-  }, [logs])
+  // Use all action types from actionTypeLabels (not filtered by current logs)
+  // Sort by French label in alphabetical order
+  const allActionTypes = useMemo(() => {
+    return Object.keys(actionTypeLabels).sort((a, b) => {
+      const labelA = actionTypeLabels[a] || a
+      const labelB = actionTypeLabels[b] || b
+      return labelA.localeCompare(labelB, 'fr')
+    })
+  }, [])
+
+  // Use all users passed from server (not filtered by current logs)
+  const allUsersForDropdown = useMemo(() => {
+    return allUsers.map((user) => ({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+    }))
+  }, [allUsers])
 
   const processedLogs = useMemo(() => {
     let filtered = logs
 
-    if (filterActionType !== "all") {
-      filtered = filtered.filter((log) => log.action_type === filterActionType)
+    if (selectedActionTypes.length > 0) {
+      filtered = filtered.filter((log) => selectedActionTypes.includes(log.action_type))
+    }
+
+    if (selectedUserIds.length > 0) {
+      filtered = filtered.filter((log) => selectedUserIds.includes(log.user_id.toString()))
     }
 
     return filtered.sort((a, b) => {
@@ -167,7 +207,7 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
 
       return sortOrder === "asc" ? compareResult : -compareResult
     })
-  }, [logs, sortField, sortOrder, filterActionType])
+  }, [logs, sortField, sortOrder, selectedActionTypes, selectedUserIds])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -220,25 +260,143 @@ export function AuditLogsTable({ logs, pagination }: AuditLogsTableProps) {
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label htmlFor="action-type-filter" className="text-sm font-medium">
-                  Type d'action:
-                </label>
-                <Select value={filterActionType} onValueChange={setFilterActionType}>
-                  <SelectTrigger id="action-type-filter" className="w-[280px]">
-                    <SelectValue placeholder="Toutes les actions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les actions</SelectItem>
-                    {uniqueActionTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {actionTypeLabels[type] || type}
-                      </SelectItem>
+              {/* Utilisateur Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenUserDropdown(!openUserDropdown)}
+                  className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
+                >
+                  Utilisateurs ({selectedUserIds.length > 0 ? selectedUserIds.length : allUsersForDropdown.length})
+                </button>
+                {openUserDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {/* Tous/Aucun buttons */}
+                    <div className="flex gap-2 px-3 py-2 border-b border-input">
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          allUsersForDropdown.forEach(user => params.append("userIds", user.id.toString()))
+                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenUserDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Tous
+                      </button>
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenUserDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Aucun
+                      </button>
+                    </div>
+                    {allUsersForDropdown.map((user) => (
+                      <label
+                        key={user.id}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer whitespace-nowrap"
+                      >
+                        <Checkbox
+                          checked={selectedUserIds.includes(user.id.toString())}
+                          onCheckedChange={(checked) => {
+                            const params = new URLSearchParams()
+                            let newUserIds = [...selectedUserIds]
+                            if (checked) {
+                              newUserIds.push(user.id.toString())
+                            } else {
+                              newUserIds = newUserIds.filter(id => id !== user.id.toString())
+                            }
+                            newUserIds.forEach(id => params.append("userIds", id))
+                            selectedActionTypes.forEach(type => params.append("actionTypes", type))
+                            params.set("page", "1")
+                            router.push(`?${params.toString()}`)
+                          }}
+                        />
+                        <span className="text-sm">
+                          {user.first_name} {user.last_name}
+                        </span>
+                      </label>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-muted-foreground">
+
+              {/* Type d'action Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenActionDropdown(!openActionDropdown)}
+                  className="px-3 py-2 border border-input rounded-md text-sm hover:bg-accent"
+                >
+                  Actions ({selectedActionTypes.length > 0 ? selectedActionTypes.length : allActionTypes.length})
+                </button>
+                {openActionDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-50 min-w-max max-h-64 overflow-y-auto">
+                    {/* Tous/Aucun buttons */}
+                    <div className="flex gap-2 px-3 py-2 border-b border-input">
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedUserIds.forEach(id => params.append("userIds", id))
+                          allActionTypes.forEach(type => params.append("actionTypes", type))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenActionDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Tous
+                      </button>
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams()
+                          selectedUserIds.forEach(id => params.append("userIds", id))
+                          params.set("page", "1")
+                          router.push(`?${params.toString()}`)
+                          setOpenActionDropdown(false)
+                        }}
+                        className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
+                      >
+                        Aucun
+                      </button>
+                    </div>
+                    {allActionTypes.map((type) => (
+                      <label
+                        key={type}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer whitespace-nowrap"
+                      >
+                        <Checkbox
+                          checked={selectedActionTypes.includes(type)}
+                          onCheckedChange={(checked) => {
+                            const params = new URLSearchParams()
+                            let newActionTypes = [...selectedActionTypes]
+                            if (checked) {
+                              newActionTypes.push(type)
+                            } else {
+                              newActionTypes = newActionTypes.filter(t => t !== type)
+                            }
+                            selectedUserIds.forEach(id => params.append("userIds", id))
+                            newActionTypes.forEach(t => params.append("actionTypes", t))
+                            params.set("page", "1")
+                            router.push(`?${params.toString()}`)
+                          }}
+                        />
+                        <span className="text-sm">
+                          {actionTypeLabels[type] || type}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-sm text-muted-foreground ml-auto">
                 {processedLogs.length} {processedLogs.length === 1 ? "action" : "actions"}
               </div>
             </div>

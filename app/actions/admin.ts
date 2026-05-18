@@ -159,7 +159,7 @@ export async function toggleUserAdminStatus(userId: number, makeAdmin: boolean) 
       recordId: userId,
       oldValues: { is_admin: currentAdminStatus },
       newValues: { is_admin: makeAdmin },
-      description: `Admin status changed from ${currentAdminStatus} to ${makeAdmin} for user ${targetUserName} (ID: ${userId})`,
+      description: `Le statut administrateur a été changé de ${currentAdminStatus ? "oui" : "non"} à ${makeAdmin ? "oui" : "non"} pour l'utilisateur ${targetUserName}`,
     })
 
     return {
@@ -215,7 +215,7 @@ export async function toggleUserOwnerStatus(userId: number, makeOwner: boolean) 
       recordId: userId,
       oldValues: { is_owner: currentOwnerStatus },
       newValues: { is_owner: makeOwner },
-      description: `Owner status changed from ${currentOwnerStatus} to ${makeOwner} for user ${targetUserName} (ID: ${userId})`,
+      description: `Le statut de propriétaire a été changé de ${currentOwnerStatus ? "oui" : "non"} à ${makeOwner ? "oui" : "non"} pour l'utilisateur ${targetUserName}`,
     })
 
     return {

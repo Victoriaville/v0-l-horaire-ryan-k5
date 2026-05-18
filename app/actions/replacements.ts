@@ -395,8 +395,59 @@ export async function applyForReplacement(replacementId: number, firefighterId?:
     const insertResult = await db`
       INSERT INTO replacement_applications (replacement_id, applicant_id, status)
       VALUES (${replacementId}, ${applicantId}, 'pending')
-      RETURNING applied_at
+      RETURNING id, applied_at
     `
+
+    // Log only if admin is adding application for another firefighter
+    if (user.is_admin && firefighterId && firefighterId !== user.id) {
+      try {
+        // Get replacement details for logging
+        const replacementDetails = await db`
+          SELECT r.shift_date, r.user_id, r.shift_type
+          FROM replacements r
+          WHERE r.id = ${replacementId}
+        `
+
+        if (replacementDetails.length > 0) {
+          const { shift_date, user_id: replacedUserId, shift_type } = replacementDetails[0]
+          const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+
+          // Format date to French format (15 mai 2026)
+          const dateObj = new Date(shift_date)
+          const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+          const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
+          // Get names of the added firefighter and replaced firefighter
+          const firefighterDetails = await db`
+            SELECT 
+              u1.first_name as added_first_name,
+              u1.last_name as added_last_name,
+              u2.first_name as replaced_first_name,
+              u2.last_name as replaced_last_name
+            FROM users u1, users u2
+            WHERE u1.id = ${applicantId} AND u2.id = ${replacedUserId}
+          `
+
+          if (firefighterDetails.length > 0) {
+            const { added_first_name, added_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
+            const added_name = `${added_first_name} ${added_last_name}`
+            const replaced_name = `${replaced_first_name} ${replaced_last_name}`
+
+            await createAuditLog({
+              userId: user.id,
+              actionType: "REPLACEMENT_APPLICATION_ADDED",
+              tableName: "replacement_applications",
+              recordId: insertResult[0].id,
+              oldValues: null,
+              newValues: { replacement_id: replacementId, applicant_id: applicantId, status: "pending" },
+              description: `Candidat ${added_name} ajouté manuellement comme candidat pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
+            })
+          }
+        }
+      } catch (auditError) {
+        console.error("[v0] Error creating audit log for application:", auditError)
+      }
+    }
 
     try {
       invalidateCache()
@@ -1055,12 +1106,51 @@ export async function updateReplacementAssignment(replacementId: number, assigne
       disableWarningInBrowsers: true,
     })
 
+    // Get replacement details for logging
+    const replacementDetails = await db`
+      SELECT r.shift_date, s.shift_type, r.user_id
+      FROM replacements r
+      JOIN shifts s ON r.shift_id = s.id
+      WHERE r.id = ${replacementId}
+    `
+
+    if (replacementDetails.length === 0) {
+      return { error: "Remplacement introuvable" }
+    }
+
+    const { shift_date, shift_type, user_id: replacedUserId } = replacementDetails[0]
+    const shiftTypeLabel = shift_type === "day" ? "Jour" : (shift_type === "night" ? "Nuit" : "24h")
+
+    // Format date to French format (5 mai 2026)
+    const dateObj = new Date(shift_date)
+    const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`
+
     if (assignedTo) {
+      // Get names of assigned firefighter and replaced firefighter
+      const firefighterDetails = await db`
+        SELECT 
+          u1.first_name as assigned_first_name,
+          u1.last_name as assigned_last_name,
+          u2.first_name as replaced_first_name,
+          u2.last_name as replaced_last_name
+        FROM users u1, users u2
+        WHERE u1.id = ${assignedTo} AND u2.id = ${replacedUserId}
+      `
+
+      if (firefighterDetails.length === 0) {
+        return { error: "Pompiers introuvables" }
+      }
+
+      const { assigned_first_name, assigned_last_name, replaced_first_name, replaced_last_name } = firefighterDetails[0]
+      const assigned_name = `${assigned_first_name} ${assigned_last_name}`
+      const replaced_name = `${replaced_first_name} ${replaced_last_name}`
+
       await db`
         INSERT INTO replacement_applications (replacement_id, applicant_id, status, reviewed_by, reviewed_at)
         VALUES (${replacementId}, ${assignedTo}, 'approved', ${user.id}, CURRENT_TIMESTAMP)
         ON CONFLICT (replacement_id, applicant_id) 
-        DO UPDATE SET status = 'approved', reviewed_by = ${user.id}, reviewed_at = ${user.id}, reviewed_at = CURRENT_TIMESTAMP
+        DO UPDATE SET status = 'approved', reviewed_by = ${user.id}, reviewed_at = CURRENT_TIMESTAMP
       `
 
       await db`
@@ -1074,6 +1164,23 @@ export async function updateReplacementAssignment(replacementId: number, assigne
         SET status = 'assigned'
         WHERE id = ${replacementId}
       `
+
+      // Log the manual assignment
+      try {
+        console.log("[v0] Logging replacement assignment:", { assigned_name, replaced_name, formattedDate, shiftTypeLabel })
+        const logResult = await createAuditLog({
+          userId: user.id,
+          actionType: "REPLACEMENT_ASSIGNED",
+          tableName: "replacement_applications",
+          recordId: replacementId,
+          oldValues: null,
+          newValues: { applicant_id: assignedTo, status: "approved" },
+          description: `Candidat ${assigned_name} assigné pour le remplacement du ${formattedDate} (${shiftTypeLabel}) remplaçant ${replaced_name}`,
+        })
+        console.log("[v0] Audit log result:", logResult)
+      } catch (auditError) {
+        console.error("[v0] Error creating audit log for assignment:", auditError)
+      }
     } else {
       await db`
         UPDATE replacement_applications
@@ -1216,7 +1323,7 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacementDetails[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const shiftTypeLabel = is_partial ? `Partiel (${start_time}-${end_time})` : (shift_type === "day" ? "Jour" : "Nuit")
     const formattedDate = formatLocalDate(shift_date)
 
     // Log the replacement request approval with detailed information
@@ -1227,7 +1334,7 @@ export async function approveReplacementRequest(replacementId: number, deadlineS
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "open" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel})`,
+      description: `La demande de remplacement de ${firefighterToReplaceName} le ${formattedDate} (${shiftTypeLabel}) a été approuvée`,
     })
 
     // Get replacement details for notifications
@@ -1329,7 +1436,7 @@ export async function rejectReplacementRequest(replacementId: number) {
 
     const { shift_date, shift_type, is_partial, start_time, end_time, first_name, last_name } = replacement[0]
     const firefighterToReplaceName = `${first_name} ${last_name}`
-    const shiftTypeLabel = is_partial ? `Partial (${start_time}-${end_time})` : (shift_type === "day" ? "Day" : "Night")
+    const shiftTypeLabel = is_partial ? `Partiel (${start_time}-${end_time})` : (shift_type === "day" ? "Jour" : "Nuit")
     const formattedDate = formatLocalDate(shift_date)
 
     await db`
@@ -1346,7 +1453,7 @@ export async function rejectReplacementRequest(replacementId: number) {
       recordId: replacementId,
       oldValues: { status: "pending" },
       newValues: { status: "cancelled" },
-      description: `Replacement request for ${firefighterToReplaceName} on ${formattedDate} (${shiftTypeLabel}) rejected`,
+      description: `La demande de remplacement de ${firefighterToReplaceName} le ${formattedDate} (${shiftTypeLabel}) a été rejetée`,
     })
 
     try {
@@ -1435,14 +1542,15 @@ export async function requestReplacement(
   const finalEndTime = isPartial ? (endTime || null) : (shiftEndTime || null)
 
   // Validate consecutive hours before creating the replacement
-  console.log("[v0] requestReplacement - Checking consecutive hours")
+  // isReplacementRequest = true car le pompier prend CONGÉ, pas du travail supplémentaire
   const { exceeds, totalHours, message } = await checkConsecutiveHours(
     user.id,
     shiftDate,
     shiftType,
     isPartial,
     finalStartTime,
-    finalEndTime
+    finalEndTime,
+    true // isReplacementRequest: pompier prend congé, pas besoin de vérifier
   )
 
   if (exceeds) {

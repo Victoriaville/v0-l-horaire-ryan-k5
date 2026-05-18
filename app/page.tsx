@@ -1,12 +1,4 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/app/actions/auth"
-
-export default async function HomePage() {
-  const user = await getSession()
-
-  if (user) {
-    redirect("/dashboard")
-  }
-
-  redirect("/login")
+export default function HomePage() {
+  // Middleware handles redirects before this page renders
+  return <></>
 }

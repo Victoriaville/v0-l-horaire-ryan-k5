@@ -15,6 +15,7 @@ export type AuditActionType =
   | "REPLACEMENT_REQUEST_APPROVED"
   | "REPLACEMENT_REQUEST_REJECTED"
   | "REPLACEMENT_ASSIGNED"
+  | "REPLACEMENT_APPLICATION_ADDED"
   | "EXCHANGE_CREATED"
   | "EXCHANGE_APPROVED"
   | "EXCHANGE_REJECTED"
@@ -97,25 +98,52 @@ export async function createAuditLog(params: AuditLogParams): Promise<void> {
 export async function getAuditLogs(options: {
   page?: number
   limit?: number
-  userId?: number
-  actionType?: AuditActionType
+  userIds?: number[]
+  actionTypes?: AuditActionType[]
   startDate?: string
   endDate?: string
 }) {
   const page = options.page || 1
-  const limit = options.limit || 50
+  const limit = options.limit || 100
   const offset = (page - 1) * limit
 
   try {
     let whereClause = sql``
-    const conditions = []
+    const conditions: any[] = []
 
-    if (options.userId) {
-      conditions.push(sql`user_id = ${options.userId}`)
+    // Construire les conditions de filtre
+    if (options.userIds && options.userIds.length > 0) {
+      if (options.userIds.length === 1) {
+        conditions.push(sql`user_id = ${options.userIds[0]}`)
+      } else {
+        // Pour plusieurs userIds, utiliser OR
+        const orParts = options.userIds.map(id => sql`user_id = ${id}`)
+        conditions.push(orParts.length > 0 ? orParts[0] : sql`1=0`)
+        for (let i = 1; i < orParts.length; i++) {
+          conditions[conditions.length - 1] = sql`${conditions[conditions.length - 1]} OR ${orParts[i]}`
+        }
+        // Encapsuler dans des parenthèses
+        if (orParts.length > 1) {
+          conditions[conditions.length - 1] = sql`(${conditions[conditions.length - 1]})`
+        }
+      }
     }
 
-    if (options.actionType) {
-      conditions.push(sql`action_type = ${options.actionType}`)
+    if (options.actionTypes && options.actionTypes.length > 0) {
+      if (options.actionTypes.length === 1) {
+        conditions.push(sql`action_type = ${options.actionTypes[0]}`)
+      } else {
+        // Pour plusieurs actionTypes, utiliser OR
+        const orParts = options.actionTypes.map(type => sql`action_type = ${type}`)
+        conditions.push(orParts.length > 0 ? orParts[0] : sql`1=0`)
+        for (let i = 1; i < orParts.length; i++) {
+          conditions[conditions.length - 1] = sql`${conditions[conditions.length - 1]} OR ${orParts[i]}`
+        }
+        // Encapsuler dans des parenthèses
+        if (orParts.length > 1) {
+          conditions[conditions.length - 1] = sql`(${conditions[conditions.length - 1]})`
+        }
+      }
     }
 
     if (options.startDate) {
@@ -126,8 +154,12 @@ export async function getAuditLogs(options: {
       conditions.push(sql`created_at <= ${options.endDate}`)
     }
 
+    // Construire la clause WHERE
     if (conditions.length > 0) {
-      whereClause = sql`WHERE ${sql.join(conditions, sql` AND `)}`
+      whereClause = sql`WHERE ${conditions[0]}`
+      for (let i = 1; i < conditions.length; i++) {
+        whereClause = sql`${whereClause} AND ${conditions[i]}`
+      }
     }
 
     // Compter le total
